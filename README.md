@@ -1,6 +1,6 @@
 # rs_lvgl
 
-**English** · [简体中文](README.zh.md)
+**English** · [简体中文](https://github.com/umbrella22/rs_lvgl/blob/main/README.zh.md)
 
 Rust bindings and declarative UI for [LVGL](https://lvgl.io/) 9.6.
 
@@ -8,14 +8,14 @@ Use LVGL widgets directly from Rust, or build screens with `rs_lvgl_ui` and
 update them through messages. Run your interface on the desktop with SDL2,
 then connect it to your device's display and input drivers.
 
-![rs_lvgl component studio](docs/images/studio-overview.png)
+![rs_lvgl component studio](https://raw.githubusercontent.com/umbrella22/rs_lvgl/main/docs/images/studio-overview.png)
 
 ## Try the demo
 
 The component studio includes controls, charts, text input, layouts, media,
 and navigation, with light and dark themes.
-[Browse the gallery](docs/component-studio.md) or explore the
-[smaller examples](examples/README.md).
+[Browse the gallery](https://github.com/umbrella22/rs_lvgl/blob/main/docs/component-studio.md) or explore the
+[smaller examples](https://github.com/umbrella22/rs_lvgl/blob/main/examples/README.md).
 
 You'll need Rust, a C/C++ compiler, libclang, SDL2, and pkg-config.
 
@@ -37,18 +37,17 @@ cargo run -p rs_lvgl_ui --example studio --features showcase
 
 | Crate | Purpose |
 | --- | --- |
-| [`rs_lvgl_ui`](rs_lvgl_ui/README.md) | Declarative screens, typed events, themes, and reusable components |
-| [`rs_lvgl`](rs_lvgl/) | Rust wrappers for widgets, displays, input, styles, and timers |
-| [`rs_lvgl_sys`](rs_lvgl_sys/README.md) | Raw LVGL bindings, native configuration, custom C sources, and fonts |
-| [`rs_lvgl_codegen`](rs_lvgl_codegen/README.md) | Widget wrapper generation used by the build |
+| [`rs_lvgl_ui`](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_ui/README.md) | Declarative screens, typed events, themes, and reusable components |
+| [`rs_lvgl`](https://github.com/umbrella22/rs_lvgl/tree/main/rs_lvgl) | Rust wrappers for widgets, displays, input, styles, and timers |
+| [`rs_lvgl_sys`](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_sys/README.md) | Raw LVGL bindings, native configuration, custom C sources, and fonts |
+| [`rs_lvgl_codegen`](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_codegen/README.md) | Widget wrapper generation used by the build |
 
-Use path dependencies from a local checkout. For an application next to the
-`rs_lvgl` repository:
+Add the crates from crates.io:
 
 ```toml
 [dependencies]
-rs_lvgl = { path = "../rs_lvgl/rs_lvgl", default-features = false, features = ["alloc"] }
-rs_lvgl_ui = { path = "../rs_lvgl/rs_lvgl_ui" }
+rs_lvgl = { version = "0.1.0", default-features = false, features = ["alloc"] }
+rs_lvgl_ui = { version = "0.1.0" }
 ```
 
 `rs_lvgl` and `rs_lvgl_ui` support `no_std`. Embedded applications using the UI
@@ -92,8 +91,8 @@ impl App for Counter {
 }
 ```
 
-See the [complete counter example](.agents/skills/rs-lvgl-ui/references/counter.rs)
-for display setup and the event loop, or the [UI guide](rs_lvgl_ui/README.md)
+See the [complete counter example](https://github.com/umbrella22/rs_lvgl/blob/main/.agents/skills/rs-lvgl-ui/references/counter.rs)
+for display setup and the event loop, or the [UI guide](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_ui/README.md)
 for layouts, styling, and events.
 
 ## Choose widgets and fonts
@@ -101,21 +100,21 @@ for layouts, styling, and events.
 Disable the default feature set to select the widgets and fonts you need:
 
 ```toml
-rs_lvgl_ui = { path = "../rs_lvgl/rs_lvgl_ui", default-features = false, features = [
+rs_lvgl_ui = { version = "0.1.0", default-features = false, features = [
     "alloc", "components", "widget-slider", "widget-switch", "font-montserrat-16"
 ] }
 ```
 
 Labels, buttons, and row, column, and grid layouts are always available.
 QR codes, barcodes, GIF, Lottie, Pinyin input, and CJK fonts are optional.
-See [feature selection](rs_lvgl_ui/README.md#choosing-widgets) for the full list.
+See [feature selection](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_ui/README.md#choosing-widgets) for the full list.
 
 ## Documentation
 
-- [UI guide](rs_lvgl_ui/README.md) — components, state, styling, and input.
-- [Native integration](rs_lvgl_sys/README.md) — `lv_conf.h`, custom C sources, and fonts.
-- [Testing](docs/testing.md) — test commands and simulator checks.
-- [Changelog](CHANGELOG.md).
+- [UI guide](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_ui/README.md) — components, state, styling, and input.
+- [Native integration](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_sys/README.md) — `lv_conf.h`, custom C sources, and fonts.
+- [Testing](https://github.com/umbrella22/rs_lvgl/blob/main/docs/testing.md) — test commands and simulator checks.
+- [Changelog](https://github.com/umbrella22/rs_lvgl/blob/main/CHANGELOG.md).
 
 ## AI coding assistants
 
@@ -126,10 +125,10 @@ integration guidance for coding assistants. Install them with:
 python3 scripts/install-skills.py --dest ~/.agents/skills
 ```
 
-See [skill setup](docs/ai-skills.md) for project-local installation and usage.
+See [skill setup](https://github.com/umbrella22/rs_lvgl/blob/main/docs/ai-skills.md) for project-local installation and usage.
 
 ## License
 
-Rust code is licensed under [MIT](LICENSE), with credits to Rafael Carício,
+Rust code is licensed under [MIT](https://github.com/umbrella22/rs_lvgl/blob/main/LICENSE), with credits to Rafael Carício,
 Nia Espera, and the other contributors to the original bindings. LVGL, ThorVG,
 and other bundled dependencies retain their own licenses.

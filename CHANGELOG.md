@@ -9,3 +9,4 @@
 - Application-supplied LVGL configuration, custom C sources and fonts.
 - Native integration, resource lifecycle and Rust/LVGL heap checks.
 - English and Chinese entry documentation, plus installable AI coding skills.
+- Tagged crates.io releases for all four crates, with packaged and registry consumer checks.

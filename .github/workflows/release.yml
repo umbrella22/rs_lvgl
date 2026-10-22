@@ -1,0 +1,168 @@
+name: Crates release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing version tag to publish or resume (for example v0.1.0)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crates-release-${{ inputs.release_tag != '' && format('refs/tags/{0}', inputs.release_tag) || github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: never
+  RELEASE_TAG: ${{ inputs.release_tag || (github.ref_type == 'tag' && github.ref_name) || '' }}
+
+jobs:
+  validate:
+    name: Verify distributable crates
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.release_tag) || github.ref }}
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+      - uses: dtolnay/rust-toolchain@1.99.1
+      - name: Install native toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libclang-dev g++ pkg-config
+      - name: Verify versions and tag identity
+        id: version
+        run: |
+          python3 -c 'import sys; sys.path.insert(0, "scripts"); import release; print("version=" + release.release_version())' >> "$GITHUB_OUTPUT"
+          if [ -n "$RELEASE_TAG" ]; then
+            python3 scripts/release.py identity "$RELEASE_TAG"
+          fi
+      - name: Test release failure controls
+        run: python3 -m unittest discover -s scripts/tests -p 'test_release.py'
+      - name: Resolve dependencies
+        run: cargo generate-lockfile
+      - name: Verify archives and extracted consumers
+        run: python3 scripts/release.py verify "$RELEASE_TAG"
+      - name: Keep package verification diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: rs-lvgl-packages
+          path: |
+            target/release-audit/*.log
+            target/release-audit/*.json
+            target/release-audit/*.crate
+          if-no-files-found: warn
+          retention-days: 14
+
+  publish:
+    name: Publish to crates.io
+    if: github.ref_type == 'tag' || github.event_name == 'workflow_dispatch'
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: cargo.io
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.release_tag) || github.ref }}
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+      - uses: dtolnay/rust-toolchain@1.99.1
+      - name: Check publication credential or completed release
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGOTOKEN }}
+        run: |
+          if [ -z "$CARGO_REGISTRY_TOKEN" ]; then
+            if ! python3 scripts/release.py status "$RELEASE_TAG" --artifacts target/release-preflight; then
+              echo 'Set CARGOTOKEN in the cargo.io Environment of umbrella22/rs_lvgl to publish missing crates.' >&2
+              exit 1
+            fi
+          fi
+      - name: Install native toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libclang-dev g++ pkg-config
+      - name: Resolve dependencies
+        run: cargo generate-lockfile
+      - name: Publish in dependency order and run registry consumers
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGOTOKEN }}
+        run: python3 scripts/release.py publish "$RELEASE_TAG"
+      - name: Keep publication receipts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: rs-lvgl-publication
+          path: |
+            target/release-preflight/*.json
+            target/release-audit/*.log
+            target/release-audit/*.json
+            target/release-audit/*.crate
+          if-no-files-found: warn
+          retention-days: 30
+
+  github-release:
+    name: Publish GitHub Release
+    needs: [validate, publish]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.release_tag) || github.ref }}
+          persist-credentials: false
+      - name: Create release after registry acceptance
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          python3 scripts/release.py identity "$RELEASE_TAG"
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import subprocess
+
+          tag, version = os.environ["RELEASE_TAG"], os.environ["VERSION"]
+          notes = Path(os.environ["RUNNER_TEMP"]) / "release-notes.md"
+          packages = ("rs_lvgl_ui", "rs_lvgl", "rs_lvgl_sys", "rs_lvgl_codegen")
+          notes.write_text(
+              f"Rust bindings and declarative UI for LVGL 9.6.\n\n"
+              f"```toml\n[dependencies]\nrs_lvgl_ui = \"{version}\"\n```\n\n"
+              + "\n".join(f"- [{name} {version}](https://crates.io/crates/{name}/{version})" for name in packages)
+              + "\n\nA C/C++ compiler and libclang are required. SDL2 is optional for desktop examples.\n"
+          )
+          result = subprocess.run(["gh", "release", "view", tag, "--json", "tagName,isDraft,isPrerelease"],
+                                  capture_output=True, text=True)
+          if result.returncode == 0:
+              record = json.loads(result.stdout)
+              if record != {"tagName": tag, "isDraft": False, "isPrerelease": False}:
+                  raise SystemExit("Existing release has conflicting metadata")
+              print("Existing published release verified")
+          elif "release not found" in result.stderr.lower() or "HTTP 404" in result.stderr:
+              subprocess.run(["gh", "release", "create", tag, "--verify-tag", "--title",
+                              f"rs_lvgl {version}", "--notes-file", str(notes)], check=True)
+          else:
+              raise SystemExit(result.stderr)
+          PY

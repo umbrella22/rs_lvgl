@@ -13,4 +13,4 @@ native inputs, never `OUT_DIR/generated.rs`.
 cargo test -p rs_lvgl_codegen
 ```
 
-See the [workspace README](../README.md) for package roles and setup.
+See the [workspace README](https://github.com/umbrella22/rs_lvgl/blob/main/README.md) for package roles and setup.

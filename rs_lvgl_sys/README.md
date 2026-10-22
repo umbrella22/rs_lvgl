@@ -6,16 +6,15 @@ It can be used without `rs_lvgl`, `rs_lvgl_ui` or a Rust UI runtime.
 
 ```toml
 [dependencies]
-rs_lvgl_sys = { path = "../rs_lvgl/rs_lvgl_sys" }
+rs_lvgl_sys = { version = "0.1.0" }
 ```
 
-The path selects this checkout's implementation. A C compiler and libclang are
-required. SDL and the C++ ThorVG provider are optional capabilities.
+A C compiler and libclang are required. SDL and the C++ ThorVG provider are optional capabilities.
 
 ## Default configuration
 
 With no application inputs, the build uses
-[`vendor/include-9.6/lv_conf.h`](vendor/include-9.6/lv_conf.h). Cargo widget/font
+[`vendor/include-9.6/lv_conf.h`](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_sys/vendor/include-9.6/lv_conf.h). Cargo widget/font
 features patch a copy in `OUT_DIR`; the checked-in header is never rewritten.
 The default allocator is CLIB and SDL is disabled.
 
@@ -128,7 +127,7 @@ Canvas/image, vector graphics, matrices, floating-point coordinates and internal
 ThorVG. Applications supplying a header must select compatible settings themselves.
 
 ThorVG uses C++14 and the target C++ runtime. Its canonical
-[configuration](shims/thorvg_config.h) is generated in `OUT_DIR` and preincluded;
+[configuration](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_sys/shims/thorvg_config.h) is generated in `OUT_DIR` and preincluded;
 no ignored Meson header is required. The checked Lottie shim reports loading,
 timing and first-frame errors that the upstream void setter cannot return.
 Vendored source provenance and licenses are retained.

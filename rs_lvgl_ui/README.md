@@ -3,9 +3,8 @@
 A declarative, typed Rust UI layer for LVGL 9.6, built on the `rs_lvgl` bindings in
 this workspace.
 
-This crate is currently `publish = false`. Use a local path to this checkout;
-the examples below do not describe a published registry release. The
-[repository README](../README.md) covers dependencies and simulator setup.
+Add `rs_lvgl_ui = "0.1.0"` to the application dependencies. The
+[repository README](https://github.com/umbrella22/rs_lvgl/blob/main/README.md) covers native dependencies and simulator setup.
 
 Application code describes a screen as a `Node<Msg>` tree, updates one state
 value through messages, and lets the layer create, update, reorder and delete
@@ -57,7 +56,7 @@ widgets are not compiled at all. The defaults keep the full set.
 
 ```toml
 [dependencies]
-rs_lvgl_ui = { path = "../rs_lvgl/rs_lvgl_ui", default-features = false, features = [
+rs_lvgl_ui = { version = "0.1.0", default-features = false, features = [
     "alloc", "components", "widget-slider", "widget-switch", "font-montserrat-20",
 ] }
 ```
@@ -501,7 +500,7 @@ Lottie enables native vector graphics, matrix support and floating-point precise
 coordinates. Its C/C++ compilation and target bindings use the same configuration;
 this changes native types for the whole unified feature graph. Prebuilt providers
 must match that configuration and are not certified by the host tests. See the
-[native build reference](../rs_lvgl_sys/README.md#optional-extensions-and-thorvg).
+[native build reference](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_sys/README.md#native-providers-and-extensions).
 
 Native media decoding can reject data after descriptor validation. Such a mount
 or update returns `InvalidProperty` and deletes the affected partial tree. Byte
@@ -688,7 +687,7 @@ Changes since the first `rs_lvgl_ui` release that can affect existing code:
 
 ## Examples and tests
 
-The [host validation guide](../docs/testing.md) describes the supported matrix,
+The [host validation guide](https://github.com/umbrella22/rs_lvgl/blob/main/docs/testing.md) describes the supported matrix,
 native example audit and strict Rust/LVGL heap accounting. Run the leak harness
 through `python3 scripts/check-ui-leaks.py`; running its opt-in test with the
 default CLIB allocator fails because that allocator's monitor is unobservable.
@@ -758,11 +757,11 @@ emergency exit without dropping stale Rust tree handles. Use Quit or a frame
 limit to exercise normal unmount and resource teardown.
 
 The `widgets_demo` example recreates LVGL's official widgets demo with typed
-nodes and a raw calendar. The [component studio](../docs/component-studio.md)
+nodes and a raw calendar. The [component studio](https://github.com/umbrella22/rs_lvgl/blob/main/docs/component-studio.md)
 lists widget coverage and interactions.
 
 ## Component studio
 
 Run `cargo run -p rs_lvgl_ui --example studio --features showcase` for the complete
-component studio. [Coverage and rendering](../docs/component-studio.md) lists its
+component studio. [Coverage and rendering](https://github.com/umbrella22/rs_lvgl/blob/main/docs/component-studio.md) lists its
 nine categories and native acceptance checks.

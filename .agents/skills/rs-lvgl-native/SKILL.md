@@ -21,8 +21,8 @@ requested provider. External prebuilt linkage needs a separate design.
 
 For raw C calls, depend only on `rs_lvgl_sys`. Add `rs_lvgl` for imperative wrappers or
 `rs_lvgl_ui` for typed composition only when the application needs them. Check whether
-the checkout implementation is available through the chosen dependency; the local
-unpublished UI API is not obtained with an arbitrary registry version.
+the checkout implementation is available through the chosen dependency; verify the
+selected rs_lvgl release before using its UI API.
 
 Use [the application-input recipe](references/application-inputs.md) when supplying
 a configuration, C source or font. The header is authoritative. Cargo's explicit

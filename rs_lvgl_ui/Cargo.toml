@@ -7,7 +7,7 @@ license = "MIT"
 repository = "https://github.com/umbrella22/rs_lvgl"
 categories = ["embedded", "gui", "no-std"]
 keywords = ["rs_lvgl", "embedded", "gui", "ui"]
-publish = false
+publish = ["crates-io"]
 readme = "README.md"
 
 [dependencies]
