@@ -1,0 +1,9 @@
+[workspace]
+members = [
+    "rs_lvgl",
+    "rs_lvgl_codegen",
+    "rs_lvgl_sys",
+    "rs_lvgl_ui",
+]
+
+resolver = "2"

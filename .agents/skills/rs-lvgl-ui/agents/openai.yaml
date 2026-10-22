@@ -1,0 +1,4 @@
+interface:
+  display_name: "LVGL Rust UI"
+  short_description: "Build typed declarative UIs with Rust and LVGL"
+  default_prompt: "Use $rs-lvgl-ui to implement this screen with the workspace LVGL API."

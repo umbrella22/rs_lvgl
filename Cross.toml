@@ -1,0 +1,11 @@
+# Cross (cross-rs) cross-compilation config.
+#
+# The LVGL 9 build needs no environment passthrough: rs_lvgl_sys compiles the
+# vendored C sources directly (see rs_lvgl_sys/build.rs). Historically this
+# file passed DEP_LV_CONFIG_PATH/LVGL_INCLUDE/LVGL_LINK to the build; those
+# variables are no longer read.
+
+# See https://github.com/rafaelcaricio/lvgl-rs/issues/78 for more details on
+# the current status of `Cross` support.
+# https://github.com/rafaelcaricio/lvgl-rs/issues/53 contains a way to get
+# lvgl-rs building on armv7-unknown-linux-gnueabihf

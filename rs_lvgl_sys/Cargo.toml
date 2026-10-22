@@ -1,0 +1,126 @@
+[package]
+name = "rs_lvgl_sys"
+description = "Raw bindings to the LVGL C library (LVGL 9.6.x)."
+version = "0.1.0"
+authors = ["Rafael Caricio <crates.lvgl-sys@caric.io>", "Nia Espera <a5b6@riseup.net>"]
+edition = "2021"
+license = "MIT"
+homepage = "https://github.com/umbrella22/rs_lvgl"
+repository = "https://github.com/umbrella22/rs_lvgl"
+readme = "README.md"
+categories = ["external-ffi-bindings", "embedded", "gui", "no-std"]
+keywords = ["littlevgl", "rs_lvgl"]
+build = "build.rs"
+links = "lvgl"
+exclude = [
+    "vendor/lvgl-9.6/tests",
+    "vendor/lvgl-9.6/examples",
+    "vendor/lvgl-9.6/docs",
+    "vendor/lvgl-9.6/scripts",
+    "vendor/lvgl-9.6/env_support",
+]
+
+[lib]
+name = "rs_lvgl_sys"
+
+[dependencies]
+cty = "0.2.2"
+
+[build-dependencies]
+cc = "1.2"
+bindgen = "0.71"
+
+# Integration tests compile the real build script to exercise its config patch.
+[dev-dependencies]
+cc = "1.2"
+bindgen = "0.71"
+
+[features]
+# Compatibility no-op: the vendored configuration is the default. Applications
+# can select a header through LVGL_CONFIG_PATH without changing this feature.
+use-vendored-config = []
+# Desktop simulator: compile + link LVGL's native SDL2 backend
+# (src/drivers/sdl, LV_USE_SDL=1). Requires SDL2 on the host; default
+# builds (e.g. ESP cross-compiles) are unaffected.
+sdl = []
+# Compile the vendored official widgets demo (vendor/lvgl-9.6/demos/widgets)
+# and expose lv_demo_widgets(). Needs the fonts/widgets the demo uses
+# enabled in the vendored lv_conf.h.
+lv-demo-widgets = []
+# Legacy lv_drivers (SDL/Linux) backends -- not used on ESP-IDF v6 path
+# (esp_lvgl_port supplies flush). Kept as a no-op feature for Cargo.toml
+# back-compat with existing dependents.
+drivers = []
+# LVGL 9 owns the tick internally via lv_tick_inc + esp_lvgl_port; these
+# features are retained as no-ops.
+rust_timer = []
+custom_timer = []
+
+# Widget and font selection. Without `minimal-config` the vendored
+# lv_conf.h is used as is and the `widget-*`/`font-*` features only add to it.
+# With `minimal-config` every optional widget and every Montserrat size except
+# the default 14 is off unless its feature is enabled; label and button always
+# stay on. Widgets that another one requires (slider -> bar, keyboard ->
+# buttonmatrix + textarea, ...) are enabled automatically. Dependents read
+# the result from DEP_LVGL_WIDGETS / DEP_LVGL_FONTS.
+minimal-config = []
+widget-animimage = []
+widget-arc = []
+widget-arclabel = []
+widget-bar = []
+widget-buttonmatrix = []
+widget-calendar = []
+widget-canvas = []
+widget-chart = []
+widget-checkbox = []
+widget-dropdown = []
+widget-image = []
+widget-imagebutton = []
+widget-keyboard = []
+widget-led = []
+widget-line = []
+widget-list = []
+widget-menu = []
+widget-msgbox = []
+widget-roller = []
+widget-scale = []
+widget-slider = []
+widget-span = []
+widget-spinbox = []
+widget-spinner = []
+widget-switch = []
+widget-table = []
+widget-tabview = []
+widget-textarea = []
+widget-tileview = []
+widget-win = []
+font-montserrat-8 = []
+font-montserrat-10 = []
+font-montserrat-12 = []
+font-montserrat-16 = []
+font-montserrat-18 = []
+font-montserrat-20 = []
+font-montserrat-22 = []
+font-montserrat-24 = []
+font-montserrat-26 = []
+font-montserrat-28 = []
+font-montserrat-30 = []
+font-montserrat-32 = []
+font-montserrat-34 = []
+font-montserrat-36 = []
+font-montserrat-38 = []
+font-montserrat-40 = []
+font-montserrat-42 = []
+font-montserrat-44 = []
+font-montserrat-46 = []
+font-montserrat-48 = []
+
+# Optional extensions and vendored CJK fonts; none are enabled by default.
+widget-qrcode = []
+widget-barcode = []
+widget-gif = []
+widget-lottie = []
+widget-ime-pinyin = []
+font-cjk-14 = []
+font-cjk-16 = []
+gridnav = []

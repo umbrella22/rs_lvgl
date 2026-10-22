@@ -1,0 +1,4 @@
+interface:
+  display_name: "LVGL Rust Native Integration"
+  short_description: "Configure raw LVGL bindings, C sources and fonts"
+  default_prompt: "Use $rs-lvgl-native to integrate this native configuration with rs_lvgl_sys."

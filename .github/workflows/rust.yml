@@ -1,0 +1,165 @@
+name: rs_lvgl
+
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rs-lvgl-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Rust / ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libclang-dev g++ pkg-config libsdl2-dev
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
+        run: |
+          brew install sdl2 pkg-config
+          echo "LIBRARY_PATH=$(pkg-config --variable=libdir sdl2)" >> "$GITHUB_ENV"
+      - name: Resolve workspace dependencies
+        run: cargo generate-lockfile
+      - name: Build and test serially
+        run: |
+          cargo build --workspace --locked
+          cargo test --workspace --locked -- --test-threads=1
+      - name: Check examples and no_std configuration
+        run: |
+          cargo check -p rs_lvgl_ui --locked --examples --features showcase,rust_timer
+          cargo check -p rs_lvgl --locked --no-default-features --lib
+          cargo test -p rs_lvgl --locked --no-default-features --features lvgl_alloc,rust_timer -- --test-threads=1
+
+  ui:
+    name: Components and native studio
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install native UI dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libclang-dev g++ pkg-config libsdl2-dev xvfb xauth
+      - name: Resolve workspace dependencies
+        run: cargo generate-lockfile
+      - name: Test all UI capabilities
+        run: cargo test -p rs_lvgl_ui --locked --features showcase,font-cjk-14,rust_timer -- --test-threads=1
+      - name: Test actual views and native SDL journeys
+        run: xvfb-run -a python3 scripts/check-ui-examples.py --locked --artifacts target/ui-audit
+      - name: Render the component studio
+        run: python3 scripts/render-studio.py --locked --artifacts target/studio-audit
+      - name: Check reduced configurations
+        run: |
+          cargo test -p rs_lvgl_ui --locked --no-default-features --features alloc,components -- --test-threads=1
+          cargo check -p rs_lvgl_ui --locked --no-default-features --lib
+          cargo check -p rs_lvgl_ui --locked --no-default-features --features alloc,no-autoinit --lib
+          for capability in input-keypad input-gridnav widget-canvas widget-qrcode widget-barcode widget-gif widget-lottie widget-ime-pinyin font-cjk-14 font-cjk-16; do
+            cargo check -p rs_lvgl_ui --locked --no-default-features --features "alloc,$capability" --lib
+          done
+      - name: Keep images and native diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: rs-lvgl-studio
+          path: |
+            target/ui-audit/*.log
+            target/ui-audit/*.json
+            target/ui-audit/images/
+            target/studio-audit/
+          if-no-files-found: warn
+          retention-days: 7
+
+  native-contracts:
+    name: Native configuration and packaged consumers
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install native toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libclang-dev g++ pkg-config
+      - name: Resolve workspace dependencies
+        run: cargo generate-lockfile
+      - name: Verify configuration and recovery three times
+        run: |
+          for pass in 1 2 3; do
+            python3 scripts/check-native-inputs.py --locked --artifacts target/native-input-audit
+            mkdir -p "target/native-input-audit/pass-$pass"
+            cp target/native-input-audit/*.log target/native-input-audit/results.json "target/native-input-audit/pass-$pass/"
+          done
+      - name: Verify installed skills and downstream examples
+        run: python3 scripts/check-skills.py --locked --artifacts target/skill-audit
+      - name: Keep consumer diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: rs-lvgl-native-contracts
+          path: |
+            target/native-input-audit/*.log
+            target/native-input-audit/*.json
+            target/native-input-audit/pass-*/*.log
+            target/native-input-audit/pass-*/*.json
+            target/skill-audit/*.log
+            target/skill-audit/*.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  heap-contracts:
+    name: Rust and LVGL heap balance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install native toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libclang-dev g++ pkg-config
+      - name: Resolve workspace dependencies
+        run: cargo generate-lockfile
+      - name: Verify strict balance and leak sensitivity three times
+        run: |
+          for pass in 1 2 3; do
+            python3 scripts/check-ui-leaks.py --locked --artifacts target/leak-audit
+            mkdir -p "target/leak-audit/pass-$pass"
+            cp target/leak-audit/*.log target/leak-audit/results.json "target/leak-audit/pass-$pass/"
+          done
+      - name: Keep heap diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: rs-lvgl-heap-contracts
+          path: |
+            target/leak-audit/*.log
+            target/leak-audit/*.json
+            target/leak-audit/pass-*/*.log
+            target/leak-audit/pass-*/*.json
+          if-no-files-found: warn
+          retention-days: 7
