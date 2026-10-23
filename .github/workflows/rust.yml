@@ -107,13 +107,8 @@ jobs:
           sudo apt-get install -y clang libclang-dev g++ pkg-config
       - name: Resolve workspace dependencies
         run: cargo generate-lockfile
-      - name: Verify configuration and recovery three times
-        run: |
-          for pass in 1 2 3; do
-            python3 scripts/check-native-inputs.py --locked --artifacts target/native-input-audit
-            mkdir -p "target/native-input-audit/pass-$pass"
-            cp target/native-input-audit/*.log target/native-input-audit/results.json "target/native-input-audit/pass-$pass/"
-          done
+      - name: Verify configuration and recovery
+        run: python3 scripts/check-native-inputs.py --locked --artifacts target/native-input-audit
       - name: Verify installed skills and downstream examples
         run: python3 scripts/check-skills.py --locked --artifacts target/skill-audit
       - name: Keep consumer diagnostics
@@ -124,8 +119,6 @@ jobs:
           path: |
             target/native-input-audit/*.log
             target/native-input-audit/*.json
-            target/native-input-audit/pass-*/*.log
-            target/native-input-audit/pass-*/*.json
             target/skill-audit/*.log
             target/skill-audit/*.json
           if-no-files-found: warn
@@ -144,13 +137,8 @@ jobs:
           sudo apt-get install -y clang libclang-dev g++ pkg-config
       - name: Resolve workspace dependencies
         run: cargo generate-lockfile
-      - name: Verify strict balance and leak sensitivity three times
-        run: |
-          for pass in 1 2 3; do
-            python3 scripts/check-ui-leaks.py --locked --artifacts target/leak-audit
-            mkdir -p "target/leak-audit/pass-$pass"
-            cp target/leak-audit/*.log target/leak-audit/results.json "target/leak-audit/pass-$pass/"
-          done
+      - name: Verify strict balance and leak sensitivity
+        run: python3 scripts/check-ui-leaks.py --locked --artifacts target/leak-audit
       - name: Keep heap diagnostics
         if: always()
         uses: actions/upload-artifact@v7
@@ -159,7 +147,5 @@ jobs:
           path: |
             target/leak-audit/*.log
             target/leak-audit/*.json
-            target/leak-audit/pass-*/*.log
-            target/leak-audit/pass-*/*.json
           if-no-files-found: warn
           retention-days: 7

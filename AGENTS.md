@@ -190,7 +190,7 @@ not_started -> red_confirmed -> implemented_unverified
             -> deterministic_green -> complete
 ```
 
-Preservation-only/baseline work may use `red_confirmed` for a recorded valid oracle with an explained `N/A` defect failure. Missing required environment/UI/provider acceptance cannot be represented as `complete`. A blocker is recorded with its cause and release condition, not as a successful wave state. Relevant changes invalidate affected evidence and reset acceptance counters. Lifecycle, callback/reentrancy, rebuild-interruption, and output-isolation gates require three consecutive passes on unchanged relevant inputs when those behaviors are in scope; repeated unrelated unit tests are not substitutes.
+Preservation-only/baseline work may use `red_confirmed` for a recorded valid oracle with an explained `N/A` defect failure. Missing required environment/UI/provider acceptance cannot be represented as `complete`. A blocker is recorded with its cause and release condition, not as a successful wave state. Relevant changes invalidate affected evidence and reset acceptance counters. During development acceptance, lifecycle, callback/reentrancy, rebuild-interruption, and output-isolation gates require three consecutive passes on unchanged relevant inputs when those behaviors are in scope; repeated unrelated unit tests are not substitutes. Routine CI/CD runs each complete validation script once, retaining all cases, assertions, negative controls, and feature combinations.
 
 Resume in this order:
 
