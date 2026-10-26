@@ -11,7 +11,7 @@
 //! counters. It contains no `rs_lvgl::sys` calls and no raw pointers.
 
 use rs_lvgl::Display;
-use rs_lvgl_ui::{App, Key, Node, Size, Style, Theme, Ui};
+use rs_lvgl_ui::prelude::*;
 
 #[derive(Clone, Debug)]
 enum Msg {
@@ -51,72 +51,55 @@ impl App for Settings {
         }
     }
 
-    fn view(&self, theme: &Theme) -> Node<Msg> {
+    fn view(&self, theme: &Theme) -> View<Msg> {
         let modes = ["Auto", "Manual", "Night"];
 
-        Node::column()
-            .style(Style::screen(theme).gap(12).pad(16))
-            .child(Node::label("Fan settings").style(Style::title(theme)))
-            .child(
-                Node::row()
-                    .style(Style::surface(theme).width(Size::Percent(100)).gap(12))
-                    .child(
-                        Node::label("Speed")
-                            .key(Key::Named("speed-label"))
-                            .style(Style::body(theme)),
-                    )
-                    .child(
-                        Node::slider(0, 100, self.speed)
-                            .key(Key::Named("speed"))
-                            .style(Style::default().height(Size::Px(16)).flex_grow(1))
-                            .on_value_changed(Msg::SpeedChanged),
-                    ),
-            )
-            .child(
-                Node::row()
-                    .style(Style::surface(theme).width(Size::Percent(100)).gap(12))
-                    .child(
-                        Node::label(if self.muted { "Muted" } else { "Sound on" })
-                            .key(Key::Named("mute-label"))
-                            .style(Style::body(theme)),
-                    )
-                    .child(
-                        Node::switch(self.muted)
-                            .key(Key::Named("mute"))
-                            .on_value_changed(|_| Msg::ToggleMute),
-                    ),
-            )
-            .child(
-                Node::column()
-                    .key(Key::Named("modes"))
-                    .style(Style::surface(theme).width(Size::Percent(100)).gap(8))
-                    .child(Node::label("Mode").style(Style::muted(theme)))
-                    .children(modes.iter().enumerate().map(|(index, mode)| {
-                        Node::button(*mode)
-                            .key(Key::Id(index as u64))
-                            .style(if index == self.selected {
-                                Style::accent(theme)
-                            } else {
-                                Style::body(theme).bg(theme.surface).shadow_width(0)
-                            })
-                            .on_click(Msg::Select(index))
-                    })),
-            )
-            .child(
-                Node::row()
-                    .style(Style::default().width(Size::Percent(100)).gap(12))
-                    .child(
-                        Node::label(format!("Speed {}%", self.speed))
-                            .key(Key::Named("summary"))
-                            .style(Style::body(theme).flex_grow(1)),
-                    )
-                    .child(
-                        Node::button("Save")
-                            .key(Key::Named("save"))
-                            .style(Style::accent(theme))
-                            .on_click(Msg::Save),
-                    ),
-            )
+        column([
+            label("Fan settings").style(Style::title(theme)),
+            row([
+                label("Speed")
+                    .key(Key::Named("speed-label"))
+                    .style(Style::body(theme)),
+                slider(0, 100, self.speed)
+                    .key(Key::Named("speed"))
+                    .style(Style::default().height(Size::Px(16)).flex_grow(1))
+                    .on_value_changed(Msg::SpeedChanged),
+            ])
+            .style(Style::surface(theme).width(Size::Percent(100)).gap(12)),
+            row([
+                label(if self.muted { "Muted" } else { "Sound on" })
+                    .key(Key::Named("mute-label"))
+                    .style(Style::body(theme)),
+                switch(self.muted)
+                    .key(Key::Named("mute"))
+                    .on_value_changed(|_| Msg::ToggleMute),
+            ])
+            .style(Style::surface(theme).width(Size::Percent(100)).gap(12)),
+            column([label("Mode").style(Style::muted(theme))])
+                .key(Key::Named("modes"))
+                .style(Style::surface(theme).width(Size::Percent(100)).gap(8))
+                .children(modes.iter().enumerate().map(|(index, mode)| {
+                    button(*mode)
+                        .key(Key::Id(index as u64))
+                        .style(if index == self.selected {
+                            Style::accent(theme)
+                        } else {
+                            Style::body(theme).bg(theme.surface).shadow_width(0)
+                        })
+                        .on_click(Msg::Select(index))
+                })),
+            row([
+                label(format!("Speed {}%", self.speed))
+                    .key(Key::Named("summary"))
+                    .style(Style::body(theme).flex_grow(1)),
+                button("Save")
+                    .key(Key::Named("save"))
+                    .style(Style::accent(theme))
+                    .on_click(Msg::Save),
+            ])
+            .style(Style::default().width(Size::Percent(100)).gap(12)),
+        ])
+        .style(Style::screen(theme).gap(12).pad(16))
     }
 }
 

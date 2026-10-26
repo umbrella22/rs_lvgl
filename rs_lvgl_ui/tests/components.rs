@@ -6,6 +6,7 @@
 mod common;
 
 use core::ptr::{self, NonNull};
+use rs_lvgl_ui::prelude::*;
 use std::ffi::CStr;
 
 use common::{app_root, child, init, lock};
@@ -16,7 +17,6 @@ use rs_lvgl_ui::components::list::{self, ListItem};
 use rs_lvgl_ui::components::nav::{self, NavMsg, NavState};
 use rs_lvgl_ui::components::panel::{self, Panel};
 use rs_lvgl_ui::components::toast::{self, Toasts};
-use rs_lvgl_ui::{symbol, App, Node, Theme, Ui};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Page {
@@ -40,12 +40,12 @@ struct Host {
     nav: NavState<Page>,
     toasts: Toasts,
     dialog: bool,
-    view: fn(&Host, &Theme) -> Node<Msg>,
+    view: fn(&Host, &Theme) -> View<Msg>,
     received: Vec<Msg>,
 }
 
 impl Host {
-    fn new(view: fn(&Host, &Theme) -> Node<Msg>) -> Self {
+    fn new(view: fn(&Host, &Theme) -> View<Msg>) -> Self {
         Self {
             nav: NavState::new(Page::Root),
             toasts: Toasts::new(),
@@ -69,11 +69,11 @@ impl App for Host {
         self.received.push(msg);
     }
 
-    fn view(&self, theme: &Theme) -> Node<Msg> {
-        Node::column().child((self.view)(self, theme))
+    fn view(&self, theme: &Theme) -> View<Msg> {
+        column([]).child((self.view)(self, theme))
     }
 
-    fn overlay(&self, theme: &Theme) -> Option<Node<Msg>> {
+    fn overlay(&self, theme: &Theme) -> Option<View<Msg>> {
         if !self.dialog && self.toasts.is_empty() {
             return None;
         }
@@ -221,7 +221,7 @@ fn list_item_trailing_node_keeps_its_handler() {
     let _guard = lock();
     let mut app = Host::new(|_, theme| {
         ListItem::new("Bluetooth")
-            .trailing(Node::switch(false).on_value_changed(Msg::Toggle))
+            .trailing(switch(false).on_value_changed(Msg::Toggle))
             .view(theme)
     });
     let (mut ui, row) = mount(&app);
@@ -245,8 +245,8 @@ fn panel_has_header_actions_and_content() {
     let mut app = Host::new(|_, theme| {
         Panel::new("Logs")
             .action(panel::icon_button(theme, symbol::REFRESH, Msg::Open(7)))
-            .child(Node::label("line 1"))
-            .child(Node::label("line 2"))
+            .child(label("line 1"))
+            .child(label("line 2"))
             .view(theme)
     });
     let (mut ui, panel) = mount(&app);
@@ -287,7 +287,7 @@ fn nav_state_updates() {
     assert_eq!(nav.depth(), 0);
 }
 
-fn nav_view(host: &Host, theme: &Theme) -> Node<Msg> {
+fn nav_view(host: &Host, theme: &Theme) -> View<Msg> {
     let (title, page) = match host.nav.current() {
         Page::Root => (
             "Settings",
@@ -300,8 +300,8 @@ fn nav_view(host: &Host, theme: &Theme) -> Node<Msg> {
                 )],
             ),
         ),
-        Page::Wifi => ("Wi-Fi", Node::label("Networks")),
-        Page::Display => ("Display", Node::label("Brightness")),
+        Page::Wifi => ("Wi-Fi", label("Networks")),
+        Page::Display => ("Display", label("Brightness")),
     };
     nav::view(&host.nav, theme, title, page, Msg::Nav(NavMsg::Back))
 }
@@ -337,7 +337,7 @@ fn nav_view_pushes_and_pops_pages() {
 #[test]
 fn dialog_mounts_on_top_layer_and_closes_through_state() {
     let _guard = lock();
-    let mut app = Host::new(|_, _| Node::label("view"));
+    let mut app = Host::new(|_, _| label("view"));
     let (mut ui, _) = mount(&app);
     assert!(overlay_tree().is_none());
 
@@ -408,7 +408,7 @@ fn toasts_expire_drop_oldest_and_dismiss() {
 #[test]
 fn toast_view_keeps_identity_and_dismisses_on_click() {
     let _guard = lock();
-    let mut app = Host::new(|_, _| Node::label("view"));
+    let mut app = Host::new(|_, _| label("view"));
     app.toasts.push("Saved", 100);
     let second = app.toasts.push("Synced", 1000);
     let (mut ui, _) = mount(&app);
@@ -440,7 +440,7 @@ fn components_compose_with_map() {
 
     let _guard = lock();
     let mut app = Host::new(|_, theme| {
-        let rows: Node<Row> = list::list(
+        let rows: View<Row> = list::list(
             theme,
             [ListItem::new("Pick").on_click(Row::Picked(3)).view(theme)],
         );

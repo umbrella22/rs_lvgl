@@ -1,5 +1,5 @@
 //! Run: `cargo run -p rs_lvgl_ui --example bar --features simulator`
-use rs_lvgl_ui::{App, Node, Size, Style, Theme};
+use rs_lvgl_ui::prelude::*;
 mod support;
 
 #[derive(Clone)]
@@ -23,7 +23,7 @@ impl App for Progress {
             Msg::Reset => 0,
         };
     }
-    fn view(&self, theme: &Theme) -> Node<Msg> {
+    fn view(&self, theme: &Theme) -> View<Msg> {
         support::frame(
             theme,
             "Progress bar",
@@ -31,7 +31,7 @@ impl App for Progress {
             support::column()
                 .child(support::value(theme, format!("{}% complete", self.value)))
                 .child(
-                    Node::bar(0, 100, self.value).style(
+                    bar(0, 100, self.value).style(
                         Style::default()
                             .width(Size::Percent(100))
                             .height(Size::Px(24)),

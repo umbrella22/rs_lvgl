@@ -1,5 +1,5 @@
 //! Run: `cargo run -p rs_lvgl_ui --example animation --features simulator`
-use rs_lvgl_ui::{Align, Animation, AnimationProperty, App, Easing, Node, Size, Style, Theme};
+use rs_lvgl_ui::prelude::*;
 mod support;
 
 #[derive(Clone)]
@@ -19,8 +19,8 @@ impl App for Motion {
     fn update(&mut self, _: Msg) {
         self.running = !self.running;
     }
-    fn view(&self, theme: &Theme) -> Node<Msg> {
-        let mut dot = Node::obj().style(
+    fn view(&self, theme: &Theme) -> View<Msg> {
+        let mut dot = obj().style(
             Style::default()
                 .bg(theme.accent)
                 .radius(14)
@@ -43,7 +43,7 @@ impl App for Motion {
             "LVGL animates a mounted node; messages control playback.",
             support::column()
                 .child(
-                    Node::obj()
+                    obj()
                         .style(
                             Style::default()
                                 .width(Size::Percent(100))

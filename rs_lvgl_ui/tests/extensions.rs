@@ -1,32 +1,31 @@
 mod common;
-use rs_lvgl_ui::*;
-struct View(usize);
-impl App for View {
+use rs_lvgl_ui::prelude::*;
+struct TestApp(usize);
+impl App for TestApp {
     type Msg = ();
     fn update(&mut self, _: ()) {}
-    fn view(&self, _: &Theme) -> Node<()> {
+    fn view(&self, _: &Theme) -> View<()> {
         match self.0 {
-            0 => Node::qrcode(QrCode::new(b"a\0b".to_vec(), 58)),
-            1 => Node::qrcode(QrCode::new(b"changed".to_vec(), 58)),
-            2 => Node::barcode(Barcode::new("A B", 20)),
-            3 => Node::barcode(Barcode::new("AB", 20)),
-            4 => Node::gif(Gif::new(&include_bytes!("assets/two-colors.gif")[..])),
+            0 => qrcode(QrCode::new(b"a\0b".to_vec(), 58)),
+            1 => qrcode(QrCode::new(b"changed".to_vec(), 58)),
+            2 => barcode(Barcode::new("A B", 20)),
+            3 => barcode(Barcode::new("AB", 20)),
+            4 => gif(Gif::new(&include_bytes!("assets/two-colors.gif")[..])),
             5 => {
-                let mut gif = Gif::new(&include_bytes!("assets/two-colors.gif")[..]);
-                gif.paused = true;
-                Node::gif(gif)
+                let mut animation = Gif::new(&include_bytes!("assets/two-colors.gif")[..]);
+                animation.paused = true;
+                gif(animation)
             }
-            6 => Node::lottie(Lottie::new(
+            6 => lottie(Lottie::new(
                 include_str!("assets/moving-square.json"),
                 32,
                 32,
             )),
-            7 => Node::lottie(Lottie::new("{}", 32, 32)),
-            8 => Node::column()
-                .child(Node::textarea("").keyboard_id(1).key(Key::Named("text")))
-                .child(Node::pinyin_keyboard(1, Font::cjk_16()).key(Key::Named("ime"))),
-            _ => Node::column()
-                .child(Node::pinyin_keyboard(1, Font::cjk_16()).key(Key::Named("ime"))),
+            7 => lottie(Lottie::new("{}", 32, 32)),
+            8 => column([])
+                .child(textarea("").keyboard_id(1).key(Key::Named("text")))
+                .child(pinyin_keyboard(1, Font::cjk_16()).key(Key::Named("ime"))),
+            _ => column([]).child(pinyin_keyboard(1, Font::cjk_16()).key(Key::Named("ime"))),
         }
     }
 }
@@ -42,7 +41,7 @@ fn qr_binary_payload_and_barcode_spaces_produce_real_updated_pixels() {
     let _guard = common::lock();
     let display = common::init();
     let mut ui = Ui::new(&display, common::theme()).unwrap();
-    ui.mount(&View(0)).unwrap();
+    ui.mount(&TestApp(0)).unwrap();
     let qr = common::app_root();
     let first = ui.snapshot().unwrap();
     assert!(first.pixels.as_chunks::<4>().0.contains(&[0, 0, 0, 255]));
@@ -51,13 +50,13 @@ fn qr_binary_payload_and_barcode_spaces_produce_real_updated_pixels() {
         .as_chunks::<4>()
         .0
         .contains(&[255, 255, 255, 255]));
-    ui.update(&View(1)).unwrap();
+    ui.update(&TestApp(1)).unwrap();
     assert_eq!(common::app_root(), qr);
     assert_ne!(ui.snapshot().unwrap().pixels, first.pixels);
-    ui.update(&View(2)).unwrap();
+    ui.update(&TestApp(2)).unwrap();
     let with_space = ui.snapshot().unwrap();
     assert!(unsafe { rs_lvgl_sys::lv_barcode_is_render_valid(common::app_root().as_ptr()) });
-    ui.update(&View(3)).unwrap();
+    ui.update(&TestApp(3)).unwrap();
     let without_space = ui.snapshot().unwrap();
     assert_ne!(with_space, without_space, "Raw encoding preserves spaces");
 }
@@ -67,13 +66,13 @@ fn gif_owns_source_advances_frames_and_pauses_without_restarting() {
     for _ in 0..3 {
         let display = common::init();
         let mut ui = Ui::new(&display, common::theme()).unwrap();
-        ui.mount(&View(4)).unwrap();
+        ui.mount(&TestApp(4)).unwrap();
         let gif = common::app_root();
         let first = ui.snapshot().unwrap();
         advance(80);
         let second = ui.snapshot().unwrap();
         assert_ne!(first.pixels, second.pixels);
-        ui.update(&View(5)).unwrap();
+        ui.update(&TestApp(5)).unwrap();
         assert_eq!(gif, common::app_root());
         let index = unsafe { rs_lvgl_sys::lv_gif_get_current_frame_index(gif.as_ptr()) };
         advance(300);
@@ -91,7 +90,7 @@ fn lottie_renders_moves_rejects_invalid_source_and_reinitializes() {
     for _ in 0..3 {
         let display = common::init();
         let mut ui = Ui::new(&display, common::theme()).unwrap();
-        ui.mount(&View(6)).unwrap();
+        ui.mount(&TestApp(6)).unwrap();
         let obj = common::app_root();
         unsafe {
             rs_lvgl_sys::lv_refr_now(core::ptr::null_mut());
@@ -108,9 +107,9 @@ fn lottie_renders_moves_rejects_invalid_source_and_reinitializes() {
         advance(500);
         let second = ui.snapshot().unwrap();
         assert_ne!(first.pixels, second.pixels);
-        ui.update(&View(6)).unwrap();
+        ui.update(&TestApp(6)).unwrap();
         assert_eq!(common::app_root(), obj);
-        assert_eq!(ui.update(&View(7)), Err(UiError::InvalidProperty));
+        assert_eq!(ui.update(&TestApp(7)), Err(UiError::InvalidProperty));
         ui.unmount();
         assert_eq!(unsafe { rs_lvgl_sys::lv_anim_count_running() }, 0);
     }
@@ -122,7 +121,7 @@ fn pinyin_commits_candidate_and_unbinds_when_textarea_disappears() {
     for _ in 0..3 {
         let display = common::init();
         let mut ui = Ui::new(&display, common::theme()).unwrap();
-        ui.mount(&View(8)).unwrap();
+        ui.mount(&TestApp(8)).unwrap();
         let root = common::app_root();
         let textarea = common::child(root, 0);
         let ime_root = common::child(root, 1);
@@ -167,7 +166,7 @@ fn pinyin_commits_candidate_and_unbinds_when_textarea_disappears() {
                 candidate
             );
         }
-        ui.update(&View(9)).unwrap();
+        ui.update(&TestApp(9)).unwrap();
         assert_eq!(common::child(common::app_root(), 0), ime_root);
         unsafe {
             let kb = rs_lvgl_sys::lv_ime_pinyin_get_kb(ime.as_ptr());
@@ -203,8 +202,8 @@ fn vendored_cjk_fonts_resolve_chinese_glyphs_and_float_points_are_exact() {
         impl App for Line {
             type Msg = ();
             fn update(&mut self, _: ()) {}
-            fn view(&self, _: &Theme) -> Node<()> {
-                Node::line([(16_777_217, 0), (0, 1)])
+            fn view(&self, _: &Theme) -> View<()> {
+                line([(16_777_217, 0), (0, 1)])
             }
         }
         let mut ui = Ui::new(&display, common::theme()).unwrap();
@@ -218,14 +217,14 @@ fn failed_later_sibling_releases_retained_native_users_before_retry() {
     impl App for Siblings {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, _: &Theme) -> Node<()> {
-            Node::column()
+        fn view(&self, _: &Theme) -> View<()> {
+            column([])
                 .child(
-                    Node::gif(Gif::new(&include_bytes!("assets/two-colors.gif")[..]))
+                    gif(Gif::new(&include_bytes!("assets/two-colors.gif")[..]))
                         .key(Key::Named("gif")),
                 )
                 .child(
-                    Node::lottie(Lottie::new(
+                    lottie(Lottie::new(
                         if self.0 {
                             "{}"
                         } else {

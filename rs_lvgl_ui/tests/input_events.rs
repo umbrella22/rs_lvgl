@@ -1,9 +1,6 @@
 mod common;
 
-use rs_lvgl_ui::{
-    App, Event, GestureDirection, InputEvent, Node, PointerEvent, ScrollDir, ScrollOffset,
-    ScrollSnap, ScrollbarMode, Size, Style, Theme, Ui, UiError,
-};
+use rs_lvgl_ui::prelude::*;
 use std::{cell::Cell, rc::Rc};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -31,9 +28,9 @@ impl App for Events {
     fn update(&mut self, msg: Msg) {
         self.seen.push(msg);
     }
-    fn view(&self, _: &Theme) -> Node<Msg> {
+    fn view(&self, _: &Theme) -> View<Msg> {
         let generation = self.generation;
-        let mut child = Node::obj()
+        let mut child = obj()
             .style(Style::neutral().width(Size::Px(32)).height(Size::Px(32)))
             .scrollable(false)
             .gesture_bubble(false)
@@ -53,7 +50,7 @@ impl App for Events {
         }
         // Every new handler must survive message mapping, including the
         // descendant observer. Mapping happens before native registration.
-        Node::column()
+        column([])
             .child(child)
             .on_value_changed(Msg::ParentValue)
             .on_bubbled_event(|event| Some(Msg::Bubble(*event)))
@@ -229,8 +226,8 @@ impl App for Scroller {
     fn update(&mut self, msg: ScrollOffset) {
         self.seen.push(msg);
     }
-    fn view(&self, _: &Theme) -> Node<ScrollOffset> {
-        let mut node = Node::column()
+    fn view(&self, _: &Theme) -> View<ScrollOffset> {
+        let mut node = column([])
             .style(Style::neutral().width(Size::Px(40)).height(Size::Px(40)))
             .scroll_dir(ScrollDir::VER)
             .scrollbar_mode(ScrollbarMode::Active)
@@ -239,7 +236,7 @@ impl App for Scroller {
             .scroll_momentum(!self.reset)
             .scroll_elastic(!self.reset)
             .on_scroll(|p| p)
-            .child(Node::obj().style(Style::neutral().height(Size::Px(200)).width(Size::Px(20))));
+            .child(obj().style(Style::neutral().height(Size::Px(200)).width(Size::Px(20))));
         if let Some(offset) = self.offset {
             node = node.scroll_to(offset.x, offset.y);
         }

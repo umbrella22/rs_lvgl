@@ -4,19 +4,20 @@
 //! ```ignore
 //! Panel::new("Logs")
 //!     .action(panel::icon_button(theme, symbol::REFRESH, Msg::Reload))
-//!     .child(Node::label(log))
+//!     .child(crate::label(log))
 //!     .view(theme)
 //! ```
 
+use crate::View;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use crate::node::{FlexAlign, Key, LabelLongMode, Node, Size, State, WidgetKind};
+use crate::node::{FlexAlign, Key, LabelLongMode, Size, State, WidgetKind};
 use crate::theme::{Style, Theme};
 
 /// A compact accent button showing one glyph, for header actions.
-pub fn icon_button<M: Clone + 'static>(theme: &Theme, icon: &'static str, msg: M) -> Node<M> {
-    Node::button(icon)
+pub fn icon_button<M: Clone + 'static>(theme: &Theme, icon: &'static str, msg: M) -> View<M> {
+    crate::button(icon)
         .style(
             Style::default()
                 .bg(theme.surface)
@@ -37,8 +38,8 @@ pub fn icon_button<M: Clone + 'static>(theme: &Theme, icon: &'static str, msg: M
 /// content area scroll instead of growing.
 pub struct Panel<M> {
     title: String,
-    actions: Vec<Node<M>>,
-    children: Vec<Node<M>>,
+    actions: Vec<View<M>>,
+    children: Vec<View<M>>,
     style: Option<Style>,
 }
 
@@ -54,17 +55,17 @@ impl<M: Clone + 'static> Panel<M> {
 
     /// Add a header action, typically an [`icon_button`]. Actions appear
     /// after the title in insertion order.
-    pub fn action(mut self, action: Node<M>) -> Self {
+    pub fn action(mut self, action: View<M>) -> Self {
         self.actions.push(action);
         self
     }
 
-    pub fn child(mut self, child: Node<M>) -> Self {
+    pub fn child(mut self, child: View<M>) -> Self {
         self.children.push(child);
         self
     }
 
-    pub fn children(mut self, children: impl IntoIterator<Item = Node<M>>) -> Self {
+    pub fn children(mut self, children: impl IntoIterator<Item = View<M>>) -> Self {
         self.children.extend(children);
         self
     }
@@ -75,7 +76,7 @@ impl<M: Clone + 'static> Panel<M> {
         self
     }
 
-    pub fn view(self, theme: &Theme) -> Node<M> {
+    pub fn view(self, theme: &Theme) -> View<M> {
         let base = Style::surface(theme)
             .pad(0)
             .gap(0)
@@ -84,29 +85,26 @@ impl<M: Clone + 'static> Panel<M> {
             Some(style) => base.merged(style),
             None => base,
         };
-        let header = Node::row()
-            .key(Key::Named("header"))
-            .style(
-                Style::default()
-                    .width(Size::Percent(100))
-                    .pad(8)
-                    .pad_left(12)
-                    .gap(6)
-                    .flex_align(FlexAlign::Start, FlexAlign::Center)
-                    .bg(theme.background)
-                    .bg_opacity(90),
-            )
-            .scrollable(false)
-            .child(
-                Node::new(WidgetKind::Label {
-                    text: self.title,
-                    long_mode: LabelLongMode::Dots,
-                })
-                .key(Key::Named("title"))
-                .style(Style::title(theme).flex_grow(1)),
-            )
-            .children(self.actions);
-        let content = Node::column()
+        let header = crate::row([View::new(WidgetKind::Label {
+            text: self.title,
+            long_mode: LabelLongMode::Dots,
+        })
+        .key(Key::Named("title"))
+        .style(Style::title(theme).flex_grow(1))])
+        .key(Key::Named("header"))
+        .style(
+            Style::default()
+                .width(Size::Percent(100))
+                .pad(8)
+                .pad_left(12)
+                .gap(6)
+                .flex_align(FlexAlign::Start, FlexAlign::Center)
+                .bg(theme.background)
+                .bg_opacity(90),
+        )
+        .scrollable(false)
+        .children(self.actions);
+        let content = crate::column(self.children)
             .key(Key::Named("content"))
             .style(
                 Style::body(theme)
@@ -114,8 +112,7 @@ impl<M: Clone + 'static> Panel<M> {
                     .pad(12)
                     .gap(8)
                     .flex_grow(1),
-            )
-            .children(self.children);
-        Node::column().style(base).child(header).child(content)
+            );
+        crate::column([header, content]).style(base)
     }
 }

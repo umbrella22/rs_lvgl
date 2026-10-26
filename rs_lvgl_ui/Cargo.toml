@@ -1,7 +1,7 @@
 [package]
 name = "rs_lvgl_ui"
 description = "Declarative, typed Rust UI layer for LVGL 9.6 with keyed reconciliation."
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/umbrella22/rs_lvgl"
@@ -11,10 +11,10 @@ publish = ["crates-io"]
 readme = "README.md"
 
 [dependencies]
-rs_lvgl = { version = "0.1.0", path = "../rs_lvgl", default-features = false }
+rs_lvgl = { version = "0.2.0", path = "../rs_lvgl", default-features = false }
 # rs_lvgl_ui always selects LVGL widgets and fonts through its own features, so
 # LVGL only compiles what they enable (see "Choosing widgets" in README.md).
-rs_lvgl_sys = { version = "0.1.0", path = "../rs_lvgl_sys", features = ["minimal-config"] }
+rs_lvgl_sys = { version = "0.2.0", path = "../rs_lvgl_sys", features = ["minimal-config"] }
 cstr_core = { version = "0.2.6", default-features = false, features = ["alloc"] }
 cty = "0.2.2"
 
@@ -38,7 +38,7 @@ leak-check = [
 ]
 
 # Widgets. Obj, row, column, grid, label, button and custom nodes are always
-# available; every other `Node` constructor needs its `widget-*` feature.
+# available; every other view constructor needs its `widget-*` feature.
 # LVGL compiles only the enabled widgets (plus the ones they build on), so
 # disabling unused ones shrinks the firmware. `widgets-all` also keeps the
 # LVGL widgets that have no node (list, menu, win) for raw `rs_lvgl_sys`

@@ -1,5 +1,5 @@
 //! Run: `cargo run -p rs_lvgl_ui --example app --features simulator`
-use rs_lvgl_ui::{App, Node, Theme};
+use rs_lvgl_ui::prelude::*;
 mod support;
 
 #[derive(Clone)]
@@ -27,19 +27,19 @@ impl App for Settings {
             Msg::Save => self.saves += 1,
         }
     }
-    fn view(&self, theme: &Theme) -> Node<Msg> {
+    fn view(&self, theme: &Theme) -> View<Msg> {
         support::frame(
             theme,
             "Device settings",
             "Compose controls around one application state.",
             support::column()
                 .child(
-                    support::row().child(Node::label("Notifications")).child(
-                        Node::switch(self.enabled).on_value_changed(|n| Msg::Enabled(n != 0)),
-                    ),
+                    support::row()
+                        .child(label("Notifications"))
+                        .child(switch(self.enabled).on_value_changed(|n| Msg::Enabled(n != 0))),
                 )
                 .child(support::action(theme, "Save settings", Msg::Save))
-                .child(Node::label(if self.saves == 0 {
+                .child(label(if self.saves == 0 {
                     "No changes saved".into()
                 } else {
                     format!("Saved {} times", self.saves)

@@ -1,3 +1,4 @@
+use crate::View;
 use alloc::rc::Rc;
 use core::cell::Cell;
 use core::ptr::NonNull;
@@ -7,7 +8,7 @@ use rs_lvgl::NativeObject;
 use rs_lvgl_sys::lv_obj_t;
 
 use crate::events::EventQueue;
-use crate::node::{self, Node, Size};
+use crate::node::{self, Size};
 use crate::reconciler::{self, Counters, MountedNode};
 use crate::theme::{Style, Theme};
 use crate::widgets::{self, KindTag};
@@ -27,7 +28,7 @@ pub trait App {
     type Msg: Clone + 'static;
 
     fn update(&mut self, msg: Self::Msg);
-    fn view(&self, theme: &Theme) -> Node<Self::Msg>;
+    fn view(&self, theme: &Theme) -> View<Self::Msg>;
 
     /// Optional tree mounted above the view, on the display's top layer.
     ///
@@ -40,7 +41,7 @@ pub trait App {
     /// The overlay is reconciled together with the view and shares its
     /// message queue. Keyboard ids are resolved across both trees, so they
     /// should be unique across the view and the overlay.
-    fn overlay(&self, theme: &Theme) -> Option<Node<Self::Msg>> {
+    fn overlay(&self, theme: &Theme) -> Option<View<Self::Msg>> {
         let _ = theme;
         None
     }
@@ -409,7 +410,7 @@ impl<M: Clone + 'static> Ui<M> {
         Ok(())
     }
 
-    fn render(&mut self, tree: Node<M>, overlay: Option<Node<M>>) -> Result<(), UiError> {
+    fn render(&mut self, tree: View<M>, overlay: Option<View<M>>) -> Result<(), UiError> {
         node::validate(&tree)?;
         if let Some(overlay) = &overlay {
             node::validate(overlay)?;
@@ -555,7 +556,7 @@ struct BusyGuard(*const Cell<bool>);
 fn reconcile_tree<M: Clone + 'static>(
     root: NonNull<lv_obj_t>,
     slot: &mut Option<MountedNode<M>>,
-    tree: Node<M>,
+    tree: View<M>,
     queue: &Rc<EventQueue<M>>,
     counters: &mut Counters,
 ) -> Result<(), UiError> {

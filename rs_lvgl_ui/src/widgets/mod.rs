@@ -876,7 +876,7 @@ pub(crate) fn create(
             KindTag::Msgbox => {
                 // The text label is the first child of the content area;
                 // the node's children follow it.
-                let label = rs_lvgl_sys::lv_msgbox_add_text(obj.as_ptr(), c"".as_ptr());
+                let label = rs_lvgl_sys::lv_msgbox_add_text(obj.as_ptr(), c"".as_ptr().cast());
                 let content = rs_lvgl_sys::lv_msgbox_get_content(obj.as_ptr());
                 let (Some(label), Some(content)) = (NonNull::new(label), NonNull::new(content))
                 else {

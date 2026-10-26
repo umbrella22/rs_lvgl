@@ -9,15 +9,16 @@
 //! Msg::Saved => { self.toasts.push("Saved", 2000); }
 //! Msg::DismissToast(id) => self.toasts.dismiss(id),
 //!
-//! fn overlay(&self, theme: &Theme) -> Option<Node<Msg>> {
+//! fn overlay(&self, theme: &Theme) -> Option<View<Msg>> {
 //!     (!self.toasts.is_empty()).then(|| toast::view(&self.toasts, theme, Msg::DismissToast))
 //! }
 //! ```
 
+use crate::View;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use crate::node::{Align, Color, FlexAlign, Key, Node, Size, TextAlign};
+use crate::node::{Align, Color, FlexAlign, Key, Size, TextAlign};
 use crate::theme::{Style, Theme};
 
 /// Visual kind of a toast.
@@ -124,39 +125,38 @@ pub fn view<M: Clone + 'static>(
     toasts: &Toasts,
     theme: &Theme,
     dismiss: impl Fn(u64) -> M,
-) -> Node<M> {
-    Node::column()
-        .key(Key::Named("toasts"))
-        .style(
-            Style::neutral()
-                .width(Size::Content)
-                .height(Size::Content)
-                .max_width(Size::Percent(90))
-                .gap(6)
-                .flex_align(FlexAlign::Start, FlexAlign::Center)
-                .align(Align::BottomMid)
-                .offset(0, -16),
-        )
-        .clickable(false)
-        .scrollable(false)
-        .children(toasts.items.iter().map(|toast| {
-            let (bg, fg) = match toast.kind {
-                ToastKind::Info => (theme.surface, theme.text),
-                ToastKind::Success => (theme.accent, theme.background),
-                ToastKind::Error => (theme.danger, Color::rgb(0xff, 0xff, 0xff)),
-            };
-            Node::label(toast.text.clone())
-                .key(Key::Id(toast.id))
-                .style(
-                    Style::default()
-                        .bg(bg)
-                        .fg(fg)
-                        .font(theme.body_font)
-                        .pad(10)
-                        .radius(8)
-                        .text_align(TextAlign::Center),
-                )
-                .clickable(true)
-                .on_click(dismiss(toast.id))
-        }))
+) -> View<M> {
+    crate::column(toasts.items.iter().map(|toast| {
+        let (bg, fg) = match toast.kind {
+            ToastKind::Info => (theme.surface, theme.text),
+            ToastKind::Success => (theme.accent, theme.background),
+            ToastKind::Error => (theme.danger, Color::rgb(0xff, 0xff, 0xff)),
+        };
+        crate::label(toast.text.clone())
+            .key(Key::Id(toast.id))
+            .style(
+                Style::default()
+                    .bg(bg)
+                    .fg(fg)
+                    .font(theme.body_font)
+                    .pad(10)
+                    .radius(8)
+                    .text_align(TextAlign::Center),
+            )
+            .clickable(true)
+            .on_click(dismiss(toast.id))
+    }))
+    .key(Key::Named("toasts"))
+    .style(
+        Style::neutral()
+            .width(Size::Content)
+            .height(Size::Content)
+            .max_width(Size::Percent(90))
+            .gap(6)
+            .flex_align(FlexAlign::Start, FlexAlign::Center)
+            .align(Align::BottomMid)
+            .offset(0, -16),
+    )
+    .clickable(false)
+    .scrollable(false)
 }

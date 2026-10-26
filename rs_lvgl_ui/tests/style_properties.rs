@@ -1,8 +1,5 @@
 mod common;
-use rs_lvgl_ui::{
-    App, BlendMode, Color, GradientDirection, Node, Part, State, Style, TextDecoration, Theme, Ui,
-    UiError,
-};
+use rs_lvgl_ui::prelude::*;
 
 struct Styled {
     style: Style,
@@ -11,10 +8,8 @@ struct Styled {
 impl App for Styled {
     type Msg = ();
     fn update(&mut self, _: ()) {}
-    fn view(&self, _: &Theme) -> Node<()> {
-        let mut node = Node::obj()
-            .style(self.style)
-            .child(Node::label("Inherited"));
+    fn view(&self, _: &Theme) -> View<()> {
+        let mut node = obj().style(self.style).child(label("Inherited"));
         if let Some(style) = self.state {
             node = node
                 .state_style(State::PRESSED, style)

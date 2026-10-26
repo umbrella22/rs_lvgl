@@ -1,4 +1,4 @@
-use crate::{Color, Node, UiError, WidgetKind};
+use crate::{Color, UiError};
 use alloc::string::String;
 use core::ptr::NonNull;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -74,11 +74,5 @@ impl Barcode {
             }
         }
         Ok(())
-    }
-}
-impl<M> Node<M> {
-    pub fn barcode(code: Barcode) -> Self {
-        let style = crate::Style::default().height(crate::Size::Px(code.height as i16));
-        Self::new(WidgetKind::Barcode { code }).style(style)
     }
 }

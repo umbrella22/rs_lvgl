@@ -2,12 +2,10 @@ mod common;
 
 use core::cell::{Cell, RefCell};
 use core::ptr::NonNull;
+use rs_lvgl_ui::prelude::*;
 use std::rc::Rc;
 
 use common::{init, lock, theme};
-use rs_lvgl_ui::{
-    App, CustomObject, CustomWidget, Key, NativeObject, Node, Obj, Theme, Ui, UiError,
-};
 
 /// Counters and shared state for one test's custom widgets.
 #[derive(Clone, Default)]
@@ -106,9 +104,9 @@ impl App for TestApp {
 
     fn update(&mut self, (): ()) {}
 
-    fn view(&self, _: &Theme) -> Node<()> {
-        Node::column().children(self.ids.iter().map(|id| {
-            Node::custom(TestWidget {
+    fn view(&self, _: &Theme) -> View<()> {
+        column([]).children(self.ids.iter().map(|id| {
+            custom(TestWidget {
                 id: *id,
                 counters: self.counters.clone(),
                 invalidate: self.invalidate,
@@ -229,17 +227,17 @@ fn kind_change_deletes_custom_widget_exactly_once() {
 
         fn update(&mut self, (): ()) {}
 
-        fn view(&self, _: &Theme) -> Node<()> {
+        fn view(&self, _: &Theme) -> View<()> {
             let child = if self.custom {
-                Node::custom(TestWidget {
+                custom(TestWidget {
                     id: 1,
                     counters: self.counters.clone(),
                     invalidate: false,
                 })
             } else {
-                Node::label("plain")
+                label("plain")
             };
-            Node::column().child(child.key(Key::Id(1)))
+            column([]).child(child.key(Key::Id(1)))
         }
     }
 
@@ -409,14 +407,14 @@ fn custom_node_explicit_handler_posts_messages() {
             self.clicks = clicks;
         }
 
-        fn view(&self, _: &Theme) -> Node<u32> {
+        fn view(&self, _: &Theme) -> View<u32> {
             // Boxed trait-object form, as in the plan sketch.
             let widget: Box<dyn CustomWidget> = Box::new(TestWidget {
                 id: 1,
                 counters: Counters::default(),
                 invalidate: false,
             });
-            Node::column().child(Node::custom(widget).key(Key::Id(1)).on_click(9))
+            column([]).child(custom(widget).key(Key::Id(1)).on_click(9))
         }
     }
 
@@ -454,18 +452,18 @@ fn raw_subtree_is_not_a_lifecycle_widget() {
 
         fn update(&mut self, (): ()) {}
 
-        fn view(&self, _: &Theme) -> Node<()> {
+        fn view(&self, _: &Theme) -> View<()> {
             let creates = Rc::clone(&self.creates);
             // SAFETY: the factory returns a live direct child of the parent;
             // LVGL deletes it with the mounted subtree.
-            let raw: Node<()> = unsafe {
-                Node::raw(move |parent: NonNull<rs_lvgl_sys::lv_obj_t>| {
+            let raw: View<()> = unsafe {
+                raw(move |parent: NonNull<rs_lvgl_sys::lv_obj_t>| {
                     creates.set(creates.get() + 1);
                     let obj = rs_lvgl_sys::lv_obj_create(parent.as_ptr());
                     NonNull::new(obj)
                 })
             };
-            Node::column().child(raw.key(Key::Named("raw")))
+            column([]).child(raw.key(Key::Named("raw")))
         }
     }
 

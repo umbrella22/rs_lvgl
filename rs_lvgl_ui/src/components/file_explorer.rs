@@ -3,7 +3,7 @@
 //! resulting entries. Paths and filenames are displayed without normalization.
 //! This composition replaces the deprecated native lv_file_explorer widget.
 use super::list::{self, ListItem};
-use crate::{symbol, Key, Node, Size, Style, Theme};
+use crate::{symbol, Key, Size, Style, Theme, View};
 use alloc::string::String;
 
 /// A stable entry identity and its activation message. `name` is display text;
@@ -41,48 +41,47 @@ pub fn view<M: Clone + 'static>(
     location: &str,
     parent: Option<M>,
     entries: impl IntoIterator<Item = FileEntry<M>>,
-) -> Node<M> {
-    let mut header = Node::row().style(Style::body(theme).gap(8).width(Size::Percent(100)));
+) -> View<M> {
+    let mut header = crate::row([]).style(Style::body(theme).gap(8).width(Size::Percent(100)));
     if let Some(parent) = parent {
         header = header.child(
-            Node::button(symbol::UP)
+            crate::button(symbol::UP)
                 .style(Style::default().shadow_width(0))
                 .on_click(parent),
         );
     }
-    header = header.child(Node::label(location).style(Style::body(theme).flex_grow(1)));
-    Node::column()
-        .style(
-            Style::neutral()
-                .width(Size::Percent(100))
-                .height(Size::Percent(100)),
+    header = header.child(crate::label(location).style(Style::body(theme).flex_grow(1)));
+    crate::column([
+        header.key(Key::Named("location")),
+        list::list(
+            theme,
+            entries.into_iter().map(|entry| {
+                let row = ListItem::new(entry.name)
+                    .icon(if entry.directory {
+                        symbol::DIRECTORY
+                    } else {
+                        symbol::FILE
+                    })
+                    .chevron(entry.directory)
+                    .on_click(entry.activate)
+                    .view(theme)
+                    .key(Key::Id(entry.id));
+                #[cfg(feature = "input-keypad")]
+                let row = row.focusable(true).state_style(
+                    crate::State::FOCUSED,
+                    Style::default()
+                        .outline_width(1)
+                        .outline_color(theme.accent),
+                );
+                row
+            }),
         )
-        .child(header.key(Key::Named("location")))
-        .child(
-            list::list(
-                theme,
-                entries.into_iter().map(|entry| {
-                    let row = ListItem::new(entry.name)
-                        .icon(if entry.directory {
-                            symbol::DIRECTORY
-                        } else {
-                            symbol::FILE
-                        })
-                        .chevron(entry.directory)
-                        .on_click(entry.activate)
-                        .view(theme)
-                        .key(Key::Id(entry.id));
-                    #[cfg(feature = "input-keypad")]
-                    let row = row.focusable(true).state_style(
-                        crate::State::FOCUSED,
-                        Style::default()
-                            .outline_width(1)
-                            .outline_color(theme.accent),
-                    );
-                    row
-                }),
-            )
-            .style(Style::default().flex_grow(1))
-            .key(Key::Named("entries")),
-        )
+        .style(Style::default().flex_grow(1))
+        .key(Key::Named("entries")),
+    ])
+    .style(
+        Style::neutral()
+            .width(Size::Percent(100))
+            .height(Size::Percent(100)),
+    )
 }

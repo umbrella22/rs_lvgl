@@ -1,5 +1,5 @@
 //! Declarative ARGB8888 canvas drawing.
-use crate::{Color, Font, Node, UiError, WidgetKind};
+use crate::{Color, Font, UiError};
 use alloc::{string::String, vec::Vec};
 use core::ptr::NonNull;
 
@@ -92,11 +92,6 @@ impl Canvas {
             }
         }
         Ok(())
-    }
-}
-impl<M> Node<M> {
-    pub fn canvas(frame: Canvas) -> Self {
-        Self::new(WidgetKind::Canvas { frame })
     }
 }
 

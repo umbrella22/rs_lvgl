@@ -1,13 +1,10 @@
 mod common;
 
 use core::ptr;
+use rs_lvgl_ui::prelude::*;
 use std::ptr::NonNull;
 
 use common::{app_root, child, init, lock, screen};
-use rs_lvgl_ui::{
-    App, ChartSeries, ChartType, Event, GridTrack, ImageSource, Key, Node, Part, Size, Style,
-    TextAlign, Theme, Ui, UiError,
-};
 
 #[derive(Clone)]
 struct TreeApp {
@@ -20,13 +17,13 @@ impl App for TreeApp {
 
     fn update(&mut self, _: ()) {}
 
-    fn view(&self, _: &Theme) -> Node<()> {
-        Node::column()
-            .child(Node::label(self.text).key(Key::Named("first")))
+    fn view(&self, _: &Theme) -> View<()> {
+        column([])
+            .child(label(self.text).key(Key::Named("first")))
             .child(if self.kind == 0 {
-                Node::label("second").key(Key::Id(1))
+                label("second").key(Key::Id(1))
             } else {
-                Node::slider(0, 10, 5).key(Key::Id(1))
+                slider(0, 10, 5).key(Key::Id(1))
             })
     }
 }
@@ -78,11 +75,11 @@ impl App for ListApp {
 
     fn update(&mut self, _: ()) {}
 
-    fn view(&self, _: &Theme) -> Node<()> {
-        Node::column().children(
+    fn view(&self, _: &Theme) -> View<()> {
+        column([]).children(
             self.items
                 .iter()
-                .map(|(id, value)| Node::label(format!("{value}")).key(Key::Id(*id))),
+                .map(|(id, value)| label(format!("{value}")).key(Key::Id(*id))),
         )
     }
 }
@@ -157,11 +154,11 @@ fn auto_and_keyed_siblings_mix() {
     impl App for MixedApp {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, _: &Theme) -> Node<()> {
-            Node::column()
-                .child(Node::label(format!("auto-a{}", self.suffix)))
-                .child(Node::label(format!("keyed{}", self.suffix)).key(Key::Id(1)))
-                .child(Node::label(format!("auto-b{}", self.suffix)))
+        fn view(&self, _: &Theme) -> View<()> {
+            column([])
+                .child(label(format!("auto-a{}", self.suffix)))
+                .child(label(format!("keyed{}", self.suffix)).key(Key::Id(1)))
+                .child(label(format!("auto-b{}", self.suffix)))
         }
     }
 
@@ -194,9 +191,9 @@ impl App for SliderApp {
         }
     }
 
-    fn view(&self, _: &Theme) -> Node<SpeedMsg> {
-        Node::column().child(
-            Node::slider(0, 100, self.speed)
+    fn view(&self, _: &Theme) -> View<SpeedMsg> {
+        column([]).child(
+            slider(0, 100, self.speed)
                 .key(Key::Named("speed"))
                 .on_value_changed(SpeedMsg::Speed),
         )
@@ -258,14 +255,16 @@ impl App for ClickApp {
         self.clicked = Some(msg);
     }
 
-    fn view(&self, _: &Theme) -> Node<ClickMsg> {
-        Node::column().child(Node::button("go").key(Key::Named("go")).on_click(
-            if self.version == 0 {
-                ClickMsg::A
-            } else {
-                ClickMsg::B
-            },
-        ))
+    fn view(&self, _: &Theme) -> View<ClickMsg> {
+        column([]).child(
+            button("go")
+                .key(Key::Named("go"))
+                .on_click(if self.version == 0 {
+                    ClickMsg::A
+                } else {
+                    ClickMsg::B
+                }),
+        )
     }
 }
 
@@ -329,8 +328,8 @@ fn queue_overflow_and_drain_cap() {
             self.count += 1;
         }
 
-        fn view(&self, _: &Theme) -> Node<Inc> {
-            Node::column().child(Node::label(format!("{}", self.count)))
+        fn view(&self, _: &Theme) -> View<Inc> {
+            column([]).child(label(format!("{}", self.count)))
         }
     }
 
@@ -362,14 +361,14 @@ fn validation_rejects_bad_views_before_mutation() {
     impl App for BadApp {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, _: &Theme) -> Node<()> {
+        fn view(&self, _: &Theme) -> View<()> {
             match self.0 {
-                0 => Node::column()
-                    .child(Node::label("a").key(Key::Named("dup")))
-                    .child(Node::label("b").key(Key::Named("dup"))),
-                1 => Node::column().child(Node::slider(10, 0, 5).key(Key::Id(1))),
-                2 => Node::column().child(Node::label("a\0b").key(Key::Id(1))),
-                _ => Node::column().child(Node::label("parent").child(Node::label("child"))),
+                0 => column([])
+                    .child(label("a").key(Key::Named("dup")))
+                    .child(label("b").key(Key::Named("dup"))),
+                1 => column([]).child(slider(10, 0, 5).key(Key::Id(1))),
+                2 => column([]).child(label("a\0b").key(Key::Id(1))),
+                _ => column([]).child(label("parent").child(label("child"))),
             }
         }
     }
@@ -397,9 +396,9 @@ fn raw_subtree_is_opaque_and_deleted_with_its_parent() {
     impl App for RawApp {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, _: &Theme) -> Node<()> {
-            let raw: Node<()> = unsafe {
-                Node::raw(|parent: NonNull<rs_lvgl_sys::lv_obj_t>| {
+        fn view(&self, _: &Theme) -> View<()> {
+            let raw: View<()> = unsafe {
+                raw(|parent: NonNull<rs_lvgl_sys::lv_obj_t>| {
                     let obj = rs_lvgl_sys::lv_obj_create(parent.as_ptr());
                     let obj = NonNull::new(obj)?;
                     let label = rs_lvgl_sys::lv_label_create(obj.as_ptr());
@@ -410,7 +409,7 @@ fn raw_subtree_is_opaque_and_deleted_with_its_parent() {
                     Some(obj)
                 })
             };
-            Node::column().child(raw.key(Key::Named("raw")))
+            column([]).child(raw.key(Key::Named("raw")))
         }
     }
 
@@ -444,8 +443,8 @@ fn non_container_rejects_children() {
     impl App for ChildApp {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, _: &Theme) -> Node<()> {
-            Node::column().child(Node::button("b").child(Node::label("x")))
+        fn view(&self, _: &Theme) -> View<()> {
+            column([]).child(button("b").child(label("x")))
         }
     }
 
@@ -463,8 +462,8 @@ fn styled_nodes_keep_class_defaults_when_unset() {
     impl App for StyledApp {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, _: &Theme) -> Node<()> {
-            Node::column().child(Node::slider(0, 100, 20).key(Key::Id(1)))
+        fn view(&self, _: &Theme) -> View<()> {
+            column([]).child(slider(0, 100, 20).key(Key::Id(1)))
         }
     }
 
@@ -504,9 +503,9 @@ impl App for SwitchApp {
         }
     }
 
-    fn view(&self, _: &Theme) -> Node<SwitchMsg> {
-        Node::column().child(
-            Node::switch(self.checked)
+    fn view(&self, _: &Theme) -> View<SwitchMsg> {
+        column([]).child(
+            switch(self.checked)
                 .key(Key::Named("switch"))
                 .on_value_changed(SwitchMsg::State),
         )
@@ -572,9 +571,8 @@ fn image_source_and_scale_update_in_place() {
     impl App for ImageApp {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, _: &Theme) -> Node<()> {
-            Node::column()
-                .child(Node::image_scaled(self.source, self.scale).key(Key::Named("image")))
+        fn view(&self, _: &Theme) -> View<()> {
+            column([]).child(image_scaled(self.source, self.scale).key(Key::Named("image")))
         }
     }
 
@@ -637,14 +635,14 @@ fn gallery_message_flow_updates_state_and_reconciles() {
             }
         }
 
-        fn view(&self, theme: &Theme) -> Node<Msg> {
-            Node::column()
+        fn view(&self, theme: &Theme) -> View<Msg> {
+            column([])
                 .style(Style::screen(theme))
                 .children(self.items.iter().map(|id| {
-                    Node::row()
+                    row([])
                         .key(Key::Id(*id))
-                        .child(Node::label(format!("{id}")).style(Style::default().flex_grow(1)))
-                        .child(Node::button("down").on_click(Msg::MoveDown(*id)))
+                        .child(label(format!("{id}")).style(Style::default().flex_grow(1)))
+                        .child(button("down").on_click(Msg::MoveDown(*id)))
                 }))
         }
     }
@@ -698,9 +696,9 @@ impl App for CheckApp {
         }
     }
 
-    fn view(&self, theme: &Theme) -> Node<CheckMsg> {
-        Node::column().child(
-            Node::checkbox("Notify", self.checked)
+    fn view(&self, theme: &Theme) -> View<CheckMsg> {
+        column([]).child(
+            checkbox("Notify", self.checked)
                 .key(Key::Named("check"))
                 .style(Style::default().fg(theme.text))
                 .on_value_changed(|value| CheckMsg::Checked(value != 0)),
@@ -755,9 +753,9 @@ impl App for TextApp {
         }
     }
 
-    fn view(&self, _: &Theme) -> Node<TextMsg> {
-        Node::column().child(
-            Node::textarea(self.text.as_str())
+    fn view(&self, _: &Theme) -> View<TextMsg> {
+        column([]).child(
+            textarea(self.text.as_str())
                 .placeholder("Your name")
                 .key(Key::Named("text"))
                 .on_text_changed(|text| TextMsg::Text(text.into())),
@@ -811,9 +809,9 @@ impl App for DropApp {
         }
     }
 
-    fn view(&self, _: &Theme) -> Node<DropMsg> {
-        Node::column().child(
-            Node::dropdown(["Male", "Female", "Other"], self.selected)
+    fn view(&self, _: &Theme) -> View<DropMsg> {
+        column([]).child(
+            dropdown(["Male", "Female", "Other"], self.selected)
                 .key(Key::Named("dropdown"))
                 .on_value_changed(DropMsg::Selected),
         )
@@ -868,9 +866,9 @@ impl App for ArcApp {
         }
     }
 
-    fn view(&self, theme: &Theme) -> Node<ArcMsg> {
-        Node::column().child(
-            Node::arc(0, 100, self.value)
+    fn view(&self, theme: &Theme) -> View<ArcMsg> {
+        column([]).child(
+            arc(0, 100, self.value)
                 .key(Key::Named("arc"))
                 .style(
                     Style::default()
@@ -940,9 +938,9 @@ fn scale_properties_update_in_place() {
     impl App for ScaleApp {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, _: &Theme) -> Node<()> {
-            Node::column().child(
-                Node::scale(0, 100, self.ticks, self.major)
+        fn view(&self, _: &Theme) -> View<()> {
+            column([]).child(
+                scale(0, 100, self.ticks, self.major)
                     .key(Key::Named("scale"))
                     .style(
                         Style::default()
@@ -996,9 +994,9 @@ fn style_sides_alignment_bounds_and_states() {
     impl App for StyleApp {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, _: &Theme) -> Node<()> {
-            Node::column().child(
-                Node::obj().key(Key::Named("box")).style(
+        fn view(&self, _: &Theme) -> View<()> {
+            column([]).child(
+                obj().key(Key::Named("box")).style(
                     Style::default()
                         .width(Size::Px(50))
                         .height(Size::Px(50))
@@ -1096,15 +1094,15 @@ fn invalid_new_widget_properties_are_rejected() {
     impl App for BadApp {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, _: &Theme) -> Node<()> {
+        fn view(&self, _: &Theme) -> View<()> {
             match self.0 {
-                0 => Node::column().child(Node::dropdown(Vec::<String>::new(), 0)),
-                1 => Node::column().child(Node::dropdown(["a", "b"], 2)),
-                2 => Node::column().child(Node::scale(0, 100, 1, 1)),
-                3 => Node::column().child(Node::textarea("ok").on_text_changed(|_| ())),
-                4 => Node::column().child(Node::label("x").on_text_changed(|_| ())),
-                5 => Node::column().child(Node::chart(ChartType::Line, 0, 100, Vec::new())),
-                _ => Node::column().child(Node::chart(
+                0 => column([]).child(dropdown(Vec::<String>::new(), 0)),
+                1 => column([]).child(dropdown(["a", "b"], 2)),
+                2 => column([]).child(scale(0, 100, 1, 1)),
+                3 => column([]).child(textarea("ok").on_text_changed(|_| ())),
+                4 => column([]).child(label("x").on_text_changed(|_| ())),
+                5 => column([]).child(chart(ChartType::Line, 0, 100, Vec::new())),
+                _ => column([]).child(chart(
                     ChartType::Line,
                     0,
                     100,
@@ -1144,13 +1142,13 @@ fn chart_type_values_and_series_update_in_place() {
     impl App for ChartApp {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, theme: &Theme) -> Node<()> {
+        fn view(&self, theme: &Theme) -> View<()> {
             let mut series = vec![ChartSeries::new(theme.accent, self.values.clone())];
             if self.second_series {
                 series.push(ChartSeries::new(theme.muted, self.values.clone()));
             }
-            Node::column().child(
-                Node::chart(self.chart_type, 0, 100, series)
+            column([]).child(
+                chart(self.chart_type, 0, 100, series)
                     .key(Key::Named("chart"))
                     .style(
                         Style::default()
@@ -1229,26 +1227,26 @@ fn grid_tracks_and_cells_place_children_and_update_in_place() {
     impl App for GridApp {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, _: &Theme) -> Node<()> {
+        fn view(&self, _: &Theme) -> View<()> {
             let columns = if self.wide_first {
                 vec![GridTrack::Fr(3), GridTrack::Fr(1)]
             } else {
                 vec![GridTrack::Fr(1), GridTrack::Fr(1)]
             };
             let cell = |column, row| {
-                Node::obj()
+                obj()
                     .key(Key::Id((row * 2 + column) as u64))
                     .grid_cell(column as u16, row as u16, 1, 1)
                     .style(Style::default().width(Size::Px(10)).height(Size::Px(10)))
             };
-            Node::column()
+            column([])
                 .style(
                     Style::default()
                         .width(Size::Percent(100))
                         .height(Size::Percent(100)),
                 )
                 .child(
-                    Node::grid(columns, [GridTrack::Fr(1), GridTrack::Fr(1)])
+                    grid(columns, [GridTrack::Fr(1), GridTrack::Fr(1)], [])
                         .key(Key::Named("grid"))
                         .style(Style::default().width(Size::Percent(100)))
                         .child(cell(0, 0))
@@ -1295,19 +1293,19 @@ fn grid_content_row_sizes_to_children() {
     impl App for App1 {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, _: &Theme) -> Node<()> {
-            Node::column()
+        fn view(&self, _: &Theme) -> View<()> {
+            column([])
                 .style(
                     Style::default()
                         .width(Size::Percent(100))
                         .height(Size::Percent(100)),
                 )
                 .child(
-                    Node::grid([GridTrack::Fr(1)], [GridTrack::Content])
+                    grid([GridTrack::Fr(1)], [GridTrack::Content], [])
                         .key(Key::Named("grid"))
                         .style(Style::default().width(Size::Percent(100)))
                         .child(
-                            Node::obj()
+                            obj()
                                 .grid_cell(0, 0, 1, 1)
                                 .style(Style::default().width(Size::Px(10)).height(Size::Px(10))),
                         ),
@@ -1335,32 +1333,36 @@ fn grid_with_column_children_content_height() {
     impl App for App2 {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, _: &Theme) -> Node<()> {
-            Node::column()
+        fn view(&self, _: &Theme) -> View<()> {
+            column([])
                 .style(
                     Style::default()
                         .width(Size::Percent(100))
                         .height(Size::Percent(100)),
                 )
                 .child(
-                    Node::column()
+                    column([])
                         .style(Style::default().width(Size::Percent(100)))
                         .child(
-                            Node::grid([GridTrack::Fr(1), GridTrack::Fr(1)], [GridTrack::Content])
-                                .key(Key::Named("grid"))
-                                .style(Style::default().width(Size::Percent(100)).gap(12))
-                                .child(
-                                    Node::column()
-                                        .grid_cell(0, 0, 1, 1)
-                                        .style(Style::default().gap(4))
-                                        .child(Node::label("Gender")),
-                                )
-                                .child(
-                                    Node::column()
-                                        .grid_cell(1, 0, 1, 1)
-                                        .style(Style::default().gap(4))
-                                        .child(Node::label("Birthday")),
-                                ),
+                            grid(
+                                [GridTrack::Fr(1), GridTrack::Fr(1)],
+                                [GridTrack::Content],
+                                [],
+                            )
+                            .key(Key::Named("grid"))
+                            .style(Style::default().width(Size::Percent(100)).gap(12))
+                            .child(
+                                column([])
+                                    .grid_cell(0, 0, 1, 1)
+                                    .style(Style::default().gap(4))
+                                    .child(label("Gender")),
+                            )
+                            .child(
+                                column([])
+                                    .grid_cell(1, 0, 1, 1)
+                                    .style(Style::default().gap(4))
+                                    .child(label("Birthday")),
+                            ),
                         ),
                 )
         }
@@ -1387,7 +1389,7 @@ fn grid_with_input_children_content_height() {
     impl App for App3 {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, _: &Theme) -> Node<()> {
+        fn view(&self, _: &Theme) -> View<()> {
             let input = Style::default()
                 .bg(rs_lvgl_ui::Color::rgb(20, 20, 20))
                 .fg(rs_lvgl_ui::Color::rgb(240, 240, 240))
@@ -1395,30 +1397,34 @@ fn grid_with_input_children_content_height() {
                 .radius(6)
                 .pad(8)
                 .width(Size::Percent(100));
-            Node::column()
+            column([])
                 .style(
                     Style::default()
                         .width(Size::Percent(100))
                         .height(Size::Percent(100)),
                 )
                 .child(
-                    Node::grid([GridTrack::Fr(1), GridTrack::Fr(1)], [GridTrack::Content])
-                        .key(Key::Named("grid"))
-                        .style(Style::default().width(Size::Percent(100)).gap(12))
-                        .child(
-                            Node::column()
-                                .grid_cell(0, 0, 1, 1)
-                                .style(Style::default().gap(4))
-                                .child(Node::label("Gender"))
-                                .child(Node::dropdown(["Male", "Female"], 0).style(input)),
-                        )
-                        .child(
-                            Node::column()
-                                .grid_cell(1, 0, 1, 1)
-                                .style(Style::default().gap(4))
-                                .child(Node::label("Birthday"))
-                                .child(Node::textarea("").placeholder("01.01.1990").style(input)),
-                        ),
+                    grid(
+                        [GridTrack::Fr(1), GridTrack::Fr(1)],
+                        [GridTrack::Content],
+                        [],
+                    )
+                    .key(Key::Named("grid"))
+                    .style(Style::default().width(Size::Percent(100)).gap(12))
+                    .child(
+                        column([])
+                            .grid_cell(0, 0, 1, 1)
+                            .style(Style::default().gap(4))
+                            .child(label("Gender"))
+                            .child(dropdown(["Male", "Female"], 0).style(input)),
+                    )
+                    .child(
+                        column([])
+                            .grid_cell(1, 0, 1, 1)
+                            .style(Style::default().gap(4))
+                            .child(label("Birthday"))
+                            .child(textarea("").placeholder("01.01.1990").style(input)),
+                    ),
                 )
         }
     }
@@ -1449,14 +1455,14 @@ fn rgb565_image_source_builds_descriptor_and_updates_in_place() {
     impl App for ImageApp {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, _: &Theme) -> Node<()> {
+        fn view(&self, _: &Theme) -> View<()> {
             let source = if self.second {
                 ImageSource::rgb565(2, 2, &PIXELS_B)
             } else {
                 ImageSource::rgb565(2, 2, &PIXELS_A)
             };
-            Node::column().child(
-                Node::image_scaled(source, self.scale)
+            column([]).child(
+                image_scaled(source, self.scale)
                     .key(Key::Named("image"))
                     .style(Style::default().width(Size::Px(8)).height(Size::Px(8))),
             )
@@ -1505,8 +1511,8 @@ fn rgb565_image_rejects_wrong_data_length() {
     impl App for BadImage {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, _: &Theme) -> Node<()> {
-            Node::column().child(Node::image(ImageSource::rgb565(2, 2, &SHORT)))
+        fn view(&self, _: &Theme) -> View<()> {
+            column([]).child(image(ImageSource::rgb565(2, 2, &SHORT)))
         }
     }
 
@@ -1528,8 +1534,8 @@ fn part_styles_override_and_restore_the_target_part() {
     impl App for PartApp {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, _: &Theme) -> Node<()> {
-            let slider = Node::slider(0, 100, 50).key(Key::Named("slider")).style(
+        fn view(&self, _: &Theme) -> View<()> {
+            let slider = slider(0, 100, 50).key(Key::Named("slider")).style(
                 Style::default()
                     .width(Size::Percent(100))
                     .height(Size::Px(16)),
@@ -1542,7 +1548,7 @@ fn part_styles_override_and_restore_the_target_part() {
             } else {
                 slider
             };
-            Node::column().child(slider)
+            column([]).child(slider)
         }
     }
 
@@ -1583,9 +1589,9 @@ fn animation_duration_style_applies() {
     impl App for AnimApp {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, _: &Theme) -> Node<()> {
-            Node::column().child(
-                Node::obj().key(Key::Named("box")).style(
+        fn view(&self, _: &Theme) -> View<()> {
+            column([]).child(
+                obj().key(Key::Named("box")).style(
                     Style::default()
                         .width(Size::Px(10))
                         .height(Size::Px(10))
@@ -1625,8 +1631,8 @@ fn tabview_switches_pages_updates_titles_and_rebuilds_on_tab_count_change() {
     impl App for TabApp {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, _: &Theme) -> Node<()> {
-            let mut tabview = Node::tabview(self.tabs.iter().copied(), self.active)
+        fn view(&self, _: &Theme) -> View<()> {
+            let mut tabview = tabview(self.tabs.iter().copied(), self.active)
                 .key(Key::Named("tabs"))
                 .style(
                     Style::default()
@@ -1635,12 +1641,12 @@ fn tabview_switches_pages_updates_titles_and_rebuilds_on_tab_count_change() {
                 );
             for index in 0..self.tabs.len() {
                 tabview = tabview.child(
-                    Node::column()
+                    column([])
                         .key(Key::Id(index as u64))
-                        .child(Node::label(format!("page {index} value {}", self.value))),
+                        .child(label(format!("page {index} value {}", self.value))),
                 );
             }
-            Node::column().child(tabview)
+            column([]).child(tabview)
         }
     }
 
@@ -1699,12 +1705,12 @@ fn tabview_validation_rejects_bad_tabs() {
     impl App for BadTabs {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, _: &Theme) -> Node<()> {
+        fn view(&self, _: &Theme) -> View<()> {
             match self.0 {
-                0 => Node::column().child(Node::tabview(Vec::<String>::new(), 0)),
-                1 => Node::column().child(Node::tabview(["A"], 1).child(Node::column())),
-                2 => Node::column().child(Node::tabview(["A", "B"], 0)),
-                _ => Node::column().child(Node::tabview(["A"], 0).child(Node::column())),
+                0 => column([]).child(tabview(Vec::<String>::new(), 0)),
+                1 => column([]).child(tabview(["A"], 1).child(column([]))),
+                2 => column([]).child(tabview(["A", "B"], 0)),
+                _ => column([]).child(tabview(["A"], 0).child(column([]))),
             }
         }
     }
@@ -1741,14 +1747,14 @@ fn tabview_value_event_updates_app_state() {
                 Msg::Tab(index) => self.active = index.max(0) as u32,
             }
         }
-        fn view(&self, _: &Theme) -> Node<Msg> {
-            Node::column().child(
-                Node::tabview(["A", "B", "C"], self.active)
+        fn view(&self, _: &Theme) -> View<Msg> {
+            column([]).child(
+                tabview(["A", "B", "C"], self.active)
                     .key(Key::Named("tabs"))
                     .on_value_changed(Msg::Tab)
-                    .child(Node::column().key(Key::Named("a")))
-                    .child(Node::column().key(Key::Named("b")))
-                    .child(Node::column().key(Key::Named("c"))),
+                    .child(column([]).key(Key::Named("a")))
+                    .child(column([]).key(Key::Named("b")))
+                    .child(column([]).key(Key::Named("c"))),
             )
         }
     }
@@ -1793,9 +1799,9 @@ fn keyboard_binds_to_keyboard_id_targets() {
                 KeyboardMsg::Focus(value) => self.focused = value,
             }
         }
-        fn view(&self, _: &Theme) -> Node<KeyboardMsg> {
+        fn view(&self, _: &Theme) -> View<KeyboardMsg> {
             let textarea = |text, id: u64| {
-                Node::textarea(text)
+                textarea(text)
                     .keyboard_id(id)
                     .key(Key::Id(id))
                     .on_event(move |event| match event {
@@ -1806,15 +1812,17 @@ fn keyboard_binds_to_keyboard_id_targets() {
                         _ => None,
                     })
             };
-            Node::column()
+            column([])
                 .child(textarea("a", 7))
                 .child(textarea("b", 8))
-                .child(Node::keyboard(self.target).key(Key::Id(100)).on_event(
-                    |event| match event {
-                        Event::Ready | Event::Cancel => Some(KeyboardMsg::Focus(false)),
-                        _ => None,
-                    },
-                ))
+                .child(
+                    keyboard(self.target)
+                        .key(Key::Id(100))
+                        .on_event(|event| match event {
+                            Event::Ready | Event::Cancel => Some(KeyboardMsg::Focus(false)),
+                            _ => None,
+                        }),
+                )
         }
     }
 
@@ -1873,13 +1881,13 @@ fn keyboard_validation_rejects_wrong_targets() {
     impl App for BadKeyboard {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, _: &Theme) -> Node<()> {
+        fn view(&self, _: &Theme) -> View<()> {
             match self.0 {
-                0 => Node::column().child(Node::label("x").keyboard_id(1)),
-                1 => Node::column().child(Node::keyboard(1).child(Node::label("x"))),
-                _ => Node::column()
-                    .child(Node::textarea("").keyboard_id(1))
-                    .child(Node::keyboard(1)),
+                0 => column([]).child(label("x").keyboard_id(1)),
+                1 => column([]).child(keyboard(1).child(label("x"))),
+                _ => column([])
+                    .child(textarea("").keyboard_id(1))
+                    .child(keyboard(1)),
             }
         }
     }

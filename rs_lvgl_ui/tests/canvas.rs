@@ -1,13 +1,13 @@
 mod common;
-use rs_lvgl_ui::{App, Canvas, Color, DrawCommand, Font, Node, Theme, Ui, UiError};
+use rs_lvgl_ui::prelude::*;
 const RED: Color = Color::rgb(255, 0, 0);
 const BLUE: Color = Color::rgb(0, 0, 255);
 struct Drawing(Canvas);
 impl App for Drawing {
     type Msg = ();
     fn update(&mut self, _: ()) {}
-    fn view(&self, _: &Theme) -> Node<()> {
-        Node::canvas(self.0.clone())
+    fn view(&self, _: &Theme) -> View<()> {
+        canvas(self.0.clone())
     }
 }
 #[test]

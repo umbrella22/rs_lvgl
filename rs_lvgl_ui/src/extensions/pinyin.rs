@@ -1,22 +1,8 @@
 //! The native IME deletes its keyboard and candidate panel. Put all three in
 //! one private container so reconciliation deletes them as a single subtree.
-use crate::{widgets::Parts, Font, Node, Size, Style, UiError, WidgetKind};
+use crate::{widgets::Parts, UiError};
 use core::ptr::NonNull;
-impl<M> Node<M> {
-    /// A 26-key Pinyin IME with LVGL's bundled dictionary, bound to a textarea's
-    /// keyboard_id. Its candidate font must contain the requested CJK glyphs.
-    /// LVGL shares candidate text buffers: use one active Pinyin keyboard at a
-    /// time. The container includes its keyboard and candidate strip.
-    pub fn pinyin_keyboard(target: u64, font: Font) -> Self {
-        Self::new(WidgetKind::PinyinKeyboard { target, font })
-            .style(
-                Style::neutral()
-                    .width(Size::Percent(100))
-                    .height(Size::Px(200)),
-            )
-            .scrollable(false)
-    }
-}
+
 pub(crate) fn create(
     parent: NonNull<rs_lvgl_sys::lv_obj_t>,
 ) -> Result<(NonNull<rs_lvgl_sys::lv_obj_t>, Parts), UiError> {

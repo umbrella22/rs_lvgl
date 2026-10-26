@@ -13,11 +13,11 @@
 //! Set `GALLERY_FRAMES=<n>` for a bounded, non-interactive smoke run.
 
 use core::mem;
+use rs_lvgl_ui::prelude::*;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
 use rs_lvgl::Display;
-use rs_lvgl_ui::{App, Key, Node, Size, Style, Theme, Ui};
 
 #[path = "support/runtime.rs"]
 mod runtime;
@@ -90,108 +90,77 @@ impl App for Gallery {
         }
     }
 
-    fn view(&self, theme: &Theme) -> Node<Msg> {
-        Node::column()
-            .style(Style::screen(theme).gap(12).pad(16))
-            .child(
-                Node::row()
-                    .style(Style::default().width(Size::Percent(100)).gap(8))
-                    .child(
-                        Node::label("Mosaico gallery")
-                            .key(Key::Named("title"))
-                            .style(Style::title(theme).flex_grow(1)),
-                    )
-                    .child(
-                        Node::button("Theme")
-                            .key(Key::Named("theme"))
-                            .style(Style::accent(theme))
-                            .on_click(Msg::ToggleTheme),
-                    )
-                    .child(
-                        Node::button("Quit")
-                            .key(Key::Named("quit"))
-                            .style(Style::accent(theme))
-                            .on_click(Msg::Quit),
-                    ),
-            )
-            .child(
-                Node::row()
-                    .style(Style::surface(theme).width(Size::Percent(100)).gap(12))
-                    .child(
-                        Node::button("-")
-                            .key(Key::Named("dec"))
-                            .style(Style::accent(theme))
-                            .on_click(Msg::Dec),
-                    )
-                    .child(
-                        Node::label(format!("Count {}", self.count))
-                            .key(Key::Named("count"))
-                            .style(Style::body(theme).flex_grow(1)),
-                    )
-                    .child(
-                        Node::button("+")
-                            .key(Key::Named("inc"))
-                            .style(Style::accent(theme))
-                            .on_click(Msg::Inc),
-                    ),
-            )
-            .child(
-                Node::row()
-                    .style(Style::surface(theme).width(Size::Percent(100)).gap(12))
-                    .child(
-                        Node::label(format!("Speed {}%", self.speed))
-                            .key(Key::Named("speed-label"))
-                            .style(Style::body(theme)),
-                    )
-                    .child(
-                        Node::slider(0, 100, self.speed)
-                            .key(Key::Named("speed"))
-                            .style(Style::default().height(Size::Px(16)).flex_grow(1))
-                            .on_value_changed(Msg::Speed),
-                    ),
-            )
-            .child(
-                Node::row()
-                    .style(Style::surface(theme).width(Size::Percent(100)).gap(12))
-                    .child(
-                        Node::label(if self.muted { "Muted" } else { "Sound on" })
-                            .key(Key::Named("mute-label"))
-                            .style(Style::body(theme).flex_grow(1)),
-                    )
-                    .child(
-                        Node::switch(self.muted)
-                            .key(Key::Named("mute"))
-                            .on_value_changed(|_| Msg::ToggleMute),
-                    ),
-            )
-            .child(
-                Node::column()
-                    .key(Key::Named("list"))
-                    .style(Style::surface(theme).width(Size::Percent(100)).gap(8))
-                    .child(Node::label("Keyed list").style(Style::muted(theme)))
-                    .children(self.items.iter().map(|id| {
-                        Node::row()
-                            .key(Key::Id(*id))
-                            .style(Style::default().width(Size::Percent(100)).gap(8))
-                            .child(
-                                Node::label(format!("Item {id}"))
-                                    .key(Key::Named("label"))
-                                    .style(Style::body(theme).flex_grow(1)),
-                            )
-                            .child(
-                                Node::button("Move down")
-                                    .key(Key::Named("down"))
-                                    .style(Style::accent(theme))
-                                    .on_click(Msg::MoveDown(*id)),
-                            )
-                    })),
-            )
-            .child(
-                Node::button("Add item")
-                    .key(Key::Named("add"))
+    fn view(&self, theme: &Theme) -> View<Msg> {
+        column([
+            row([
+                label("Mosaico gallery")
+                    .key(Key::Named("title"))
+                    .style(Style::title(theme).flex_grow(1)),
+                button("Theme")
+                    .key(Key::Named("theme"))
                     .style(Style::accent(theme))
-                    .on_click(Msg::Add),
-            )
+                    .on_click(Msg::ToggleTheme),
+                button("Quit")
+                    .key(Key::Named("quit"))
+                    .style(Style::accent(theme))
+                    .on_click(Msg::Quit),
+            ])
+            .style(Style::default().width(Size::Percent(100)).gap(8)),
+            row([
+                button("-")
+                    .key(Key::Named("dec"))
+                    .style(Style::accent(theme))
+                    .on_click(Msg::Dec),
+                label(format!("Count {}", self.count))
+                    .key(Key::Named("count"))
+                    .style(Style::body(theme).flex_grow(1)),
+                button("+")
+                    .key(Key::Named("inc"))
+                    .style(Style::accent(theme))
+                    .on_click(Msg::Inc),
+            ])
+            .style(Style::surface(theme).width(Size::Percent(100)).gap(12)),
+            row([
+                label(format!("Speed {}%", self.speed))
+                    .key(Key::Named("speed-label"))
+                    .style(Style::body(theme)),
+                slider(0, 100, self.speed)
+                    .key(Key::Named("speed"))
+                    .style(Style::default().height(Size::Px(16)).flex_grow(1))
+                    .on_value_changed(Msg::Speed),
+            ])
+            .style(Style::surface(theme).width(Size::Percent(100)).gap(12)),
+            row([
+                label(if self.muted { "Muted" } else { "Sound on" })
+                    .key(Key::Named("mute-label"))
+                    .style(Style::body(theme).flex_grow(1)),
+                switch(self.muted)
+                    .key(Key::Named("mute"))
+                    .on_value_changed(|_| Msg::ToggleMute),
+            ])
+            .style(Style::surface(theme).width(Size::Percent(100)).gap(12)),
+            column([label("Keyed list").style(Style::muted(theme))])
+                .key(Key::Named("list"))
+                .style(Style::surface(theme).width(Size::Percent(100)).gap(8))
+                .children(self.items.iter().map(|id| {
+                    row([
+                        label(format!("Item {id}"))
+                            .key(Key::Named("label"))
+                            .style(Style::body(theme).flex_grow(1)),
+                        button("Move down")
+                            .key(Key::Named("down"))
+                            .style(Style::accent(theme))
+                            .on_click(Msg::MoveDown(*id)),
+                    ])
+                    .key(Key::Id(*id))
+                    .style(Style::default().width(Size::Percent(100)).gap(8))
+                })),
+            button("Add item")
+                .key(Key::Named("add"))
+                .style(Style::accent(theme))
+                .on_click(Msg::Add),
+        ])
+        .style(Style::screen(theme).gap(12).pad(16))
     }
 }
 

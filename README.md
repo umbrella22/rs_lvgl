@@ -2,6 +2,8 @@
 
 **English** · [简体中文](https://github.com/umbrella22/rs_lvgl/blob/main/README.zh.md)
 
+[Documentation](https://umbrella22.github.io/rs_lvgl/en/) · [Getting started](https://umbrella22.github.io/rs_lvgl/en/guide/getting-started.html) · [Component preview](https://umbrella22.github.io/rs_lvgl/en/studio.html) · [Playground](https://umbrella22.github.io/rs_lvgl/en/playground.html)
+
 Rust bindings and declarative UI for [LVGL](https://lvgl.io/) 9.6.
 
 Use LVGL widgets directly from Rust, or build screens with `rs_lvgl_ui` and
@@ -11,6 +13,11 @@ then connect it to your device's display and input drivers.
 ![rs_lvgl component studio](https://raw.githubusercontent.com/umbrella22/rs_lvgl/main/docs/images/studio-overview.png)
 
 ## Try the demo
+
+The [component preview](https://umbrella22.github.io/rs_lvgl/en/studio.html) runs
+the same Rust/LVGL views in WebAssembly, including input and animations. In the
+[playground](https://umbrella22.github.io/rs_lvgl/en/playground.html), edit an
+example and interact with the result directly in your browser.
 
 The component studio includes controls, charts, text input, layouts, media,
 and navigation, with light and dark themes.
@@ -42,12 +49,12 @@ cargo run -p rs_lvgl_ui --example studio --features showcase
 | [`rs_lvgl_sys`](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_sys/README.md) | Raw LVGL bindings, native configuration, custom C sources, and fonts |
 | [`rs_lvgl_codegen`](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_codegen/README.md) | Widget wrapper generation used by the build |
 
-Add the crates from crates.io:
+Add the crates.io dependencies to your project:
 
 ```toml
 [dependencies]
-rs_lvgl = { version = "0.1.0", default-features = false, features = ["alloc"] }
-rs_lvgl_ui = { version = "0.1.0" }
+rs_lvgl = { version = "0.2", default-features = false, features = ["alloc"] }
+rs_lvgl_ui = "0.2"
 ```
 
 `rs_lvgl` and `rs_lvgl_ui` support `no_std`. Embedded applications using the UI
@@ -55,11 +62,12 @@ layer need an allocator and platform-specific display and input drivers.
 
 ## Define a screen
 
-An `App` holds your state. Its `view` builds a tree of nodes; input sends messages
+An `App` holds your state. Its `view` builds a `View<Msg>` with ordinary
+functions; input sends messages
 to `update`. `Ui` applies those changes to the LVGL widgets.
 
 ```rust
-use rs_lvgl_ui::{App, Key, Node, Style, Theme};
+use rs_lvgl_ui::prelude::*;
 
 #[derive(Clone)]
 enum Msg {
@@ -77,16 +85,15 @@ impl App for Counter {
         self.value += 1;
     }
 
-    fn view(&self, theme: &Theme) -> Node<Msg> {
-        Node::column()
-            .style(Style::default().gap(12))
-            .child(Node::label(format!("Count: {}", self.value)))
-            .child(
-                Node::button("Add one")
-                    .key(Key::Named("increment"))
-                    .style(Style::accent(theme))
-                    .on_click(Msg::Increment),
-            )
+    fn view(&self, theme: &Theme) -> View<Msg> {
+        column([
+            label(format!("Count: {}", self.value)),
+            button("Add one")
+                .key(Key::Named("increment"))
+                .style(Style::accent(theme))
+                .on_click(Msg::Increment),
+        ])
+        .style(Style::default().gap(12))
     }
 }
 ```
@@ -100,9 +107,12 @@ for layouts, styling, and events.
 Disable the default feature set to select the widgets and fonts you need:
 
 ```toml
-rs_lvgl_ui = { version = "0.1.0", default-features = false, features = [
+[dependencies.rs_lvgl_ui]
+version = "0.2"
+default-features = false
+features = [
     "alloc", "components", "widget-slider", "widget-switch", "font-montserrat-16"
-] }
+]
 ```
 
 Labels, buttons, and row, column, and grid layouts are always available.
@@ -111,6 +121,7 @@ See [feature selection](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_
 
 ## Documentation
 
+- [Usage guide (Chinese)](https://umbrella22.github.io/rs_lvgl/) · [English](https://umbrella22.github.io/rs_lvgl/en/) — installation, declarative UI, components, input, native integration and development checks.
 - [UI guide](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_ui/README.md) — components, state, styling, and input.
 - [Native integration](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_sys/README.md) — `lv_conf.h`, custom C sources, and fonts.
 - [Testing](https://github.com/umbrella22/rs_lvgl/blob/main/docs/testing.md) — test commands and simulator checks.

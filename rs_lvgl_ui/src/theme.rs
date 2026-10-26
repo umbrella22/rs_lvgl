@@ -147,7 +147,7 @@ impl Style {
     /// top-left aligned.
     ///
     /// Text color, font and text alignment are not set: LVGL inherits them
-    /// from the parent, so `Node::column().style(Style::body(theme))` styles
+    /// from the parent, so `crate::column([]).style(Style::body(theme))` styles
     /// every label inside the column.
     pub fn neutral() -> Self {
         Self {

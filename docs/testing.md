@@ -1,5 +1,8 @@
 # Host validation
 
+The [WebAssembly acceptance script](../website/scripts/check-wasm.mjs) executes the compiled Rust/LVGL module, checks all nine categories, input, animation, independent instances and teardown/reinitialization. Build first with `npm --prefix website run wasm:build`, then run `npm --prefix website run check-wasm -- --three-passes`. These checks complement visible browser acceptance; they do not validate hardware.
+
+
 The workspace compiles vendored LVGL 9.6. Tests sharing its native global state run
 serially. `cargo test-lvgl` aliases `cargo test -- --test-threads=1`.
 Commands run from the repository root. C/C++, libclang and Cargo are prerequisites;
@@ -15,6 +18,7 @@ cargo check -p rs_lvgl --no-default-features --lib
 cargo test -p rs_lvgl --no-default-features --features lvgl_alloc,rust_timer -- --test-threads=1
 cargo test -p rs_lvgl_ui --features showcase,font-cjk-14,rust_timer -- --test-threads=1
 cargo test -p rs_lvgl_ui --no-default-features --features alloc,components -- --test-threads=1
+python3 scripts/check-ui-api.py --artifacts target/ui-api-audit
 ```
 
 `Cargo.lock` is ignored. Local receipts record its digest; `--locked --offline`
@@ -25,8 +29,9 @@ application hooks.
 
 The `rs_lvgl` workflow accepts `main` and `codex/**` pushes, PRs targeting
 `main`, and manual dispatch. Workspace builds run on Ubuntu 24.04 and macOS 15. UI,
-native-input and heap jobs run separately on Linux; native rebuild/recovery and
-heap journeys repeat three times. Artifact uploads preserve logs and studio
+native-input and heap jobs run separately on Linux. Each complete validation
+script runs once in CI; relevant development acceptance retains the repository
+guide's repeated lifecycle/recovery checks. Artifact uploads preserve logs and studio
 renders on failure as well as success. Local invocation does not establish that
 a remote workflow has executed.
 
@@ -34,6 +39,12 @@ The complete studio has its own native interaction/class coverage and three-cycl
 lifecycle test. `python3 scripts/render-studio.py` renders all categories without
 a window server. `scripts/check-ui-examples.py` also runs its actual SDL window;
 see [studio coverage](component-studio.md).
+
+The public API runner compiles a separate `no_std` consumer using ordinary
+constructors and `View`, including arrays, iterators and message mapping. It
+checks root/prelude feature gates, keeps transitive native widgets out of the
+typed API, and verifies that old associated constructors and safe calls to
+`raw` fail for their intended Rust diagnostics.
 
 On macOS, the native linker may need the SDL2 library search path explicitly:
 
@@ -138,3 +149,13 @@ Host compilation/execution does not certify cross-toolchain builds, ESP-IDF
 integration, board rendering, pending DMA/GPU teardown, other operating systems,
 external-provider ABI or sanitizer coverage. Inspect the configured target runner
 before a cross-target run: the checked-in Xtensa runner flashes hardware.
+
+## Interactive documentation playground
+
+`npm --prefix website run check-interactive -- --passes 3` compiles complete Rust
+`App` examples to WebAssembly, verifies switch messages and text changes, edited
+pixels, source diagnostics, invalid views, cleanup/reinitialization, superseding
+compilation and concurrent consumer isolation. `playground:wasm:check` binds
+bundled interactive presets to source and artifact hashes. The browser Worker
+path additionally requires real input, blocked-app timeout, editor recovery,
+locale/subpath and navigation checks. Native snapshot checks remain separate.

@@ -5,12 +5,10 @@
 mod common;
 
 use core::ptr::{self, NonNull};
+use rs_lvgl_ui::prelude::*;
 
 use common::{app_root, child, init, lock};
 use rs_lvgl_sys::lv_obj_t;
-use rs_lvgl_ui::{
-    symbol, Align, App, Color, Event, FlexAlign, Node, Part, Size, State, Style, Theme, Ui,
-};
 
 #[derive(Clone, Debug, PartialEq)]
 enum Inner {
@@ -28,15 +26,15 @@ enum Msg {
 
 /// A view built from a function of a small state value, with an optional
 /// overlay built the same way.
-struct View {
+struct TestApp {
     state: u32,
-    view: fn(u32) -> Node<Msg>,
-    overlay: Option<fn(u32) -> Node<Msg>>,
+    view: fn(u32) -> View<Msg>,
+    overlay: Option<fn(u32) -> View<Msg>>,
     received: Vec<Msg>,
 }
 
-impl View {
-    fn new(view: fn(u32) -> Node<Msg>) -> Self {
+impl TestApp {
+    fn new(view: fn(u32) -> View<Msg>) -> Self {
         Self {
             state: 0,
             view,
@@ -46,23 +44,23 @@ impl View {
     }
 }
 
-impl App for View {
+impl App for TestApp {
     type Msg = Msg;
 
     fn update(&mut self, msg: Msg) {
         self.received.push(msg);
     }
 
-    fn view(&self, _: &Theme) -> Node<Msg> {
-        Node::column().child((self.view)(self.state))
+    fn view(&self, _: &Theme) -> View<Msg> {
+        column([]).child((self.view)(self.state))
     }
 
-    fn overlay(&self, _: &Theme) -> Option<Node<Msg>> {
+    fn overlay(&self, _: &Theme) -> Option<View<Msg>> {
         self.overlay.map(|overlay| overlay(self.state))
     }
 }
 
-fn mount(app: &View) -> (Ui<Msg>, NonNull<lv_obj_t>) {
+fn mount(app: &TestApp) -> (Ui<Msg>, NonNull<lv_obj_t>) {
     let display = init();
     let mut ui = Ui::new(&display, Theme::dark()).unwrap();
     ui.mount(app).unwrap();
@@ -131,13 +129,11 @@ const CHECKED: u32 = rs_lvgl_sys::lv_state_t_LV_STATE_CHECKED;
 #[test]
 fn map_converts_click_value_and_event_messages() {
     let _guard = lock();
-    let mut app = View::new(|_| {
-        let inner: Node<Inner> = Node::column()
-            .child(Node::button("go").on_click(Inner::Clicked))
-            .child(Node::slider(0, 10, 3).on_value_changed(Inner::Value))
-            .child(
-                Node::obj().on_event(|event| (*event == Event::Clicked).then_some(Inner::Event)),
-            );
+    let mut app = TestApp::new(|_| {
+        let inner: View<Inner> = column([])
+            .child(button("go").on_click(Inner::Clicked))
+            .child(slider(0, 10, 3).on_value_changed(Inner::Value))
+            .child(obj().on_event(|event| (*event == Event::Clicked).then_some(Inner::Event)));
         // Nested maps compose.
         inner.map(Msg::Inner).map(|msg| match msg {
             Msg::Inner(inner) => Msg::Outer(inner),
@@ -169,8 +165,8 @@ fn map_converts_click_value_and_event_messages() {
 #[test]
 fn map_keeps_object_identity_across_renders() {
     let _guard = lock();
-    let mut app = View::new(|state| {
-        Node::button(format!("n{state}"))
+    let mut app = TestApp::new(|state| {
+        button(format!("n{state}"))
             .on_click(Inner::Clicked)
             .map(Msg::Inner)
     });
@@ -186,8 +182,8 @@ fn map_keeps_object_identity_across_renders() {
 #[test]
 fn state_styles_apply_and_clear() {
     let _guard = lock();
-    let mut app = View::new(|state| {
-        let node = Node::button("b").style(Style::default().bg(Color::rgb(1, 2, 3)));
+    let mut app = TestApp::new(|state| {
+        let node = button("b").style(Style::default().bg(Color::rgb(1, 2, 3)));
         match state {
             0 => node.state_style(State::PRESSED, Style::default().bg(Color::rgb(9, 8, 7))),
             1 => node.state_style(
@@ -216,8 +212,8 @@ fn state_styles_apply_and_clear() {
 #[test]
 fn part_state_style_targets_part_and_state() {
     let _guard = lock();
-    let app = View::new(|_| {
-        Node::slider(0, 10, 5).part_state_style(
+    let app = TestApp::new(|_| {
+        slider(0, 10, 5).part_state_style(
             Part::Knob,
             State::PRESSED,
             Style::default().bg(Color::rgb(10, 20, 30)),
@@ -232,8 +228,8 @@ fn part_state_style_targets_part_and_state() {
 #[test]
 fn state_style_ignores_object_wide_props() {
     let _guard = lock();
-    let app = View::new(|_| {
-        Node::obj().state_style(State::PRESSED, Style::default().hidden(true).floating(true))
+    let app = TestApp::new(|_| {
+        obj().state_style(State::PRESSED, Style::default().hidden(true).floating(true))
     });
     let (_ui, widget) = mount(&app);
     assert!(!has_flag(
@@ -249,10 +245,10 @@ fn state_style_ignores_object_wide_props() {
 #[test]
 fn checked_is_controlled() {
     let _guard = lock();
-    let mut app = View::new(|state| match state {
-        0 => Node::button("b").checked(true),
-        1 => Node::button("b").checked(false),
-        _ => Node::button("b"),
+    let mut app = TestApp::new(|state| match state {
+        0 => button("b").checked(true),
+        1 => button("b").checked(false),
+        _ => button("b"),
     });
     let (mut ui, widget) = mount(&app);
     let checked = rs_lvgl_sys::lv_state_t_LV_STATE_CHECKED;
@@ -279,7 +275,7 @@ fn checked_is_controlled() {
 #[test]
 fn checked_is_ignored_for_switch() {
     let _guard = lock();
-    let app = View::new(|_| Node::switch(true).checked(false));
+    let app = TestApp::new(|_| switch(true).checked(false));
     let (_ui, widget) = mount(&app);
     assert!(has_state(widget, rs_lvgl_sys::lv_state_t_LV_STATE_CHECKED));
 }
@@ -287,16 +283,16 @@ fn checked_is_ignored_for_switch() {
 #[test]
 fn floating_and_offset_apply_and_clear() {
     let _guard = lock();
-    let mut app = View::new(|state| {
+    let mut app = TestApp::new(|state| {
         if state == 0 {
-            Node::obj().style(
+            obj().style(
                 Style::default()
                     .floating(true)
                     .align(Align::TopRight)
                     .offset(-4, 6),
             )
         } else {
-            Node::obj()
+            obj()
         }
     });
     let (mut ui, widget) = mount(&app);
@@ -322,8 +318,8 @@ fn flex_place(obj: NonNull<lv_obj_t>, prop: u32) -> Option<i32> {
 #[test]
 fn flex_align_applies_and_clears() {
     let _guard = lock();
-    let mut app = View::new(|state| {
-        let column = Node::column().child(Node::label("a"));
+    let mut app = TestApp::new(|state| {
+        let column = column([]).child(label("a"));
         if state == 0 {
             column.style(Style::default().flex_align(FlexAlign::SpaceBetween, FlexAlign::Center))
         } else {
@@ -366,15 +362,15 @@ fn flex_align_applies_and_clears() {
 #[test]
 fn flex_align_centers_children_after_layout() {
     let _guard = lock();
-    let app = View::new(|_| {
-        Node::column()
+    let app = TestApp::new(|_| {
+        column([])
             .style(
                 Style::default()
                     .width(Size::Px(60))
                     .pad(0)
                     .flex_align(FlexAlign::Start, FlexAlign::Center),
             )
-            .child(Node::obj().style(Style::neutral().width(Size::Px(20)).height(Size::Px(10))))
+            .child(obj().style(Style::neutral().width(Size::Px(20)).height(Size::Px(10))))
     });
     let (_ui, widget) = mount(&app);
     let item = child(widget, 0);
@@ -393,15 +389,15 @@ fn flex_align_centers_children_after_layout() {
 #[test]
 fn overlay_mounts_updates_and_unmounts_on_top_layer() {
     let _guard = lock();
-    let mut app = View::new(|_| Node::label("view"));
+    let mut app = TestApp::new(|_| label("view"));
     let (mut ui, _) = mount(&app);
     assert_eq!(child_count(layer_top()), 0);
     let view_nodes = ui.stats().mounted_nodes;
 
     app.overlay = Some(|state| {
-        Node::column()
-            .child(Node::label(format!("overlay {state}")))
-            .child(Node::button("close").on_click(Msg::Close))
+        column([])
+            .child(label(format!("overlay {state}")))
+            .child(button("close").on_click(Msg::Close))
     });
     ui.update(&app).unwrap();
     assert_eq!(child_count(layer_top()), 1);
@@ -430,8 +426,8 @@ fn overlay_mounts_updates_and_unmounts_on_top_layer() {
 #[test]
 fn overlay_is_deleted_on_unmount_and_drop() {
     let _guard = lock();
-    let mut app = View::new(|_| Node::label("view"));
-    app.overlay = Some(|_| Node::label("overlay"));
+    let mut app = TestApp::new(|_| label("view"));
+    app.overlay = Some(|_| label("overlay"));
     let (mut ui, _) = mount(&app);
     assert_eq!(child_count(layer_top()), 1);
     ui.unmount();
@@ -446,8 +442,8 @@ fn overlay_is_deleted_on_unmount_and_drop() {
 #[test]
 fn keyboard_in_overlay_binds_textarea_in_view() {
     let _guard = lock();
-    let mut app = View::new(|_| Node::textarea("").keyboard_id(1));
-    app.overlay = Some(|_| Node::keyboard(1));
+    let mut app = TestApp::new(|_| textarea("").keyboard_id(1));
+    app.overlay = Some(|_| keyboard(1));
     let (_ui, textarea) = mount(&app);
     let keyboard = child(child(NonNull::new(layer_top()).unwrap(), 0), 0);
     // SAFETY: the keyboard is live.

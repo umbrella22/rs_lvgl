@@ -1,6 +1,6 @@
 ---
 name: rs-lvgl-ui
-description: Build or modify declarative Rust screens using this repository's rs_lvgl_ui App, Node and Ui APIs, including features, events, styling and resource lifetimes. Use for rs_lvgl applications; verify the dependency before applying this API to another LVGL Rust crate.
+description: Build or modify declarative Rust screens using rs_lvgl_ui functions, View and App/Ui APIs, including features, events, styling and resource lifetimes. Verify the resolved API version before applying this skill to a published package or another LVGL Rust crate.
 ---
 
 # LVGL Rust UI
@@ -9,10 +9,15 @@ description: Build or modify declarative Rust screens using this repository's rs
 
 Identify the application's Cargo dependency and the actual source checkout. This
 skill targets `rs_lvgl_ui` from `umbrella22/rs_lvgl`, layered over LVGL 9.6.
-The local development API is not interchangeable with older registry `lvgl`,
+The 0.2 API is not interchangeable with older registry `lvgl`,
 `lightvgl-sys` or C++ wrappers. Read the resolved manifests and relevant APIs
 before assuming a symbol or feature exists. In this source repository, the main
-entry points are `rs_lvgl_ui/src/{app,node,theme}.rs` and `rs_lvgl_ui/README.md`.
+entry points are `rs_lvgl_ui/src/{constructors,prelude,app,node,theme}.rs` and
+`rs_lvgl_ui/README.md`.
+
+Use ordinary functions, `View<M>` and `rs_lvgl_ui::prelude::*` for UI construction.
+The included counter demonstrates the same API. Resolve the application's actual
+dependency and feature set before using optional widgets or platform integrations.
 
 Respect the target workspace's agent guide and the user's requested scope.
 Skill installation does not authorize publication, hardware flashing or a broad
@@ -21,8 +26,17 @@ wrapper migration. Preserve other work in the checkout.
 ## Build the application behavior
 
 - Model changes as a `Clone` message enum and `App::update`; make `App::view`
-  return a pure `Node<Msg>` description. C callbacks enqueue messages. Call
+  return a pure `View<Msg>` description. C callbacks enqueue messages. Call
   `Ui::drain` outside native callbacks to update and reconcile once per batch.
+- Import `rs_lvgl_ui::prelude::*` or explicit root functions/types. Build with
+  `column([label("Title"), button("Save").on_click(Msg::Save)])`.
+  `row(children)` and `column(children)` accept arrays or iterators;
+  `grid(columns, rows, children)` also takes its children directly. `obj()` is
+  the plain container; native tabview/tileview use `.child`/`.children` for their
+  pages. Append builders remain useful for conditional or incremental assembly.
+  `View<M>` aliases the existing descriptor type; associated constructors such
+  as `Node::column()` and `View::column()` are removed. Use ordinary functions,
+  including `canvas`, media constructors, `custom` and unsafe `raw`.
 - Use stable `Key::Named` or `Key::Id` values for dynamic siblings. Keys are
   unique among siblings; `Key::Auto` matches by position. Reordering a keyed
   list should preserve the native object and focus where it remains viable.
@@ -64,7 +78,7 @@ display deletion or deinitialization. Dropping a `Display` handle does not delet
 its native display. Retained font/image pointers need their full native lifetime.
 `Snapshot` contains copied RGBA pixels and can survive unmount.
 
-Prefer typed nodes. A raw/custom escape requires local pointer and lifetime
+Prefer typed views. A raw/custom escape requires local pointer and lifetime
 justification; do not turn a raw-pointer forwarding API into a safe API merely
 by moving its unsafe block.
 
@@ -72,6 +86,8 @@ by moving its unsafe block.
 
 In this repository, use serial native tests and the examples matching the changed
 feature set. Reduced-feature compilation catches accidental optional dependencies.
+`python3 scripts/check-ui-api.py` compiles external `no_std` consumers and checks
+root/prelude capability gates, removed constructors and the unsafe raw boundary.
 For lifecycle changes, `python3 scripts/check-ui-leaks.py` measures Rust and native
 allocation balance with deliberate leak controls. For example rendering, use
 `python3 scripts/check-ui-examples.py`; native SDL smoke and snapshot assertions

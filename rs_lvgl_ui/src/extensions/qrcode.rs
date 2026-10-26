@@ -1,4 +1,4 @@
-use crate::{Color, Node, UiError, WidgetKind};
+use crate::{Color, UiError};
 use alloc::vec::Vec;
 use core::ptr::NonNull;
 
@@ -49,10 +49,5 @@ impl QrCode {
             }
         }
         Ok(())
-    }
-}
-impl<M> Node<M> {
-    pub fn qrcode(code: QrCode) -> Self {
-        Self::new(WidgetKind::QrCode { code })
     }
 }

@@ -13,6 +13,7 @@
 //! Set `COMPONENTS_FRAMES=<n>` for a bounded, non-interactive smoke run.
 
 use core::mem;
+use rs_lvgl_ui::prelude::*;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
@@ -23,7 +24,6 @@ use rs_lvgl_ui::components::list::{self, ListItem};
 use rs_lvgl_ui::components::nav::{self, NavMsg, NavState};
 use rs_lvgl_ui::components::panel::{self, Panel};
 use rs_lvgl_ui::components::toast::{self, ToastKind, Toasts};
-use rs_lvgl_ui::{symbol, App, Key, Node, Size, Style, Theme, Ui};
 
 #[path = "support/runtime.rs"]
 mod runtime;
@@ -88,14 +88,14 @@ impl Demo {
         }
     }
 
-    fn root_page(&self, theme: &Theme) -> Node<Msg> {
+    fn root_page(&self, theme: &Theme) -> View<Msg> {
         list::list(
             theme,
             [
                 list::section(theme, "Network").key(Key::Named("net")),
                 ListItem::new("Wi-Fi")
                     .icon(symbol::WIFI)
-                    .trailing(Node::switch(self.wifi).on_value_changed(|_| Msg::ToggleWifi))
+                    .trailing(switch(self.wifi).on_value_changed(|_| Msg::ToggleWifi))
                     .view(theme)
                     .key(Key::Named("wifi")),
                 list::section(theme, "Device").key(Key::Named("device")),
@@ -127,7 +127,7 @@ impl Demo {
         )
     }
 
-    fn display_page(&self, theme: &Theme) -> Node<Msg> {
+    fn display_page(&self, theme: &Theme) -> View<Msg> {
         list::list(
             theme,
             BRIGHTNESS.iter().map(|(level, label)| {
@@ -140,14 +140,14 @@ impl Demo {
         )
     }
 
-    fn logs_page(&self, theme: &Theme) -> Node<Msg> {
+    fn logs_page(&self, theme: &Theme) -> View<Msg> {
         Panel::new("Events")
             .action(panel::icon_button(theme, symbol::SAVE, Msg::Save))
             .children(
                 self.log
                     .iter()
                     .enumerate()
-                    .map(|(index, line)| Node::label(line.clone()).key(Key::Id(index as u64))),
+                    .map(|(index, line)| label(line.clone()).key(Key::Id(index as u64))),
             )
             .style(Style::default().flex_grow(1).height(Size::Percent(100)))
             .view(theme)
@@ -203,7 +203,7 @@ impl App for Demo {
         }
     }
 
-    fn view(&self, theme: &Theme) -> Node<Msg> {
+    fn view(&self, theme: &Theme) -> View<Msg> {
         let (title, page) = match self.nav.current() {
             Page::Root => ("Settings", self.root_page(theme)),
             Page::Display => ("Display", self.display_page(theme)),
@@ -212,7 +212,7 @@ impl App for Demo {
         nav::view(&self.nav, theme, title, page, Msg::Nav(NavMsg::Back))
     }
 
-    fn overlay(&self, theme: &Theme) -> Option<Node<Msg>> {
+    fn overlay(&self, theme: &Theme) -> Option<View<Msg>> {
         if !self.confirm_reset && self.toasts.is_empty() {
             return None;
         }

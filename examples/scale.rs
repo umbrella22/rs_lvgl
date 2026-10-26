@@ -1,5 +1,5 @@
 //! Run: `cargo run -p rs_lvgl_ui --example scale --features simulator`
-use rs_lvgl_ui::{App, Color, Node, Size, Style, Theme};
+use rs_lvgl_ui::prelude::*;
 mod support;
 
 #[derive(Clone)]
@@ -23,7 +23,7 @@ impl App for Ruler {
             Msg::Reset => 50,
         };
     }
-    fn view(&self, theme: &Theme) -> Node<Msg> {
+    fn view(&self, theme: &Theme) -> View<Msg> {
         support::frame(
             theme,
             "Scale and slider",
@@ -31,7 +31,7 @@ impl App for Ruler {
             support::column()
                 .child(support::value(theme, format!("Position {}", self.value)))
                 .child(
-                    Node::scale(0, 100, 21, 5).style(
+                    scale(0, 100, 21, 5).style(
                         Style::default()
                             .width(Size::Percent(100))
                             .height(Size::Px(64))
@@ -45,7 +45,7 @@ impl App for Ruler {
                     ),
                 )
                 .child(
-                    Node::slider(0, 100, self.value)
+                    slider(0, 100, self.value)
                         .style(
                             Style::default()
                                 .width(Size::Percent(100))

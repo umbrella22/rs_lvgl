@@ -1,12 +1,13 @@
 //! Strict lifecycle accounting. Run through scripts/check-ui-leaks.py.
 //! Each workload executes in a fresh process, with one declared priming cycle.
 
+use rs_lvgl_ui::prelude::*;
+use rs_lvgl_ui::{components::dialog::Dialog, *};
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering::SeqCst};
 
 use rs_lvgl::input_device::{key, Keypad, KeypadInputData};
-use rs_lvgl_ui::{components::dialog::Dialog, *};
 
 struct CountingAllocator;
 static RUST_BYTES: AtomicUsize = AtomicUsize::new(0);
@@ -118,26 +119,26 @@ fn display_cycle(work: impl FnOnce(&rs_lvgl::Display)) {
     unsafe { display.delete() };
 }
 
-struct View {
+struct TestApp {
     kind: usize,
     overlay: bool,
     changed: bool,
 }
 
-impl App for View {
+impl App for TestApp {
     type Msg = String;
     fn update(&mut self, _: String) {
         self.changed = !self.changed;
     }
-    fn view(&self, _: &Theme) -> Node<String> {
+    fn view(&self, _: &Theme) -> View<String> {
         match self.kind {
-            0 => Node::column().children((0..12).map(|index| {
+            0 => column([]).children((0..12).map(|index| {
                 let index = if self.changed { 11 - index } else { index };
-                Node::button(format!("item {index}"))
+                button(format!("item {index}"))
                     .key(Key::Id(index))
                     .on_click(format!("message {index}"))
             })),
-            1 => Node::button("Styled")
+            1 => button("Styled")
                 .key(Key::Id(0))
                 .on_click("pressed".into())
                 .style(
@@ -156,7 +157,7 @@ impl App for View {
                     Style::default().outline_width(3).shadow_width(5),
                 )
                 .animate(Animation::new(AnimationProperty::Opacity, 100, 255, 40).reverse(30)),
-            2 => Node::canvas(
+            2 => canvas(
                 Canvas::new(if self.changed { 19 } else { 17 }, 13)
                     .background(Color::rgb(30, 50, 80), 255)
                     .draw(DrawCommand::Text {
@@ -170,22 +171,22 @@ impl App for View {
                         opacity: 255,
                     }),
             ),
-            3 => Node::qrcode(QrCode::new(b"bytes\0retained".to_vec(), 58)),
-            4 => Node::barcode(Barcode::new("A B 123", 20)),
-            5 => Node::gif(Gif::new(&include_bytes!("assets/two-colors.gif")[..])),
-            6 => Node::lottie(Lottie::new(
+            3 => qrcode(QrCode::new(b"bytes\0retained".to_vec(), 58)),
+            4 => barcode(Barcode::new("A B 123", 20)),
+            5 => gif(Gif::new(&include_bytes!("assets/two-colors.gif")[..])),
+            6 => lottie(Lottie::new(
                 include_str!("assets/moving-square.json"),
                 32,
                 32,
             )),
-            7 => Node::column()
-                .child(Node::textarea("text").keyboard_id(1))
-                .child(Node::pinyin_keyboard(1, Font::cjk_16())),
-            8 => Node::lottie(Lottie::new("{}", 32, 32)),
-            _ => Node::obj().style(Style::default().width(Size::Px(-1))),
+            7 => column([])
+                .child(textarea("text").keyboard_id(1))
+                .child(pinyin_keyboard(1, Font::cjk_16())),
+            8 => lottie(Lottie::new("{}", 32, 32)),
+            _ => obj().style(Style::default().width(Size::Px(-1))),
         }
     }
-    fn overlay(&self, theme: &Theme) -> Option<Node<String>> {
+    fn overlay(&self, theme: &Theme) -> Option<View<String>> {
         self.overlay.then(|| {
             Dialog::new("Confirm")
                 .text("Retained dialog")
@@ -211,7 +212,7 @@ fn workload(case: &str) {
         return;
     }
     display_cycle(|display| {
-        let mut app = View {
+        let mut app = TestApp {
             kind: 0,
             overlay: false,
             changed: false,

@@ -1,7 +1,7 @@
 //! Shared desktop host for the focused component examples.
 #![allow(dead_code)]
 
-use rs_lvgl_ui::{App, FlexAlign, Node, Size, Snapshot, State, Style, Theme, Ui};
+use rs_lvgl_ui::prelude::*;
 use std::{
     ffi::CString,
     path::Path,
@@ -30,42 +30,39 @@ pub fn frame<M: Clone + 'static>(
     theme: &Theme,
     title: &str,
     subtitle: &str,
-    content: Node<M>,
-) -> Node<M> {
-    Node::column()
-        .style(Style::screen(theme).pad(24).gap(12))
-        .child(Node::label("rs_lvgl / examples").style(Style::muted(theme)))
-        .child(Node::label(title).style(Style::title(theme)))
-        .child(Node::label(subtitle).style(Style::muted(theme)))
-        .child(
-            Node::column()
-                .style(
-                    Style::surface(theme)
-                        .pad(24)
-                        .gap(18)
-                        .width(Size::Percent(100))
-                        .flex_grow(1),
-                )
-                .child(content),
-        )
+    content: View<M>,
+) -> View<M> {
+    rs_lvgl_ui::column([
+        label("rs_lvgl / examples").style(Style::muted(theme)),
+        label(title).style(Style::title(theme)),
+        label(subtitle).style(Style::muted(theme)),
+        rs_lvgl_ui::column([content]).style(
+            Style::surface(theme)
+                .pad(24)
+                .gap(18)
+                .width(Size::Percent(100))
+                .flex_grow(1),
+        ),
+    ])
+    .style(Style::screen(theme).pad(24).gap(12))
 }
 
-pub fn column<M>() -> Node<M> {
-    Node::column().style(Style::default().gap(16).width(Size::Percent(100)))
+pub fn column<M>() -> View<M> {
+    rs_lvgl_ui::column([]).style(Style::default().gap(16).width(Size::Percent(100)))
 }
-pub fn row<M>() -> Node<M> {
-    Node::row().style(
+pub fn row<M>() -> View<M> {
+    rs_lvgl_ui::row([]).style(
         Style::default()
             .gap(12)
             .width(Size::Percent(100))
             .flex_align(FlexAlign::Start, FlexAlign::Center),
     )
 }
-pub fn value<M>(theme: &Theme, text: impl Into<String>) -> Node<M> {
-    Node::label(text).style(Style::title(theme))
+pub fn value<M>(theme: &Theme, text: impl Into<String>) -> View<M> {
+    label(text).style(Style::title(theme))
 }
-pub fn action<M: Clone + 'static>(theme: &Theme, text: &str, message: M) -> Node<M> {
-    Node::button(text)
+pub fn action<M: Clone + 'static>(theme: &Theme, text: &str, message: M) -> View<M> {
+    button(text)
         .style(
             Style::accent(theme)
                 .pad_left(16)

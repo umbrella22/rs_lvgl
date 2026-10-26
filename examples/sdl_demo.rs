@@ -1,5 +1,6 @@
 //! Run: `cargo run -p rs_lvgl_ui --example sdl_demo --features simulator`
-use rs_lvgl_ui::{components::panel::Panel, App, Node, Size, Style, Theme};
+use rs_lvgl_ui::components::panel::Panel;
+use rs_lvgl_ui::prelude::*;
 mod support;
 
 #[derive(Clone)]
@@ -29,7 +30,7 @@ impl App for Mixer {
             Msg::Reset => *self = Self::default(),
         }
     }
-    fn view(&self, theme: &Theme) -> Node<Msg> {
+    fn view(&self, theme: &Theme) -> View<Msg> {
         support::frame(
             theme,
             "Component dashboard",
@@ -38,13 +39,11 @@ impl App for Mixer {
                 .style(Style::default().height(Size::Percent(100)))
                 .child(
                     support::row()
-                        .child(Node::label(format!("Volume {}%", self.volume)))
-                        .child(
-                            Node::switch(self.enabled).on_value_changed(|n| Msg::Enabled(n != 0)),
-                        ),
+                        .child(label(format!("Volume {}%", self.volume)))
+                        .child(switch(self.enabled).on_value_changed(|n| Msg::Enabled(n != 0))),
                 )
                 .child(
-                    Node::slider(0, 100, self.volume)
+                    slider(0, 100, self.volume)
                         .style(
                             Style::default()
                                 .width(Size::Percent(100))
@@ -53,7 +52,7 @@ impl App for Mixer {
                         .on_value_changed(Msg::Volume),
                 )
                 .child(
-                    Node::bar(0, 100, if self.enabled { self.volume } else { 0 }).style(
+                    bar(0, 100, if self.enabled { self.volume } else { 0 }).style(
                         Style::default()
                             .width(Size::Percent(100))
                             .height(Size::Px(16)),

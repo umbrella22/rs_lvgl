@@ -4,7 +4,7 @@
 //! message like any other:
 //!
 //! ```ignore
-//! fn overlay(&self, theme: &Theme) -> Option<Node<Msg>> {
+//! fn overlay(&self, theme: &Theme) -> Option<View<Msg>> {
 //!     self.confirm.then(|| {
 //!         Dialog::new("Delete file?")
 //!             .text("This cannot be undone.")
@@ -16,11 +16,12 @@
 //! }
 //! ```
 
+use crate::View;
 use alloc::string::String;
 use alloc::vec::Vec;
 
 use super::full_size;
-use crate::node::{Align, Color, FlexAlign, Key, Node, Size, State};
+use crate::node::{Align, Color, FlexAlign, Key, Size, State};
 use crate::theme::{Style, Theme};
 
 const FOCUS_WIDTH: i16 = 2;
@@ -41,7 +42,7 @@ struct Button<M> {
 /// sends [`Dialog::on_dismiss`], if set.
 pub struct Dialog<M> {
     title: String,
-    body: Vec<Node<M>>,
+    body: Vec<View<M>>,
     buttons: Vec<Button<M>>,
     dismiss: Option<M>,
     width: Size,
@@ -61,12 +62,12 @@ impl<M: Clone + 'static> Dialog<M> {
     /// Add a paragraph of body text.
     pub fn text(mut self, text: impl Into<String>) -> Self {
         self.body
-            .push(Node::label(text).style(Style::neutral().width(Size::Percent(100))));
+            .push(crate::label(text).style(Style::neutral().width(Size::Percent(100))));
         self
     }
 
     /// Add arbitrary body content, such as a textarea or a list.
-    pub fn child(mut self, child: Node<M>) -> Self {
+    pub fn child(mut self, child: View<M>) -> Self {
         self.body.push(child);
         self
     }
@@ -103,25 +104,22 @@ impl<M: Clone + 'static> Dialog<M> {
         self
     }
 
-    pub fn view(self, theme: &Theme) -> Node<M> {
-        let mut card = Node::column()
-            .key(Key::Named("card"))
-            .style(
-                Style::surface(theme)
-                    .font(theme.body_font)
-                    .width(self.width)
-                    .max_width(Size::Px(360))
-                    .max_height(Size::Percent(90))
-                    .pad(16)
-                    .gap(12)
-                    .align(Align::Center),
-            )
-            .child(
-                Node::label(self.title)
-                    .key(Key::Named("title"))
-                    .style(Style::title(theme).width(Size::Percent(100))),
-            )
-            .children(self.body);
+    pub fn view(self, theme: &Theme) -> View<M> {
+        let mut card = crate::column([crate::label(self.title)
+            .key(Key::Named("title"))
+            .style(Style::title(theme).width(Size::Percent(100)))])
+        .key(Key::Named("card"))
+        .style(
+            Style::surface(theme)
+                .font(theme.body_font)
+                .width(self.width)
+                .max_width(Size::Px(360))
+                .max_height(Size::Percent(90))
+                .pad(16)
+                .gap(12)
+                .align(Align::Center),
+        )
+        .children(self.body);
         if !self.buttons.is_empty() {
             let focus = Style::default()
                 .outline_color(theme.accent)
@@ -139,7 +137,7 @@ impl<M: Clone + 'static> Dialog<M> {
                         .radius(8)
                         .shadow_width(0)
                 };
-                Node::button(button.text)
+                crate::button(button.text)
                     .key(Key::Id(index as u64))
                     .style(style.outline_width(0))
                     .state_style(State::FOCUSED, focus)
@@ -148,7 +146,7 @@ impl<M: Clone + 'static> Dialog<M> {
                     .on_click(button.msg)
             });
             card = card.child(
-                Node::row()
+                crate::row(buttons)
                     .key(Key::Named("buttons"))
                     .style(
                         Style::default()
@@ -157,11 +155,10 @@ impl<M: Clone + 'static> Dialog<M> {
                             .gap(FOCUS_SPACE * 2)
                             .flex_align(FlexAlign::End, FlexAlign::Center),
                     )
-                    .scrollable(false)
-                    .children(buttons),
+                    .scrollable(false),
             );
         }
-        let mut backdrop = Node::obj()
+        let mut backdrop = crate::obj()
             .key(Key::Named("dialog"))
             .style(full_size().bg(Color::rgb(0, 0, 0)).bg_opacity(128))
             .scrollable(false)

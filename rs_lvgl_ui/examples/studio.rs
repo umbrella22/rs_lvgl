@@ -2,14 +2,13 @@
 //! Run with `--features showcase`. STUDIO_FRAMES bounds a native SDL run;
 //! STUDIO_AUTORUN walks every category, STUDIO_CAPTURE_DIR exports real renders.
 use core::ptr::NonNull;
-use rs_lvgl_ui::{
-    components::{
-        dialog::Dialog,
-        nav::NavState,
-        toast::{self, ToastKind, Toasts},
-    },
-    *,
+use rs_lvgl_ui::components::{
+    dialog::Dialog,
+    nav::NavState,
+    toast::{self, ToastKind, Toasts},
 };
+use rs_lvgl_ui::prelude::*;
+#[cfg(not(target_os = "emscripten"))]
 use std::{
     path::Path,
     time::{Duration, Instant},
@@ -20,7 +19,12 @@ mod native;
 #[path = "studio/pages.rs"]
 mod pages;
 #[path = "support/runtime.rs"]
+#[cfg(not(target_os = "emscripten"))]
 mod runtime;
+
+#[cfg(target_os = "emscripten")]
+#[path = "studio/browser.rs"]
+pub mod browser;
 
 const WIDTH: i32 = 1280;
 const HEIGHT: i32 = 860;
@@ -205,8 +209,8 @@ impl App for Studio {
             Msg::Quit => self.quit = true,
         }
     }
-    fn view(&self, theme: &Theme) -> Node<Msg> {
-        let sidebar = column()
+    fn view(&self, theme: &Theme) -> View<Msg> {
+        let sidebar = studio_column()
             .key(Key::Named("sidebar"))
             .style(
                 Style::default()
@@ -218,10 +222,11 @@ impl App for Studio {
                     .gap(8),
             )
             .child(
-                label("rs_lvgl", WHITE, Font::montserrat_28()).style(Style::default().pad_top(8)),
+                styled_label("rs_lvgl", WHITE, Font::montserrat_28())
+                    .style(Style::default().pad_top(8)),
             )
             .child(
-                label(
+                styled_label(
                     "COMPONENT STUDIO",
                     Color::rgb(146, 156, 176),
                     Font::montserrat_12(),
@@ -229,7 +234,7 @@ impl App for Studio {
                 .style(Style::default().text_letter_space(2).pad_bottom(28)),
             )
             .children(PAGES.iter().enumerate().map(|(i, (name, _, _))| {
-                button(&format!("{:02}   {name}", i + 1), Msg::Page(i), theme)
+                action_button(&format!("{:02}   {name}", i + 1), Msg::Page(i), theme)
                     .key(Key::Named(name))
                     .style(
                         Style::default()
@@ -245,23 +250,19 @@ impl App for Studio {
                             .text_align(TextAlign::Left),
                     )
             }))
-            .child(
-                Node::obj()
-                    .style(Style::neutral().flex_grow(1))
-                    .clickable(false),
-            )
-            .child(label(
+            .child(obj().style(Style::neutral().flex_grow(1)).clickable(false))
+            .child(styled_label(
                 "BUILT WITH RUST",
                 Color::rgb(146, 156, 176),
                 Font::montserrat_12(),
             ))
-            .child(label(
+            .child(styled_label(
                 "Powered by LVGL 9.6",
                 Color::rgb(187, 196, 212),
                 Font::montserrat_12(),
             ))
             .child(
-                button("Exit studio", Msg::Quit, theme).style(
+                action_button("Exit studio", Msg::Quit, theme).style(
                     Style::default()
                         .bg(Color::rgb(42, 49, 65))
                         .fg(WHITE)
@@ -269,7 +270,7 @@ impl App for Studio {
                 ),
             );
 
-        let main = column()
+        let main = studio_column()
             .style(
                 Style::default()
                     .width(Size::Px(WIDTH as i16 - 224))
@@ -278,22 +279,22 @@ impl App for Studio {
                     .gap(18),
             )
             .child(
-                row()
+                studio_row()
                     .style(
                         Style::default()
                             .height(Size::Px(54))
                             .flex_align(FlexAlign::SpaceBetween, FlexAlign::Center),
                     )
                     .child(
-                        label("RS / COMPONENT LIBRARY", theme.muted, Font::montserrat_12())
+                        styled_label("RS / COMPONENT LIBRARY", theme.muted, Font::montserrat_12())
                             .style(Style::default().text_letter_space(2)),
                     )
                     .child(
-                        row()
+                        studio_row()
                             .style(Style::default().width(Size::Content).pad(6))
                             .children([
-                                button("Reset", Msg::Reset, theme),
-                                button(
+                                action_button("Reset", Msg::Reset, theme),
+                                action_button(
                                     if self.dark { "Light mode" } else { "Dark mode" },
                                     Msg::Theme,
                                     theme,
@@ -302,9 +303,13 @@ impl App for Studio {
                     ),
             )
             .child(
-                column()
+                studio_column()
                     .style(Style::default().gap(8).height(Size::Px(70)))
-                    .child(label(PAGES[self.page].1, theme.text, Font::montserrat_32()))
+                    .child(styled_label(
+                        PAGES[self.page].1,
+                        theme.text,
+                        Font::montserrat_32(),
+                    ))
                     .child(text(PAGES[self.page].2, theme)),
             )
             .child(
@@ -316,7 +321,7 @@ impl App for Studio {
                     .scrollbar_mode(ScrollbarMode::Auto),
             )
             .child(
-                row()
+                studio_row()
                     .style(
                         Style::default()
                             .height(Size::Px(24))
@@ -325,7 +330,7 @@ impl App for Studio {
                     .child(text(&self.status, theme))
                     .child(text("LOCAL DEMO  /  SAMPLE DATA", theme)),
             );
-        row()
+        studio_row()
             .style(
                 Style::screen(theme)
                     .pad(0)
@@ -336,7 +341,7 @@ impl App for Studio {
             .child(sidebar)
             .child(main)
     }
-    fn overlay(&self, theme: &Theme) -> Option<Node<Msg>> {
+    fn overlay(&self, theme: &Theme) -> Option<View<Msg>> {
         let mut layers = vec![toast::view(&self.toasts, theme, Msg::Dismiss)];
         if self.dialog {
             layers.push(
@@ -365,26 +370,26 @@ fn palette(dark: bool) -> Theme {
     t.title_font = Font::montserrat_20();
     t
 }
-fn row() -> Node<Msg> {
-    Node::row()
+fn studio_row() -> View<Msg> {
+    rs_lvgl_ui::row([])
         .style(Style::neutral().width(Size::Percent(100)).gap(18))
         .scrollable(false)
 }
-fn column() -> Node<Msg> {
-    Node::column()
+fn studio_column() -> View<Msg> {
+    rs_lvgl_ui::column([])
         .style(Style::neutral().width(Size::Percent(100)).gap(18))
         .scrollable(false)
 }
-fn label(value: &str, color: Color, font: Font) -> Node<Msg> {
-    Node::label(value)
+fn styled_label(value: &str, color: Color, font: Font) -> View<Msg> {
+    rs_lvgl_ui::label(value)
         .style(Style::default().fg(color).font(font))
         .scrollable(false)
 }
-fn text(value: &str, theme: &Theme) -> Node<Msg> {
-    label(value, theme.muted, theme.body_font)
+fn text(value: &str, theme: &Theme) -> View<Msg> {
+    styled_label(value, theme.muted, theme.body_font)
 }
-fn card(title: &str, caption: &str, theme: &Theme) -> Node<Msg> {
-    column()
+fn card(title: &str, caption: &str, theme: &Theme) -> View<Msg> {
+    studio_column()
         .style(
             Style::default()
                 .bg(theme.surface)
@@ -400,11 +405,11 @@ fn card(title: &str, caption: &str, theme: &Theme) -> Node<Msg> {
                     1,
                 ),
         )
-        .child(label(title, theme.text, Font::montserrat_20()))
+        .child(styled_label(title, theme.text, Font::montserrat_20()))
         .child(text(caption, theme).style(Style::default().width(Size::Percent(100))))
 }
-fn button(value: &str, msg: Msg, theme: &Theme) -> Node<Msg> {
-    Node::button(value)
+fn action_button(value: &str, msg: Msg, theme: &Theme) -> View<Msg> {
+    rs_lvgl_ui::button(value)
         .focusable(true)
         .on_click(msg)
         .style(
@@ -434,8 +439,8 @@ fn button(value: &str, msg: Msg, theme: &Theme) -> Node<Msg> {
                 .outline_color(ORANGE),
         )
 }
-fn primary(value: &str, msg: Msg, theme: &Theme) -> Node<Msg> {
-    button(value, msg, theme).style(Style::default().bg(ORANGE).fg(WHITE))
+fn primary(value: &str, msg: Msg, theme: &Theme) -> View<Msg> {
+    action_button(value, msg, theme).style(Style::default().bg(ORANGE).fg(WHITE))
 }
 
 fn apply_theme(ui: &mut Ui<Msg>, app: &Studio) {
@@ -461,6 +466,7 @@ fn apply_theme(ui: &mut Ui<Msg>, app: &Studio) {
     ui.set_theme(palette(app.dark));
 }
 
+#[cfg(not(target_os = "emscripten"))]
 fn capture(ui: &mut Ui<Msg>, directory: &Path, name: &str) {
     let image = ui.snapshot().expect("studio snapshot");
     let mut ppm = format!("P6\n{} {}\n255\n", image.width, image.height).into_bytes();
@@ -471,6 +477,7 @@ fn capture(ui: &mut Ui<Msg>, directory: &Path, name: &str) {
     std::fs::write(directory.join(format!("studio-{name}.ppm")), ppm).expect("capture file");
 }
 
+#[cfg(not(target_os = "emscripten"))]
 fn main() {
     let limit = std::env::var("STUDIO_FRAMES").ok().map(|v| {
         v.parse::<u64>()
@@ -486,7 +493,7 @@ fn main() {
             NonNull::new(rs_lvgl_sys::lv_sdl_window_create(WIDTH, HEIGHT)).expect("SDL display");
         rs_lvgl_sys::lv_sdl_window_set_title(
             display.as_ptr(),
-            c"rs_lvgl / Component Studio".as_ptr(),
+            c"rs_lvgl / Component Studio".as_ptr().cast(),
         );
         (
             NonNull::new(rs_lvgl_sys::lv_sdl_mouse_create()).unwrap(),

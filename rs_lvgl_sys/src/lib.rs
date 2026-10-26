@@ -11,6 +11,9 @@ pub fn _bindgen_raw_src() -> &'static str {
     include_str!(concat!(env!("OUT_DIR"), "/bindings.rs"))
 }
 
+// Emscripten supplies libc, including locale-aware symbols used by libc++.
+// Exporting fallback string symbols alongside it causes duplicate definitions.
+#[cfg(not(target_os = "emscripten"))]
 mod string_impl;
 
 #[cfg(test)]

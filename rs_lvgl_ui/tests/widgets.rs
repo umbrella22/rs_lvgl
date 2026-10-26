@@ -4,11 +4,11 @@
 mod common;
 
 use core::ptr::{self, NonNull};
+use rs_lvgl_ui::prelude::*;
 use std::ffi::CStr;
 
 use common::{app_root, child, init, lock};
 use rs_lvgl_sys::lv_obj_t;
-use rs_lvgl_ui::{table_cell, App, Color, Node, RollerMode, Theme, Ui, UiError};
 
 #[derive(Clone, Debug, PartialEq)]
 enum Msg {
@@ -16,14 +16,14 @@ enum Msg {
 }
 
 /// A view built from a function of a small state value.
-struct View {
+struct TestApp {
     state: u32,
-    view: fn(u32) -> Node<Msg>,
+    view: fn(u32) -> View<Msg>,
     received: Vec<Msg>,
 }
 
-impl View {
-    fn new(view: fn(u32) -> Node<Msg>) -> Self {
+impl TestApp {
+    fn new(view: fn(u32) -> View<Msg>) -> Self {
         Self {
             state: 0,
             view,
@@ -32,19 +32,19 @@ impl View {
     }
 }
 
-impl App for View {
+impl App for TestApp {
     type Msg = Msg;
 
     fn update(&mut self, msg: Msg) {
         self.received.push(msg);
     }
 
-    fn view(&self, _: &Theme) -> Node<Msg> {
-        Node::column().child((self.view)(self.state))
+    fn view(&self, _: &Theme) -> View<Msg> {
+        column([]).child((self.view)(self.state))
     }
 }
 
-fn mount(app: &View) -> (Ui<Msg>, NonNull<lv_obj_t>) {
+fn mount(app: &TestApp) -> (Ui<Msg>, NonNull<lv_obj_t>) {
     let display = init();
     let mut ui = Ui::new(&display, Theme::dark()).unwrap();
     ui.mount(app).unwrap();
@@ -72,13 +72,13 @@ fn text(raw: *const cty::c_char) -> String {
 #[test]
 fn roller_options_and_selection_are_controlled() {
     let _guard = lock();
-    let mut app = View::new(|state| {
+    let mut app = TestApp::new(|state| {
         let options: &[&str] = if state < 2 {
             &["a", "b", "c"]
         } else {
             &["x", "y"]
         };
-        Node::roller(options.iter().copied(), state.min(1))
+        roller(options.iter().copied(), state.min(1))
             .visible_rows(4)
             .roller_mode(RollerMode::Normal)
             .on_value_changed(Msg::Value)
@@ -133,8 +133,8 @@ fn roller_options_and_selection_are_controlled() {
 #[test]
 fn infinite_roller_reports_the_real_index() {
     let _guard = lock();
-    let mut app = View::new(|_| {
-        Node::roller(["a", "b", "c"], 2)
+    let mut app = TestApp::new(|_| {
+        roller(["a", "b", "c"], 2)
             .roller_mode(RollerMode::Infinite)
             .on_value_changed(Msg::Value)
     });
@@ -152,8 +152,8 @@ fn infinite_roller_reports_the_real_index() {
 #[test]
 fn spinbox_format_range_and_value_are_applied_without_echo() {
     let _guard = lock();
-    let mut app = View::new(|state| {
-        Node::spinbox(-500, 500, if state == 0 { 125 } else { -42 })
+    let mut app = TestApp::new(|state| {
+        spinbox(-500, 500, if state == 0 { 125 } else { -42 })
             .digits(3, 2)
             .step(10)
             .on_value_changed(Msg::Value)
@@ -199,15 +199,13 @@ fn spinbox_format_range_and_value_are_applied_without_echo() {
 #[test]
 fn spinner_and_led_apply_their_parameters() {
     let _guard = lock();
-    let mut app = View::new(|state| {
+    let mut app = TestApp::new(|state| {
         if state == 0 {
-            Node::row()
-                .child(Node::spinner())
-                .child(Node::led(Color::rgb(255, 0, 0)))
+            row([]).child(spinner()).child(led(Color::rgb(255, 0, 0)))
         } else {
-            Node::row()
-                .child(Node::spinner().spinner_anim(500, 90))
-                .child(Node::led(Color::rgb(0, 255, 0)).brightness(120))
+            row([])
+                .child(spinner().spinner_anim(500, 90))
+                .child(led(Color::rgb(0, 255, 0)).brightness(120))
         }
     });
     let (mut ui, row) = mount(&app);
@@ -258,9 +256,9 @@ fn line_points(line: NonNull<lv_obj_t>) -> Vec<(f64, f64)> {
 #[test]
 fn line_points_stay_owned_across_updates() {
     let _guard = lock();
-    let mut app = View::new(|state| match state {
-        0 | 1 => Node::line([(0, 0), (10, 5), (20, 0)]),
-        _ => Node::line([(1, 1), (2, 2)]),
+    let mut app = TestApp::new(|state| match state {
+        0 | 1 => line([(0, 0), (10, 5), (20, 0)]),
+        _ => line([(1, 1), (2, 2)]),
     });
     let (mut ui, line) = mount(&app);
     assert_eq!(
@@ -308,13 +306,13 @@ fn matrix_texts(matrix: NonNull<lv_obj_t>) -> Vec<String> {
 #[test]
 fn button_matrix_owns_its_map_and_reports_the_pressed_button() {
     let _guard = lock();
-    let mut app = View::new(|state| {
+    let mut app = TestApp::new(|state| {
         let rows: Vec<Vec<&str>> = if state == 0 {
             vec![vec!["1", "2", "3"], vec!["4", "5"]]
         } else {
             vec![vec!["OK", "Cancel"]]
         };
-        Node::button_matrix(rows).on_value_changed(Msg::Value)
+        button_matrix(rows).on_value_changed(Msg::Value)
     });
     let (mut ui, matrix) = mount(&app);
     assert_eq!(matrix_texts(matrix), ["1", "2", "3", "\n", "4", "5"]);
@@ -337,7 +335,7 @@ fn button_matrix_owns_its_map_and_reports_the_pressed_button() {
 #[test]
 fn table_cells_update_incrementally_and_report_the_selected_cell() {
     let _guard = lock();
-    let mut app = View::new(|state| {
+    let mut app = TestApp::new(|state| {
         let mut cells = vec![vec!["name", "value"], vec!["a", "1"]];
         if state == 1 {
             cells[1][1] = "2";
@@ -345,7 +343,7 @@ fn table_cells_update_incrementally_and_report_the_selected_cell() {
         if state == 2 {
             cells.push(vec!["b", "3"]);
         }
-        Node::table(cells)
+        table(cells)
             .column_widths([60, 40])
             .on_value_changed(Msg::Value)
     });
@@ -401,24 +399,24 @@ fn table_cells_update_incrementally_and_report_the_selected_cell() {
 #[test]
 fn invalid_widget_properties_are_rejected() {
     let _guard = lock();
-    let cases: [fn(u32) -> Node<Msg>; 12] = [
-        |_| Node::roller(Vec::<String>::new(), 0),
-        |_| Node::roller(["a"], 1),
-        |_| Node::roller(["a\nb"], 0),
-        |_| Node::spinbox(0, 10, 11),
-        |_| Node::spinbox(0, 1000, 0).digits(3, 0),
-        |_| Node::spinbox(0, 10, 0).digits(2, 2),
-        |_| Node::spinbox(0, 10, 0).step(0),
-        |_| Node::spinner().spinner_anim(1000, 361),
-        |_| Node::button_matrix([[""]]),
-        |_| Node::button_matrix(Vec::<Vec<String>>::new()),
-        |_| Node::table([vec!["a", "b"], vec!["c"]]),
-        |_| Node::table([["a"]]).column_widths([10, 20]),
+    let cases: [fn(u32) -> View<Msg>; 12] = [
+        |_| roller(Vec::<String>::new(), 0),
+        |_| roller(["a"], 1),
+        |_| roller(["a\nb"], 0),
+        |_| spinbox(0, 10, 11),
+        |_| spinbox(0, 1000, 0).digits(3, 0),
+        |_| spinbox(0, 10, 0).digits(2, 2),
+        |_| spinbox(0, 10, 0).step(0),
+        |_| spinner().spinner_anim(1000, 361),
+        |_| button_matrix([[""]]),
+        |_| button_matrix(Vec::<Vec<String>>::new()),
+        |_| table([vec!["a", "b"], vec!["c"]]),
+        |_| table([["a"]]).column_widths([10, 20]),
     ];
     for (index, case) in cases.into_iter().enumerate() {
         let display = init();
         let mut ui = Ui::<Msg>::new(&display, Theme::dark()).unwrap();
-        let app = View::new(case);
+        let app = TestApp::new(case);
         assert_eq!(
             ui.mount(&app),
             Err(UiError::InvalidProperty),

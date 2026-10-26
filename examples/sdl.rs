@@ -1,5 +1,5 @@
 //! Run: `cargo run -p rs_lvgl_ui --example sdl --features simulator`
-use rs_lvgl_ui::{App, Node, Theme};
+use rs_lvgl_ui::{App, Theme, View};
 mod support;
 
 #[derive(Clone)]
@@ -19,7 +19,7 @@ impl App for Counter {
             Msg::Decrement => self.value -= 1,
         }
     }
-    fn view(&self, theme: &Theme) -> Node<Msg> {
+    fn view(&self, theme: &Theme) -> View<Msg> {
         support::frame(
             theme,
             "Native SDL window",

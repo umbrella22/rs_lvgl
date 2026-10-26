@@ -13,28 +13,27 @@
 //! ])
 //! ```
 
+use crate::View;
 use alloc::boxed::Box;
 use alloc::string::String;
 
-use crate::node::{FlexAlign, Key, LabelLongMode, Node, Size, State, TextAlign, WidgetKind};
+use crate::node::{FlexAlign, Key, LabelLongMode, Size, State, TextAlign, WidgetKind};
 use crate::symbol;
 use crate::theme::{Style, Theme};
 
 /// A scrollable column of rows on a surface.
-pub fn list<M>(theme: &Theme, items: impl IntoIterator<Item = Node<M>>) -> Node<M> {
-    Node::column()
-        .style(
-            Style::surface(theme)
-                .pad(4)
-                .gap(2)
-                .width(Size::Percent(100)),
-        )
-        .children(items)
+pub fn list<M>(theme: &Theme, items: impl IntoIterator<Item = View<M>>) -> View<M> {
+    crate::column(items).style(
+        Style::surface(theme)
+            .pad(4)
+            .gap(2)
+            .width(Size::Percent(100)),
+    )
 }
 
 /// A muted heading between groups of rows.
-pub fn section<M>(theme: &Theme, title: impl Into<String>) -> Node<M> {
-    Node::label(title).style(Style::muted(theme).pad_left(8).pad_top(8).pad_bottom(2))
+pub fn section<M>(theme: &Theme, title: impl Into<String>) -> View<M> {
+    crate::label(title).style(Style::muted(theme).pad_left(8).pad_top(8).pad_bottom(2))
 }
 
 /// One list row: optional icon, text, optional trailing content and an
@@ -47,7 +46,7 @@ pub fn section<M>(theme: &Theme, title: impl Into<String>) -> Node<M> {
 pub struct ListItem<M> {
     text: String,
     icon: Option<&'static str>,
-    trailing: Option<Box<Node<M>>>,
+    trailing: Option<Box<View<M>>>,
     chevron: bool,
     selected: Option<bool>,
     click: Option<M>,
@@ -75,14 +74,14 @@ impl<M: Clone + 'static> ListItem<M> {
 
     /// Muted trailing text such as a current value.
     pub fn detail(self, detail: impl Into<String>) -> Self {
-        self.trailing(Node::label(detail).key(Key::Named("detail")))
+        self.trailing(crate::label(detail).key(Key::Named("detail")))
     }
 
     /// Trailing node such as a switch. It replaces [`ListItem::detail`].
     ///
     /// The node keeps its own handlers; a click on an interactive trailing
     /// widget does not also click the row.
-    pub fn trailing(mut self, node: Node<M>) -> Self {
+    pub fn trailing(mut self, node: View<M>) -> Self {
         self.trailing = Some(Box::new(node));
         self
     }
@@ -110,7 +109,7 @@ impl<M: Clone + 'static> ListItem<M> {
         self
     }
 
-    pub fn view(self, theme: &Theme) -> Node<M> {
+    pub fn view(self, theme: &Theme) -> View<M> {
         let base = Style::body(theme)
             .width(Size::Percent(100))
             .pad(10)
@@ -121,7 +120,7 @@ impl<M: Clone + 'static> ListItem<M> {
             Some(style) => base.merged(style),
             None => base,
         };
-        let mut row = Node::row().style(base).scrollable(false).state_style(
+        let mut row = crate::row([]).style(base).scrollable(false).state_style(
             State::CHECKED,
             Style::default().bg(theme.accent).fg(theme.background),
         );
@@ -129,7 +128,7 @@ impl<M: Clone + 'static> ListItem<M> {
             // A fixed slot keeps the text aligned across glyphs of different
             // widths.
             row = row.child(
-                Node::label(icon).key(Key::Named("icon")).style(
+                crate::label(icon).key(Key::Named("icon")).style(
                     Style::default()
                         .width(Size::Px(20))
                         .text_align(TextAlign::Center),
@@ -137,7 +136,7 @@ impl<M: Clone + 'static> ListItem<M> {
             );
         }
         row = row.child(
-            Node::new(WidgetKind::Label {
+            View::new(WidgetKind::Label {
                 text: self.text,
                 long_mode: LabelLongMode::Dots,
             })
@@ -152,7 +151,7 @@ impl<M: Clone + 'static> ListItem<M> {
         }
         if self.chevron {
             row = row.child(
-                Node::label(symbol::RIGHT)
+                crate::label(symbol::RIGHT)
                     .key(Key::Named("chevron"))
                     .style(Style::muted(theme)),
             );

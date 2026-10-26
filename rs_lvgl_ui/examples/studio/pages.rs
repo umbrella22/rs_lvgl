@@ -7,7 +7,7 @@ use components::{
 };
 use std::rc::Rc;
 
-pub(super) fn view(app: &Studio, theme: &Theme) -> Node<Msg> {
+pub(super) fn view(app: &Studio, theme: &Theme) -> View<Msg> {
     match app.page {
         0 => overview(app, theme),
         1 => controls(app, theme),
@@ -15,19 +15,19 @@ pub(super) fn view(app: &Studio, theme: &Theme) -> Node<Msg> {
         3 => data(theme),
         4 => layout(app, theme),
         5 => media(app, theme),
-        6 => canvas(theme),
+        6 => canvas_page(theme),
         7 => composition(app, theme),
         _ => super::native::view(app, theme),
     }
 }
-fn half(node: Node<Msg>, height: i16) -> Node<Msg> {
+fn half(node: View<Msg>, height: i16) -> View<Msg> {
     node.style(
         Style::default()
             .width(Size::Percent(49))
             .height(Size::Px(height)),
     )
 }
-fn third(node: Node<Msg>, height: i16) -> Node<Msg> {
+fn third(node: View<Msg>, height: i16) -> View<Msg> {
     node.style(
         Style::default()
             .width(Size::Percent(32))
@@ -39,14 +39,14 @@ fn full(height: i16) -> Style {
         .width(Size::Percent(100))
         .height(Size::Px(height))
 }
-fn metric(value: &str, title: &str, color: Color, theme: &Theme) -> Node<Msg> {
-    column()
+fn metric(value: &str, title: &str, color: Color, theme: &Theme) -> View<Msg> {
+    studio_column()
         .style(Style::default().width(Size::Content).gap(6))
-        .child(label(value, color, Font::montserrat_32()))
+        .child(styled_label(value, color, Font::montserrat_32()))
         .child(text(title, theme))
 }
-fn chart(height: i16) -> Node<Msg> {
-    Node::chart(
+fn signal_chart(height: i16) -> View<Msg> {
+    rs_lvgl_ui::chart(
         ChartType::Line,
         0,
         100,
@@ -58,7 +58,7 @@ fn chart(height: i16) -> Node<Msg> {
     .style(full(height).bg_opacity(0).border(Color::rgb(0, 0, 0), 0))
 }
 
-fn overview(app: &Studio, theme: &Theme) -> Node<Msg> {
+fn overview(app: &Studio, theme: &Theme) -> View<Msg> {
     let plot = card(
         "A live workspace",
         "Synthetic signal / last 12 samples",
@@ -69,11 +69,11 @@ fn overview(app: &Studio, theme: &Theme) -> Node<Msg> {
             .width(Size::Percent(64))
             .height(Size::Px(326)),
     )
-    .child(row().children([
+    .child(studio_row().children([
         metric("84.2", "Signal strength", ORANGE, theme),
         metric("12", "Sample points", TEAL, theme),
     ]))
-    .child(chart(134));
+    .child(signal_chart(134));
     let control = card("Try the controls", "Changes carry between pages.", theme)
         .style(
             Style::default()
@@ -81,7 +81,7 @@ fn overview(app: &Studio, theme: &Theme) -> Node<Msg> {
                 .height(Size::Px(326)),
         )
         .child(
-            row()
+            studio_row()
                 .style(Style::default().flex_align(FlexAlign::SpaceBetween, FlexAlign::Center))
                 .child(metric(
                     &format!("{}%", app.value),
@@ -90,13 +90,13 @@ fn overview(app: &Studio, theme: &Theme) -> Node<Msg> {
                     theme,
                 ))
                 .child(
-                    Node::switch(app.enabled)
+                    switch(app.enabled)
                         .focusable(true)
                         .on_value_changed(|v| Msg::Enabled(v != 0)),
                 ),
         )
         .child(
-            Node::slider(0, 100, app.value)
+            slider(0, 100, app.value)
                 .key(Key::Named("overview-slider"))
                 .style(full(12))
                 .focusable(true)
@@ -104,57 +104,59 @@ fn overview(app: &Studio, theme: &Theme) -> Node<Msg> {
         )
         .child(primary("Explore components", Msg::Page(1), theme).style(full(44)))
         .child(text("Touch, click or use Tab + Enter.", theme));
-    column().child(row().children([plot, control])).child(
-        row().children([
-            third(
-                card("Compose", "Small nodes. Complete interfaces.", theme),
-                242,
-            )
-            .child(
-                Node::spans([
-                    Span::new("App").color(ORANGE),
-                    Span::new("  /  Node  /  "),
-                    Span::new("Ui").color(TEAL),
-                ])
-                .style(full(40).font(Font::montserrat_20())),
-            )
-            .child(button("Open composition", Msg::Page(7), theme)),
-            third(
-                card("Create", "Pixels, motion and vector media.", theme),
-                242,
-            )
-            .child(row().children([
-                Node::image(image(false)),
-                text("Made for your device.", theme),
-            ]))
-            .child(button("Open media", Msg::Page(5), theme)),
-            third(
-                card("Connect", "A native engine, a Rust workflow.", theme),
-                242,
-            )
-            .child(
-                row()
-                    .style(Style::default().height(Size::Px(38)))
-                    .children([
-                        Node::led(TEAL).style(
-                            Style::default()
-                                .width(Size::Px(18))
-                                .height(Size::Px(18))
-                                .radius(9)
-                                .shadow_width(0),
-                        ),
-                        text("LVGL 9.6 / native rendering", theme),
-                    ]),
-            )
-            .child(button("Open a dialog", Msg::Dialog(true), theme)),
-        ]),
-    )
+    studio_column()
+        .child(studio_row().children([plot, control]))
+        .child(
+            studio_row().children([
+                third(
+                    card("Compose", "Small nodes. Complete interfaces.", theme),
+                    242,
+                )
+                .child(
+                    spans([
+                        Span::new("App").color(ORANGE),
+                        Span::new("  /  View  /  "),
+                        Span::new("Ui").color(TEAL),
+                    ])
+                    .style(full(40).font(Font::montserrat_20())),
+                )
+                .child(action_button("Open composition", Msg::Page(7), theme)),
+                third(
+                    card("Create", "Pixels, motion and vector media.", theme),
+                    242,
+                )
+                .child(studio_row().children([
+                    rs_lvgl_ui::image(sample_image(false)),
+                    text("Made for your device.", theme),
+                ]))
+                .child(action_button("Open media", Msg::Page(5), theme)),
+                third(
+                    card("Connect", "A native engine, a Rust workflow.", theme),
+                    242,
+                )
+                .child(
+                    studio_row()
+                        .style(Style::default().height(Size::Px(38)))
+                        .children([
+                            led(TEAL).style(
+                                Style::default()
+                                    .width(Size::Px(18))
+                                    .height(Size::Px(18))
+                                    .radius(9)
+                                    .shadow_width(0),
+                            ),
+                            text("LVGL 9.6 / native rendering", theme),
+                        ]),
+                )
+                .child(action_button("Open a dialog", Msg::Dialog(true), theme)),
+            ]),
+        )
 }
 
-fn controls(app: &Studio, t: &Theme) -> Node<Msg> {
-    column()
+fn controls(app: &Studio, t: &Theme) -> View<Msg> {
+    studio_column()
         .child(
-            row().children([
+            studio_row().children([
                 third(card("Output", "Slider / bar / shared value", t), 280)
                     .child(metric(
                         &format!("{}%", app.value),
@@ -163,38 +165,38 @@ fn controls(app: &Studio, t: &Theme) -> Node<Msg> {
                         t,
                     ))
                     .child(
-                        Node::slider(0, 100, app.value)
+                        slider(0, 100, app.value)
                             .key(Key::Named("controls-slider"))
                             .style(full(14))
                             .focusable(true)
                             .on_value_changed(Msg::Value),
                     )
-                    .child(Node::bar(0, 100, app.value).style(full(8))),
+                    .child(bar(0, 100, app.value).style(full(8))),
                 third(
                     card("Switch it up", "Switch / checkbox / status LED", t),
                     280,
                 )
                 .child(
-                    row()
+                    studio_row()
                         .style(
                             Style::default().flex_align(FlexAlign::SpaceBetween, FlexAlign::Center),
                         )
                         .children([
-                            label("Device enabled", t.text, t.body_font),
-                            Node::switch(app.enabled)
+                            styled_label("Device enabled", t.text, t.body_font),
+                            switch(app.enabled)
                                 .key(Key::Named("enabled"))
                                 .focusable(true)
                                 .on_value_changed(|v| Msg::Enabled(v != 0)),
                         ]),
                 )
                 .child(
-                    Node::checkbox("Send notifications", app.checked)
+                    checkbox("Send notifications", app.checked)
                         .focusable(true)
                         .on_value_changed(|v| Msg::Checked(v != 0)),
                 )
                 .child(
-                    row().children([
-                        Node::led(if app.enabled { TEAL } else { t.muted })
+                    studio_row().children([
+                        led(if app.enabled { TEAL } else { t.muted })
                             .brightness(if app.enabled { 255 } else { 50 })
                             .style(
                                 Style::default()
@@ -214,19 +216,19 @@ fn controls(app: &Studio, t: &Theme) -> Node<Msg> {
                     ]),
                 ),
                 third(card("Read the room", "Arc / animated spinner", t), 280).child(
-                    row()
+                    studio_row()
                         .style(
                             Style::default().flex_align(FlexAlign::SpaceAround, FlexAlign::Center),
                         )
                         .children([
-                            Node::arc(0, 100, app.value).style(
+                            arc(0, 100, app.value).style(
                                 Style::default()
                                     .width(Size::Px(136))
                                     .height(Size::Px(136))
                                     .arc_color(ORANGE)
                                     .arc_width(12),
                             ),
-                            Node::spinner()
+                            spinner()
                                 .spinner_anim(1300, 70)
                                 .style(Style::default().width(Size::Px(46)).height(Size::Px(46))),
                         ]),
@@ -234,16 +236,16 @@ fn controls(app: &Studio, t: &Theme) -> Node<Msg> {
             ]),
         )
         .child(
-            row().children([
+            studio_row().children([
                 third(card("Choose a mode", "Dropdown / roller", t), 282)
                     .child(
-                        Node::dropdown(["Quiet", "Balanced", "Performance"], app.selected)
+                        dropdown(["Quiet", "Balanced", "Performance"], app.selected)
                             .style(full(42))
                             .focusable(true)
                             .on_value_changed(Msg::Select),
                     )
                     .child(
-                        Node::roller(["Quiet", "Balanced", "Performance"], app.selected)
+                        roller(["Quiet", "Balanced", "Performance"], app.selected)
                             .visible_rows(2)
                             .style(full(90))
                             .focusable(true)
@@ -251,21 +253,19 @@ fn controls(app: &Studio, t: &Theme) -> Node<Msg> {
                     ),
                 third(card("Fine adjustments", "Spinbox / action buttons", t), 282)
                     .child(
-                        Node::spinbox(0, 100, app.value)
+                        spinbox(0, 100, app.value)
                             .key(Key::Named("spinbox"))
                             .digits(3, 0)
                             .style(full(48))
                             .focusable(true)
                             .on_value_changed(Msg::Value),
                     )
+                    .child(studio_row().children([
+                        action_button("-", Msg::Step(-1), t),
+                        primary("+", Msg::Step(1), t),
+                    ]))
                     .child(
-                        row().children([
-                            button("-", Msg::Step(-1), t),
-                            primary("+", Msg::Step(1), t),
-                        ]),
-                    )
-                    .child(
-                        button("Unavailable", Msg::Click, t)
+                        action_button("Unavailable", Msg::Click, t)
                             .style(Style::default().disabled(true).opacity(110)),
                     ),
                 third(
@@ -273,7 +273,7 @@ fn controls(app: &Studio, t: &Theme) -> Node<Msg> {
                     282,
                 )
                 .child(
-                    Node::button_matrix([["1", "2", "3"], ["4", "5", "6"]])
+                    button_matrix([["1", "2", "3"], ["4", "5", "6"]])
                         .style(full(112))
                         .focusable(true)
                         .on_value_changed(|_| Msg::Click),
@@ -283,10 +283,10 @@ fn controls(app: &Studio, t: &Theme) -> Node<Msg> {
         )
 }
 
-fn input(app: &Studio, t: &Theme) -> Node<Msg> {
+fn input(app: &Studio, t: &Theme) -> View<Msg> {
     let editor = half(card("Say something", "Text area / native keyboard", t), 320)
         .child(
-            Node::textarea(&app.text)
+            textarea(&app.text)
                 .placeholder("Your message")
                 .keyboard_id(101)
                 .key(Key::Named("text-input"))
@@ -294,32 +294,32 @@ fn input(app: &Studio, t: &Theme) -> Node<Msg> {
                 .focusable(true)
                 .on_text_changed(|s| Msg::Text(s.into())),
         )
-        .child(Node::keyboard(101).style(full(150)));
+        .child(keyboard(101).style(full(150)));
     let ime = half(card("Hello, world", "CJK type / Pinyin input", t), 320)
         .child(
-            Node::textarea(&app.chinese)
+            textarea(&app.chinese)
                 .keyboard_id(102)
                 .key(Key::Named("chinese-input"))
                 .style(full(44).font(Font::cjk_16()))
                 .focusable(true)
                 .on_text_changed(|s| Msg::Chinese(s.into())),
         )
-        .child(Node::pinyin_keyboard(102, Font::cjk_16()).style(full(150)));
-    column().child(row().children([editor, ime])).child(row().children([
+        .child(pinyin_keyboard(102, Font::cjk_16()).style(full(150)));
+    studio_column().child(studio_row().children([editor, ime])).child(studio_row().children([
         half(card("Pick a date", &app.date, t), 264)
-            .child(Node::calendar(2026, 10).today(CalendarDate::new(2026, 10, 22))
+            .child(calendar(2026, 10).today(CalendarDate::new(2026, 10, 22))
                 .highlighted([CalendarDate::new(2026, 10, 8), CalendarDate::new(2026, 10, 22)])
                 .style(full(154)).on_value_changed(Msg::Date)),
         half(card("Type with personality", "Labels / spans / wrapping / fonts", t), 264)
-            .child(Node::spans([Span::new("One toolkit. ").color(t.text), Span::new("Many possibilities.").color(ORANGE)])
+            .child(spans([Span::new("One toolkit. ").color(t.text), Span::new("Many possibilities.").color(ORANGE)])
                 .style(full(64).font(Font::montserrat_28())))
-            .child(label("你好，世界", t.text, Font::cjk_16()))
+            .child(styled_label("你好，世界", t.text, Font::cjk_16()))
             .child(text("Enter text above. Use ni in the Pinyin field, then select a candidate. Every change updates application state.", t).style(Style::default().width(Size::Percent(100)))),
     ]))
 }
 
-fn data(t: &Theme) -> Node<Msg> {
-    column()
+fn data(t: &Theme) -> View<Msg> {
+    studio_column()
         .child(
             card(
                 "Signals over time",
@@ -327,10 +327,10 @@ fn data(t: &Theme) -> Node<Msg> {
                 t,
             )
             .style(full(280))
-            .child(chart(166)),
+            .child(signal_chart(166)),
         )
         .child(
-            row().children([
+            studio_row().children([
                 half(
                     card(
                         "Device inventory",
@@ -340,7 +340,7 @@ fn data(t: &Theme) -> Node<Msg> {
                     285,
                 )
                 .child(
-                    Node::table([
+                    table([
                         ["Device", "Mode", "Level"],
                         ["Studio A", "Balanced", "64%"],
                         ["Studio B", "Quiet", "28%"],
@@ -351,9 +351,9 @@ fn data(t: &Theme) -> Node<Msg> {
                     .on_value_changed(|_| Msg::Click),
                 ),
                 half(card("Measure & trace", "Scale / polyline", t), 285)
-                    .child(Node::scale(0, 100, 21, 5).style(full(70)))
+                    .child(scale(0, 100, 21, 5).style(full(70)))
                     .child(
-                        Node::line([
+                        line([
                             (4, 55),
                             (58, 34),
                             (108, 43),
@@ -370,8 +370,8 @@ fn data(t: &Theme) -> Node<Msg> {
         )
 }
 
-fn layout(app: &Studio, t: &Theme) -> Node<Msg> {
-    let tabs = Node::tabview(["Design", "Build", "Ship"], app.tab)
+fn layout(app: &Studio, t: &Theme) -> View<Msg> {
+    let tabs = tabview(["Design", "Build", "Ship"], app.tab)
         .style(full(180))
         .children(
             [
@@ -381,15 +381,13 @@ fn layout(app: &Studio, t: &Theme) -> Node<Msg> {
             ]
             .iter()
             .map(|s| {
-                column().style(Style::default().pad(20)).child(label(
-                    s,
-                    t.text,
-                    Font::montserrat_20(),
-                ))
+                studio_column()
+                    .style(Style::default().pad(20))
+                    .child(styled_label(s, t.text, Font::montserrat_20()))
             }),
         )
         .on_value_changed(Msg::Tab);
-    let tiles = Node::tileview(
+    let tiles = tileview(
         [
             Tile::new(0, 0, ScrollDir::RIGHT),
             Tile::new(1, 0, ScrollDir::LEFT),
@@ -398,30 +396,30 @@ fn layout(app: &Studio, t: &Theme) -> Node<Msg> {
     )
     .style(full(138))
     .children([
-        column()
+        studio_column()
             .style(Style::default().bg(TEAL).pad(20))
-            .child(label("01 / Explore", WHITE, Font::montserrat_20())),
-        column()
+            .child(styled_label("01 / Explore", WHITE, Font::montserrat_20())),
+        studio_column()
             .style(Style::default().bg(BLUE).pad(20))
-            .child(label("02 / Create", WHITE, Font::montserrat_20())),
+            .child(styled_label("02 / Create", WHITE, Font::montserrat_20())),
     ])
     .on_value_changed(Msg::Tile);
-    let grid = Node::grid(
+    let grid = grid(
         [GridTrack::Fr(1), GridTrack::Fr(1)],
         [GridTrack::Fr(1), GridTrack::Fr(1)],
+        (0..4).map(|i| {
+            action_button(&format!("Cell {}", i + 1), Msg::Click, t)
+                .key(Key::Id(400 + i))
+                .grid_cell((i % 2) as u16, (i / 2) as u16, 1, 1)
+                .grid_align(GridAlign::Stretch, GridAlign::Stretch)
+                .style(Style::default().bg(if i == 0 { ORANGE } else { t.background }))
+        }),
     )
     .style(full(142).gap(12))
-    .grid_navigation(GridNavigation::default())
-    .children((0..4).map(|i| {
-        button(&format!("Cell {}", i + 1), Msg::Click, t)
-            .key(Key::Id(400 + i))
-            .grid_cell((i % 2) as u16, (i / 2) as u16, 1, 1)
-            .grid_align(GridAlign::Stretch, GridAlign::Stretch)
-            .style(Style::default().bg(if i == 0 { ORANGE } else { t.background }))
-    }));
-    column()
+    .grid_navigation(GridNavigation::default());
+    studio_column()
         .child(
-            row().children([
+            studio_row().children([
                 half(
                     card(
                         "One space, three tabs",
@@ -440,11 +438,15 @@ fn layout(app: &Studio, t: &Theme) -> Node<Msg> {
                     308,
                 )
                 .child(tiles)
-                .child(button("Next tile", Msg::Tile((1 - app.tile) as i32), t)),
+                .child(action_button(
+                    "Next tile",
+                    Msg::Tile((1 - app.tile) as i32),
+                    t,
+                )),
             ]),
         )
         .child(
-            row().children([
+            studio_row().children([
                 half(
                     card("A flexible grid", "Arrow-key navigation / equal tracks", t),
                     254,
@@ -459,8 +461,8 @@ fn layout(app: &Studio, t: &Theme) -> Node<Msg> {
                     254,
                 )
                 .child(
-                    row().children([
-                        column()
+                    studio_row().children([
+                        studio_column()
                             .style(
                                 Style::default()
                                     .width(Size::Percent(30))
@@ -469,15 +471,13 @@ fn layout(app: &Studio, t: &Theme) -> Node<Msg> {
                                     .radius(10)
                                     .pad(16),
                             )
-                            .child(label("Side", WHITE, t.body_font)),
-                        column()
+                            .child(styled_label("Side", WHITE, t.body_font)),
+                        studio_column()
                             .style(Style::default().flex_grow(1).gap(12))
                             .children(["Header", "Content", "Footer"].iter().map(|name| {
-                                Node::obj()
-                                    .style(full(38).bg(t.background).radius(8))
-                                    .child(
-                                        text(name, t).style(Style::default().align(Align::Center)),
-                                    )
+                                obj().style(full(38).bg(t.background).radius(8)).child(
+                                    text(name, t).style(Style::default().align(Align::Center)),
+                                )
                             })),
                     ]),
                 ),
@@ -516,42 +516,42 @@ const fn tile_pixels(alternate: bool) -> [u8; 72 * 72 * 2] {
 }
 static TILE_A: [u8; 72 * 72 * 2] = tile_pixels(false);
 static TILE_B: [u8; 72 * 72 * 2] = tile_pixels(true);
-fn image(alternate: bool) -> ImageSource {
+fn sample_image(alternate: bool) -> ImageSource {
     ImageSource::rgb565(72, 72, if alternate { &TILE_B } else { &TILE_A })
 }
 
-fn media(app: &Studio, t: &Theme) -> Node<Msg> {
-    column()
+fn media(app: &Studio, t: &Theme) -> View<Msg> {
+    studio_column()
         .child(
-            row().children([
+            studio_row().children([
                 third(card("Still & interactive", "Image / image button", t), 264)
                     .child(
-                        row()
+                        studio_row()
                             .style(
                                 Style::default()
                                     .flex_align(FlexAlign::SpaceAround, FlexAlign::Center),
                             )
                             .children([
-                                Node::image(image(false)),
-                                Node::image_button(image(false))
+                                rs_lvgl_ui::image(sample_image(false)),
+                                image_button(sample_image(false))
                                     .style(
                                         Style::default().width(Size::Px(72)).height(Size::Px(72)),
                                     )
-                                    .pressed_image(image(true))
+                                    .pressed_image(sample_image(true))
                                     .on_click(Msg::Click),
                             ]),
                     )
                     .child(text(&format!("{} image actions", app.clicks), t)),
                 third(card("Frame by frame", "Animated image / GIF", t), 264)
                     .child(
-                        row()
+                        studio_row()
                             .style(
                                 Style::default()
                                     .flex_align(FlexAlign::SpaceAround, FlexAlign::Center),
                             )
                             .children([
-                                Node::anim_image([image(false), image(true)], 1400),
-                                Node::gif(Gif::new(Rc::<[u8]>::from(
+                                anim_image([sample_image(false), sample_image(true)], 1400),
+                                gif(Gif::new(Rc::<[u8]>::from(
                                     &include_bytes!("../assets/status.gif")[..],
                                 ))),
                             ]),
@@ -560,7 +560,7 @@ fn media(app: &Studio, t: &Theme) -> Node<Msg> {
                         text("Both animations run on native timers.", t)
                             .style(Style::default().width(Size::Percent(100))),
                     ),
-                third(card("Vector in motion", "Lottie / ThorVG", t), 264).child(Node::lottie(
+                third(card("Vector in motion", "Lottie / ThorVG", t), 264).child(lottie(
                     Lottie::new(
                         Rc::<str>::from(include_str!("../assets/studio-motion.json")),
                         180,
@@ -570,20 +570,20 @@ fn media(app: &Studio, t: &Theme) -> Node<Msg> {
             ]),
         )
         .child(
-            row().children([
+            studio_row().children([
                 half(
                     card("Scan to explore", "QR code / repository address", t),
                     294,
                 )
                 .child(
-                    row().children([
-                        Node::qrcode(QrCode::new(
+                    studio_row().children([
+                        qrcode(QrCode::new(
                             b"https://github.com/umbrella22/rs_lvgl".to_vec(),
                             166,
                         )),
-                        column()
+                        studio_column()
                             .style(Style::default().flex_grow(1))
-                            .child(label(
+                            .child(styled_label(
                                 "Open source.\nMade to build on.",
                                 t.text,
                                 Font::montserrat_20(),
@@ -598,14 +598,14 @@ fn media(app: &Studio, t: &Theme) -> Node<Msg> {
                     card("A readable identity", "Code 128 / encoded text", t),
                     294,
                 )
-                .child(Node::barcode(Barcode::new("RS-LVGL-2026", 100)))
-                .child(label("RS-LVGL-2026", t.text, Font::montserrat_20()))
+                .child(barcode(Barcode::new("RS-LVGL-2026", 100)))
+                .child(styled_label("RS-LVGL-2026", t.text, Font::montserrat_20()))
                 .child(text("Generated by the native barcode extension.", t)),
             ]),
         )
 }
 
-fn canvas(t: &Theme) -> Node<Msg> {
+fn canvas_page(t: &Theme) -> View<Msg> {
     let mut frame = Canvas::new(940, 205).background(INK, 255);
     for x in (20..940).step_by(40) {
         frame = frame.draw(DrawCommand::Line {
@@ -661,7 +661,7 @@ fn canvas(t: &Theme) -> Node<Msg> {
             color: WHITE,
             opacity: 255,
         });
-    column()
+    studio_column()
         .child(
             card(
                 "Your pixels, your rules",
@@ -669,12 +669,12 @@ fn canvas(t: &Theme) -> Node<Msg> {
                 t,
             )
             .style(full(315))
-            .child(Node::canvas(frame)),
+            .child(rs_lvgl_ui::canvas(frame)),
         )
         .child(
-            row().children([
+            studio_row().children([
                 third(card("Curved type", "Arc label", t), 248).child(
-                    Node::arc_label("RUST / LVGL", 48, 200, 160).style(
+                    arc_label("RUST / LVGL", 48, 200, 160).style(
                         Style::default()
                             .width(Size::Px(200))
                             .height(Size::Px(130))
@@ -687,8 +687,8 @@ fn canvas(t: &Theme) -> Node<Msg> {
                     248,
                 )
                 .child(
-                    Node::obj().style(full(110)).scrollable(false).child(
-                        Node::obj()
+                    obj().style(full(110)).scrollable(false).child(
+                        obj()
                             .style(
                                 Style::default()
                                     .width(Size::Px(42))
@@ -709,13 +709,13 @@ fn canvas(t: &Theme) -> Node<Msg> {
                     card("Custom lifecycle", "Rust widget / tick / cleanup", t),
                     248,
                 )
-                .child(Node::custom(super::native::Pulse::default()))
-                .child(button("Try a toast", Msg::Toast, t)),
+                .child(custom(super::native::Pulse::default()))
+                .child(action_button("Try a toast", Msg::Toast, t)),
             ]),
         )
 }
 
-fn composition(app: &Studio, t: &Theme) -> Node<Msg> {
+fn composition(app: &Studio, t: &Theme) -> View<Msg> {
     let list = list::list(
         t,
         [
@@ -742,12 +742,12 @@ fn composition(app: &Studio, t: &Theme) -> Node<Msg> {
         ],
     )
     .style(full(160));
-    column()
+    studio_column()
         .child(
-            row().children([
+            studio_row().children([
                 half(
                     Panel::new("Your workspace")
-                        .action(button("Details", Msg::Push, t))
+                        .action(action_button("Details", Msg::Push, t))
                         .child(list)
                         .view(t),
                     268,
@@ -765,7 +765,7 @@ fn composition(app: &Studio, t: &Theme) -> Node<Msg> {
             ]),
         )
         .child(
-            row().children([
+            studio_row().children([
                 half(
                     card("Go a little deeper", "Stack navigation / back behavior", t),
                     306,
@@ -775,7 +775,7 @@ fn composition(app: &Studio, t: &Theme) -> Node<Msg> {
                         &app.nav,
                         t,
                         *app.nav.current(),
-                        column()
+                        studio_column()
                             .child(
                                 text(
                                     if app.nav.can_go_back() {
@@ -787,7 +787,7 @@ fn composition(app: &Studio, t: &Theme) -> Node<Msg> {
                                 )
                                 .style(Style::default().width(Size::Percent(100))),
                             )
-                            .child(button(
+                            .child(action_button(
                                 if app.nav.can_go_back() {
                                     "Back to workspace"
                                 } else {
@@ -810,15 +810,15 @@ fn composition(app: &Studio, t: &Theme) -> Node<Msg> {
                     306,
                 )
                 .child(
-                    Node::msgbox("Everything is ready.")
+                    msgbox("Everything is ready.")
                         .msgbox_title("Workspace prepared")
                         .msgbox_buttons(["Got it"])
                         .style(full(140))
                         .on_value_changed(|_| Msg::Toast),
                 )
-                .child(row().style(Style::default().pad(6)).children([
+                .child(studio_row().style(Style::default().pad(6)).children([
                     primary("Open dialog", Msg::Dialog(true), t),
-                    button("Show toast", Msg::Toast, t),
+                    action_button("Show toast", Msg::Toast, t),
                 ])),
             ]),
         )

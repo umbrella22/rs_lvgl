@@ -1,6 +1,6 @@
 //! Run: `cargo run -p rs_lvgl_ui --example rust_timer --features simulator,rust_timer`
 use rs_lvgl::timer::{update_clock, LvClock};
-use rs_lvgl_ui::{App, Node, Size, Style, Theme};
+use rs_lvgl_ui::prelude::*;
 use std::time::Duration;
 mod support;
 
@@ -24,7 +24,7 @@ impl App for Clock {
     fn update(&mut self, _: Msg) {
         self.paused = !self.paused;
     }
-    fn view(&self, theme: &Theme) -> Node<Msg> {
+    fn view(&self, theme: &Theme) -> View<Msg> {
         support::frame(
             theme,
             "Rust clock",
@@ -35,7 +35,7 @@ impl App for Clock {
                     format!("{:.1} seconds", self.milliseconds as f64 / 1000.0),
                 ))
                 .child(
-                    Node::bar(0, 10000, (self.milliseconds % 10001) as i32).style(
+                    bar(0, 10000, (self.milliseconds % 10001) as i32).style(
                         Style::default()
                             .width(Size::Percent(100))
                             .height(Size::Px(24)),

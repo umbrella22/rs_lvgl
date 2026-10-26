@@ -1,4 +1,4 @@
-use crate::{widgets::Retained, Node, UiError, WidgetKind};
+use crate::{widgets::Retained, UiError};
 use alloc::{boxed::Box, rc::Rc};
 use core::ptr::NonNull;
 /// Encoded GIF bytes retained for native timer decoding. Clones share bytes.
@@ -70,10 +70,5 @@ impl Gif {
             }
         }
         Ok(())
-    }
-}
-impl<M> Node<M> {
-    pub fn gif(animation: Gif) -> Self {
-        Self::new(WidgetKind::Gif { animation })
     }
 }

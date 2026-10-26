@@ -3,12 +3,10 @@ use alloc::rc::Rc;
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::fmt;
-use core::ptr::NonNull;
 
 use cstr_core::CStr;
-use rs_lvgl_sys::lv_obj_t;
 
-use crate::custom::{CustomWidget, CustomWidgetKind, RawWidget};
+use crate::custom::CustomWidgetKind;
 use crate::{Style, UiError};
 
 /// A resolved RGB color.
@@ -429,7 +427,7 @@ impl core::ops::BitOr for ScrollDir {
     }
 }
 
-/// One tile of a [`Node::tileview`]: its grid position and the directions
+/// One tile of a [`crate::tileview`]: its grid position and the directions
 /// the user may swipe away from it.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Tile {
@@ -493,7 +491,7 @@ impl CalendarDate {
     }
 }
 
-/// One styled run of text in a [`Node::spans`] group.
+/// One styled run of text in a [`crate::spans`] group.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Span {
     pub text: String,
@@ -1036,8 +1034,8 @@ pub enum WidgetKind {
         start_angle: i32,
         angle_size: i32,
     },
-    /// An opaque native subtree: either a static `Node::raw` factory or a
-    /// lifecycle widget supplied to `Node::custom`.
+    /// An opaque native subtree: either a static `crate::raw` factory or a
+    /// lifecycle widget supplied to `crate::custom`.
     Custom(CustomWidgetKind),
 }
 
@@ -1120,9 +1118,11 @@ impl<M> HandlerSet<M> {
     }
 }
 
-/// A declarative UI node.
+/// The backing descriptor type for [`crate::View`].
 ///
-/// Nodes are descriptors: constructing a `Node` never touches LVGL.
+/// Constructing a descriptor never touches LVGL. Application and component
+/// functions return [`crate::View`] and use ordinary constructors such as
+/// [`crate::column`], [`crate::label`] and [`crate::button`].
 pub struct Node<M> {
     pub(crate) key: Key,
     pub(crate) kind: WidgetKind,
@@ -1182,94 +1182,6 @@ impl<M> Node<M> {
         }
     }
 
-    pub fn obj() -> Self {
-        Self::new(WidgetKind::Obj)
-    }
-
-    pub fn row() -> Self {
-        Self::new(WidgetKind::Row)
-    }
-
-    pub fn column() -> Self {
-        Self::new(WidgetKind::Column)
-    }
-
-    pub fn grid(
-        columns: impl IntoIterator<Item = GridTrack>,
-        rows: impl IntoIterator<Item = GridTrack>,
-    ) -> Self {
-        Self::new(WidgetKind::Grid {
-            columns: columns.into_iter().collect(),
-            rows: rows.into_iter().collect(),
-        })
-    }
-
-    /// A native tabview. Add exactly one child per tab; each child becomes the
-    /// root of that tab's page.
-    #[cfg(feature = "widget-tabview")]
-    pub fn tabview(tabs: impl IntoIterator<Item = impl Into<String>>, active: u32) -> Self {
-        Self::new(WidgetKind::Tabview {
-            tabs: tabs.into_iter().map(Into::into).collect(),
-            active,
-        })
-    }
-
-    pub fn label(text: impl Into<String>) -> Self {
-        Self::new(WidgetKind::Label {
-            text: text.into(),
-            long_mode: LabelLongMode::Wrap,
-        })
-    }
-
-    pub fn button(text: impl Into<String>) -> Self {
-        Self::new(WidgetKind::Button { text: text.into() })
-    }
-
-    #[cfg(feature = "widget-slider")]
-    pub fn slider(min: i32, max: i32, value: i32) -> Self {
-        Self::new(WidgetKind::Slider { min, max, value })
-    }
-
-    #[cfg(feature = "widget-bar")]
-    pub fn bar(min: i32, max: i32, value: i32) -> Self {
-        Self::new(WidgetKind::Bar { min, max, value })
-    }
-
-    #[cfg(feature = "widget-switch")]
-    pub fn switch(checked: bool) -> Self {
-        Self::new(WidgetKind::Switch { checked })
-    }
-
-    #[cfg(feature = "widget-image")]
-    pub fn image(source: ImageSource) -> Self {
-        Self::new(WidgetKind::Image { source, scale: 256 })
-    }
-
-    #[cfg(feature = "widget-image")]
-    pub fn image_scaled(source: ImageSource, scale: u16) -> Self {
-        Self::new(WidgetKind::Image { source, scale })
-    }
-
-    #[cfg(feature = "widget-checkbox")]
-    pub fn checkbox(text: impl Into<String>, checked: bool) -> Self {
-        Self::new(WidgetKind::Checkbox {
-            text: text.into(),
-            checked,
-        })
-    }
-
-    /// A one-line textarea by default. Use [`Node::multiline`] to allow line
-    /// breaks and [`Node::placeholder`]/[`Node::password`] for form fields.
-    #[cfg(feature = "widget-textarea")]
-    pub fn textarea(text: impl Into<String>) -> Self {
-        Self::new(WidgetKind::Textarea {
-            text: text.into(),
-            placeholder: String::new(),
-            one_line: true,
-            password: false,
-        })
-    }
-
     #[cfg(feature = "widget-textarea")]
     pub fn placeholder(mut self, text: impl Into<String>) -> Self {
         if let WidgetKind::Textarea { placeholder, .. } = &mut self.kind {
@@ -1294,36 +1206,6 @@ impl<M> Node<M> {
         self
     }
 
-    #[cfg(feature = "widget-dropdown")]
-    pub fn dropdown(options: impl IntoIterator<Item = impl Into<String>>, selected: u32) -> Self {
-        Self::new(WidgetKind::Dropdown {
-            options: options.into_iter().map(Into::into).collect(),
-            selected,
-        })
-    }
-
-    #[cfg(feature = "widget-arc")]
-    pub fn arc(min: i32, max: i32, value: i32) -> Self {
-        Self::new(WidgetKind::Arc { min, max, value })
-    }
-
-    #[cfg(feature = "widget-scale")]
-    pub fn scale(min: i32, max: i32, total_ticks: u32, major_tick_every: u32) -> Self {
-        Self::new(WidgetKind::Scale {
-            min,
-            max,
-            total_ticks,
-            major_tick_every,
-        })
-    }
-
-    /// A keyboard. `target` is matched against a textarea's
-    /// [`Node::keyboard_id`].
-    #[cfg(feature = "widget-keyboard")]
-    pub fn keyboard(target: u64) -> Self {
-        Self::new(WidgetKind::Keyboard { target })
-    }
-
     /// Register this textarea as a keyboard target.
     ///
     /// IDs are application-scoped; the reconciler resolves them after each
@@ -1331,20 +1213,6 @@ impl<M> Node<M> {
     pub fn keyboard_id(mut self, id: u64) -> Self {
         self.keyboard_id = Some(id);
         self
-    }
-
-    /// A roller (scrolling option picker).
-    ///
-    /// `selected` is controlled; `on_value_changed` receives the selected
-    /// index. Defaults to three visible rows and [`RollerMode::Normal`].
-    #[cfg(feature = "widget-roller")]
-    pub fn roller(options: impl IntoIterator<Item = impl Into<String>>, selected: u32) -> Self {
-        Self::new(WidgetKind::Roller {
-            options: options.into_iter().map(Into::into).collect(),
-            selected,
-            visible_rows: 3,
-            mode: RollerMode::Normal,
-        })
     }
 
     /// Number of rows a roller shows. Ignored for other kinds.
@@ -1363,22 +1231,6 @@ impl<M> Node<M> {
             *mode = roller_mode;
         }
         self
-    }
-
-    /// A spinbox (numeric field) with a controlled `value` in `min..=max`.
-    ///
-    /// Defaults to five digits, no decimal separator and a step of one.
-    /// `on_value_changed` receives the integer value.
-    #[cfg(feature = "widget-spinbox")]
-    pub fn spinbox(min: i32, max: i32, value: i32) -> Self {
-        Self::new(WidgetKind::Spinbox {
-            min,
-            max,
-            value,
-            digit_count: 5,
-            decimal_pos: 0,
-            step: 1,
-        })
     }
 
     /// Digit count and decimal separator position of a spinbox.
@@ -1409,15 +1261,6 @@ impl<M> Node<M> {
         self
     }
 
-    /// A spinner with LVGL's default animation (1000 ms, 200° arc).
-    #[cfg(feature = "widget-spinner")]
-    pub fn spinner() -> Self {
-        Self::new(WidgetKind::Spinner {
-            duration_ms: 1000,
-            arc_angle: 200,
-        })
-    }
-
     /// Spinner animation parameters. Ignored for other kinds.
     #[cfg(feature = "widget-spinner")]
     pub fn spinner_anim(mut self, duration: u32, angle: u32) -> Self {
@@ -1432,15 +1275,6 @@ impl<M> Node<M> {
         self
     }
 
-    /// An LED indicator at full brightness.
-    #[cfg(feature = "widget-led")]
-    pub fn led(color: Color) -> Self {
-        Self::new(WidgetKind::Led {
-            color,
-            brightness: 255,
-        })
-    }
-
     /// LED brightness. LVGL clamps it to `80..=255`; `80` looks off.
     /// Ignored for other kinds.
     #[cfg(feature = "widget-led")]
@@ -1449,52 +1283,6 @@ impl<M> Node<M> {
             *brightness = value;
         }
         self
-    }
-
-    /// A polyline. The mounted tree owns the point buffer LVGL reads from.
-    #[cfg(feature = "widget-line")]
-    pub fn line(points: impl IntoIterator<Item = (i32, i32)>) -> Self {
-        Self::new(WidgetKind::Line {
-            points: points.into_iter().collect(),
-        })
-    }
-
-    /// A button matrix, one inner iterator per row.
-    ///
-    /// `on_value_changed` receives the index of the pressed button, counting
-    /// row by row, or `-1`. Button texts must be non-empty. The mounted tree
-    /// owns the map LVGL reads from.
-    #[cfg(feature = "widget-buttonmatrix")]
-    pub fn button_matrix<R, T>(rows: impl IntoIterator<Item = R>) -> Self
-    where
-        R: IntoIterator<Item = T>,
-        T: Into<String>,
-    {
-        Self::new(WidgetKind::ButtonMatrix {
-            rows: rows
-                .into_iter()
-                .map(|row| row.into_iter().map(Into::into).collect())
-                .collect(),
-        })
-    }
-
-    /// A text table, one inner iterator per row.
-    ///
-    /// `on_value_changed` receives the selected cell; decode it with
-    /// [`table_cell`].
-    #[cfg(feature = "widget-table")]
-    pub fn table<R, T>(cells: impl IntoIterator<Item = R>) -> Self
-    where
-        R: IntoIterator<Item = T>,
-        T: Into<String>,
-    {
-        Self::new(WidgetKind::Table {
-            cells: cells
-                .into_iter()
-                .map(|row| row.into_iter().map(Into::into).collect())
-                .collect(),
-            column_widths: Vec::new(),
-        })
     }
 
     /// Table column widths in pixels. Columns without an entry keep their
@@ -1506,28 +1294,6 @@ impl<M> Node<M> {
             *column_widths = widths.into_iter().collect();
         }
         self
-    }
-
-    /// A tileview. Add exactly one child per tile; each child becomes the
-    /// root of that tile. `active` indexes `tiles` and is controlled.
-    #[cfg(feature = "widget-tileview")]
-    pub fn tileview(tiles: impl IntoIterator<Item = Tile>, active: u32) -> Self {
-        Self::new(WidgetKind::Tileview {
-            tiles: tiles.into_iter().collect(),
-            active,
-        })
-    }
-
-    /// An inline message box showing `text`. Children are placed below the
-    /// text. Add a title with [`Node::msgbox_title`] and footer buttons with
-    /// [`Node::msgbox_buttons`].
-    #[cfg(feature = "widget-msgbox")]
-    pub fn msgbox(text: impl Into<String>) -> Self {
-        Self::new(WidgetKind::Msgbox {
-            title: None,
-            text: text.into(),
-            buttons: Vec::new(),
-        })
     }
 
     /// Message box title. Ignored for other kinds.
@@ -1549,17 +1315,6 @@ impl<M> Node<M> {
         self
     }
 
-    /// A calendar showing `month` (1-12) of `year`.
-    #[cfg(feature = "widget-calendar")]
-    pub fn calendar(year: u16, month: u8) -> Self {
-        Self::new(WidgetKind::Calendar {
-            year,
-            month,
-            today: None,
-            highlighted: Vec::new(),
-        })
-    }
-
     /// The date marked as today. Ignored for other kinds.
     #[cfg(feature = "widget-calendar")]
     pub fn today(mut self, date: CalendarDate) -> Self {
@@ -1578,24 +1333,6 @@ impl<M> Node<M> {
         self
     }
 
-    /// Rich text made of styled spans.
-    #[cfg(feature = "widget-span")]
-    pub fn spans(spans: impl IntoIterator<Item = Span>) -> Self {
-        Self::new(WidgetKind::Spans {
-            spans: spans.into_iter().collect(),
-        })
-    }
-
-    /// A button drawn with `released`; add a pressed image with
-    /// [`Node::pressed_image`].
-    #[cfg(feature = "widget-imagebutton")]
-    pub fn image_button(released: ImageSource) -> Self {
-        Self::new(WidgetKind::ImageButton {
-            released,
-            pressed: None,
-        })
-    }
-
     /// Image button picture while pressed. Ignored for other kinds.
     #[cfg(feature = "widget-imagebutton")]
     pub fn pressed_image(mut self, source: ImageSource) -> Self {
@@ -1605,17 +1342,6 @@ impl<M> Node<M> {
         self
     }
 
-    /// An image that shows every frame once per `duration_ms`, looping
-    /// forever unless [`Node::repeat`] is set.
-    #[cfg(feature = "widget-animimage")]
-    pub fn anim_image(frames: impl IntoIterator<Item = ImageSource>, duration_ms: u32) -> Self {
-        Self::new(WidgetKind::AnimImage {
-            frames: frames.into_iter().collect(),
-            duration_ms,
-            repeat: ANIM_REPEAT_INFINITE,
-        })
-    }
-
     /// Animated image repeat count. Ignored for other kinds.
     #[cfg(feature = "widget-animimage")]
     pub fn repeat(mut self, count: u32) -> Self {
@@ -1623,79 +1349,6 @@ impl<M> Node<M> {
             *repeat = count;
         }
         self
-    }
-
-    /// Text along an arc of `radius` pixels, starting at `start_angle` and
-    /// spanning `angle_size` degrees.
-    #[cfg(feature = "widget-arclabel")]
-    pub fn arc_label(
-        text: impl Into<String>,
-        radius: u32,
-        start_angle: i32,
-        angle_size: i32,
-    ) -> Self {
-        Self::new(WidgetKind::ArcLabel {
-            text: text.into(),
-            radius,
-            start_angle,
-            angle_size,
-        })
-    }
-
-    /// A chart with one or more series.
-    ///
-    /// All series must have the same number of points. The primary Y axis is
-    /// fixed to `min..=max`.
-    #[cfg(feature = "widget-chart")]
-    pub fn chart(chart_type: ChartType, min: i32, max: i32, series: Vec<ChartSeries>) -> Self {
-        Self::new(WidgetKind::Chart {
-            chart_type,
-            min,
-            max,
-            series,
-        })
-    }
-
-    /// Create an opaque native subtree.
-    ///
-    /// The reconciler calls `create` with a valid LVGL parent and never
-    /// traverses the returned object's children. Deletion happens when the
-    /// mounted node is removed or the UI is unmounted.
-    ///
-    /// # Safety
-    ///
-    /// The returned object must be a live direct child of `parent`, must remain
-    /// valid until LVGL deletes the mounted subtree, and must not be deleted by
-    /// the caller. The factory must not call back into [`crate::Ui`]. Any native
-    /// callbacks it registers are its own responsibility.
-    pub unsafe fn raw<F>(create: F) -> Self
-    where
-        F: Fn(NonNull<lv_obj_t>) -> Option<NonNull<lv_obj_t>> + 'static,
-    {
-        Self::new(WidgetKind::Custom(CustomWidgetKind::raw(RawWidget::new(
-            Box::new(create),
-        ))))
-    }
-
-    /// Create a custom widget with a native lifecycle.
-    ///
-    /// The widget's [`CustomWidget::create`] runs when the node is mounted;
-    /// [`CustomWidget::update`] runs once per [`crate::Ui::tick`];
-    /// [`CustomWidget::delete`] runs exactly once before the native object is
-    /// deleted by a key change, a kind change, subtree removal or
-    /// [`crate::Ui::unmount`].
-    ///
-    /// The mounted tree keeps the widget instance. A widget supplied by a later
-    /// `App::view` call replaces it only when the node key or the custom
-    /// variant changes; otherwise the new descriptor instance is dropped. Use a
-    /// key change to swap implementations, or keep shared application state in
-    /// an `Rc`/`RefCell` visible to both the widget and the application.
-    ///
-    /// Messages from native callbacks are delivered through the node's explicit
-    /// handler (`on_event`, `on_click`, ...), which is registered on the custom
-    /// object.
-    pub fn custom(widget: impl CustomWidget) -> Self {
-        Self::new(WidgetKind::Custom(CustomWidgetKind::lifecycle(widget)))
     }
 
     pub fn key(mut self, key: Key) -> Self {
@@ -2531,7 +2184,7 @@ fn validate_kind<M>(node: &Node<M>) -> Result<(), UiError> {
         #[cfg(feature = "widget-keyboard")]
         WidgetKind::Keyboard { .. } => {}
         WidgetKind::Custom(custom) => {
-            // `Node::raw` owns its native callbacks; lifecycle widgets may use
+            // `crate::raw` owns its native callbacks; lifecycle widgets may use
             // the typed handler because the reconciler registers it on the
             // custom root object.
             if !custom.is_lifecycle() && !node.handlers.is_empty() {

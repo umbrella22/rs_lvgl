@@ -1,5 +1,5 @@
 //! Run: `cargo run -p rs_lvgl_ui --example demo --features simulator`
-use rs_lvgl_ui::{App, Node, Size, Style, Theme};
+use rs_lvgl_ui::prelude::*;
 mod support;
 
 #[derive(Clone)]
@@ -24,17 +24,17 @@ impl App for Watch {
         self.day = self.day % 28 + 1;
         self.steps = (self.steps + 1700) % 10000;
     }
-    fn view(&self, theme: &Theme) -> Node<Msg> {
+    fn view(&self, theme: &Theme) -> View<Msg> {
         support::frame(
             theme,
             "Trail watch",
             "A small watch face built from labels, rows and a bar.",
             support::column()
                 .child(support::value(theme, "09:41"))
-                .child(Node::label(format!("October {} / Morning walk", self.day)))
-                .child(Node::label(format!("{} / 10,000 steps", self.steps)))
+                .child(label(format!("October {} / Morning walk", self.day)))
+                .child(label(format!("{} / 10,000 steps", self.steps)))
                 .child(
-                    Node::bar(0, 10000, self.steps as i32).style(
+                    bar(0, 10000, self.steps as i32).style(
                         Style::default()
                             .width(Size::Percent(100))
                             .height(Size::Px(16)),

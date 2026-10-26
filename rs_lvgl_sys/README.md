@@ -6,7 +6,7 @@ It can be used without `rs_lvgl`, `rs_lvgl_ui` or a Rust UI runtime.
 
 ```toml
 [dependencies]
-rs_lvgl_sys = { version = "0.1.0" }
+rs_lvgl_sys = { version = "0.2" }
 ```
 
 A C compiler and libclang are required. SDL and the C++ ThorVG provider are optional capabilities.

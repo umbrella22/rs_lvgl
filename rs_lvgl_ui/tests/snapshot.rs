@@ -1,12 +1,12 @@
 mod common;
 
 use core::ptr;
+use rs_lvgl_ui::prelude::*;
 use std::cell::RefCell;
 use std::rc::Rc;
 
 use common::lock;
 use rs_lvgl::Display;
-use rs_lvgl_ui::{App, Color, Key, Node, Size, Style, Theme, Ui};
 
 const WIDTH: usize = 64;
 const HEIGHT: usize = 64;
@@ -48,16 +48,16 @@ impl App for SnapshotApp {
 
     fn update(&mut self, _: ()) {}
 
-    fn view(&self, _: &Theme) -> Node<()> {
+    fn view(&self, _: &Theme) -> View<()> {
         let block = |id: u64, color: Color| {
-            Node::obj().key(Key::Id(id)).style(
+            obj().key(Key::Id(id)).style(
                 Style::default()
                     .bg(color)
                     .width(Size::Px(20))
                     .height(Size::Px(20)),
             )
         };
-        Node::column()
+        column([])
             .child(block(0, Color::rgb(255, 0, 0)))
             .child(block(1, Color::rgb(0, 255, 0)))
             .child(block(2, Color::rgb(0, 0, 255)))

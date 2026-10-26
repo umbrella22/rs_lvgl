@@ -1,19 +1,22 @@
 # rs_lvgl_ui
 
+The [browser studio](../website/docs/en/studio.mdx) runs all nine component categories in WebAssembly. It shares these Rust views with the desktop studio; see [build instructions](../website/README.md).
+
+
 A declarative, typed Rust UI layer for LVGL 9.6, built on the `rs_lvgl` bindings in
 this workspace.
 
-Add `rs_lvgl_ui = "0.1.0"` to the application dependencies. The
+The
 [repository README](https://github.com/umbrella22/rs_lvgl/blob/main/README.md) covers native dependencies and simulator setup.
 
-Application code describes a screen as a `Node<Msg>` tree, updates one state
+Application code describes a screen as a `View<Msg>` tree, updates one state
 value through messages, and lets the layer create, update, reorder and delete
 the native LVGL objects. LVGL remains the renderer, layout engine and animation
 engine.
 
 ```text
 platform event -> C callback -> EventQueue -> Ui::drain -> App::update
-  -> App::view -> Node tree -> reconciler -> LVGL objects
+  -> App::view -> View tree -> reconciler -> LVGL objects
 ```
 
 ## Design rules
@@ -56,21 +59,25 @@ widgets are not compiled at all. The defaults keep the full set.
 
 ```toml
 [dependencies]
-rs_lvgl_ui = { version = "0.1.0", default-features = false, features = [
+[dependencies.rs_lvgl_ui]
+version = "0.2"
+default-features = false
+features = [
     "alloc", "components", "widget-slider", "widget-switch", "font-montserrat-20",
-] }
+]
 ```
 
 - Always available: `obj`, `row`, `column`, `grid`, `label`, `button`, custom
-  widgets, `Node::raw` and `Font::montserrat_14`. Composite components require
+  widgets, `raw` and `Font::montserrat_14`. Composite components require
   the `components` feature.
 - Optional widgets: `animimage`, `arc`, `arclabel`, `bar`, `buttonmatrix`,
   `calendar`, `canvas`, `chart`, `checkbox`, `dropdown`, `image`, `imagebutton`,
   `keyboard`, `led`, `line`, `msgbox`, `roller`, `scale`, `slider`, `span`,
   `spinbox`, `spinner`, `switch`, `table`, `tabview`, `textarea`, `tileview`.
-  Each `widget-<name>` enables the `Node::<name>` constructors, their
+  Each `widget-<name>` enables its ordinary constructors in the crate root and
+  `prelude`, their
   `WidgetKind` variant and the widget-specific modifiers (for example
-  `Node::placeholder` needs `widget-textarea`).
+  `View::placeholder` needs `widget-textarea`).
 - LVGL dependencies are enabled automatically: `keyboard` brings in
   `buttonmatrix` and `textarea`, `calendar` brings in `buttonmatrix`, `slider`
   brings in `bar`, `spinbox` brings in `textarea`, `spinner` brings in `arc`, and
@@ -94,7 +101,7 @@ that are shared by several widgets; the full set keeps every lint.
 ## Quick start
 
 ```rust
-use rs_lvgl_ui::{App, Key, Node, Style, Theme, Ui};
+use rs_lvgl_ui::prelude::*;
 
 #[derive(Clone)]
 enum Msg {
@@ -114,15 +121,14 @@ impl App for Settings {
         }
     }
 
-    fn view(&self, theme: &Theme) -> Node<Msg> {
-        Node::column()
-            .style(Style::default().gap(12))
-            .child(Node::label("Fan").style(Style::title(theme)))
-            .child(
-                Node::slider(0, 100, self.speed)
-                    .key(Key::Named("speed"))
-                    .on_value_changed(Msg::SpeedChanged),
-            )
+    fn view(&self, theme: &Theme) -> View<Msg> {
+        column([
+            label("Fan").style(Style::title(theme)),
+            slider(0, 100, self.speed)
+                .key(Key::Named("speed"))
+                .on_value_changed(Msg::SpeedChanged),
+        ])
+        .style(Style::default().gap(12))
     }
 }
 ```
@@ -151,6 +157,44 @@ on every frame. State that changes outside messages (a clock or sensor read in
 `view`) must call `Ui::mark_dirty()` or `Ui::update(&app)`. `Ui::tick(elapsed_ms)` advances custom-widget
 animation; call it from the render loop, outside `lv_timer_handler`.
 
+## Child order and composition
+
+`View<M>` is a description of a UI subtree. `Node<M>` is the backing type of
+that alias; ordinary application and component functions return `View<M>`.
+Constructing a view does not create native LVGL objects.
+
+`column(children)` arranges children in the normal flex flow from top to bottom
+in iteration order. It accepts arrays, vectors and iterators. Child sizes,
+spacing and alignment determine the pixel positions. `row` also preserves
+iteration order; `grid` uses each child's `.grid_cell(...)` for placement.
+
+Named variables make a screen's sections visible, and ordinary functions share
+structure or styling:
+
+```rust
+use rs_lvgl_ui::prelude::*;
+
+fn page_title<M>(text: &str, theme: &Theme) -> View<M> {
+    label(text).style(Style::title(theme))
+}
+
+fn settings_view(theme: &Theme) -> View<()> {
+    let content = label("Notification preferences");
+    let title = page_title("Settings", theme);
+    column([title, content]).style(Style::default().gap(12))
+}
+```
+
+The title appears before the content because it comes first in the child
+collection, even though it is constructed later. A helper returns a description
+within the same view tree; it does not add independent state or a render cache.
+Each parent takes its child values by move. Call the helper again to create a
+view for another location.
+
+Child order and identity are separate. Stable `Key::Named` or `Key::Id` values
+identify dynamic children across inserts, removals and reorders. An array index
+used as a key follows the position, so it does not identify a reordered item.
+
 ## Semantics
 
 - `Key::Auto` matches by position among `Auto` siblings. `Named` and `Id` match
@@ -173,7 +217,7 @@ animation; call it from the render loop, outside `lv_timer_handler`.
 - `Theme` supplies application color/font tokens; it does not switch LVGL's
   native theme. `Style::accent(theme)` and the composite action buttons use
   flat surfaces with `shadow_width(0)` so a native light-theme shadow does not
-  appear as a gray lower edge on dark backgrounds. Plain `Node::button` and
+  appear as a gray lower edge on dark backgrounds. Plain `button` and
   `Style::default()` retain native defaults. For a custom flat button, set
   `shadow_width(0)`; for elevation, set the shadow width, color, opacity and
   offset explicitly after the preset.
@@ -186,30 +230,31 @@ animation; call it from the render loop, outside `lv_timer_handler`.
   event codes in use (`LV_EVENT_ALL` with `on_event` or input payload handlers);
   a node without handlers has no callbacks. Direct handlers see the node's own
   events. `on_bubbled_event` explicitly observes descendant events.
-- Handlers do not change LVGL flags. Use `Node::clickable(bool)` and
-  `Node::scrollable(bool)` to override the class defaults.
+- Handlers do not change LVGL flags. Use `View::clickable(bool)` and
+  `View::scrollable(bool)` to override the class defaults.
 - Interactive values are controlled: slider, bar, arc, switch, checkbox,
   dropdown, roller, spinbox, textarea text and the active tab are compared
   with the native widget on every render, so the native widget always shows
   the value from `view`. A user change that the application ignores or clamps
   is reverted on the next render. Programmatic writes suppress the next native value event,
   preventing feedback loops.
-- `Node::grid` takes `GridTrack` columns/rows; children use `grid_cell` and
-  `grid_align`. `Node::tabview` takes one child per tab page and reports the
+- `grid(columns, rows, children)` takes `GridTrack` columns/rows and its child
+  collection; children use `grid_cell` and
+  `grid_align`. `tabview` takes one child per tab page and reports the
   active index through `on_value_changed`.
-- `Node::part_style(Part, Style)` styles a specific widget part (indicator,
+- `View::part_style(Part, Style)` styles a specific widget part (indicator,
   knob, scrollbar, selected, items, cursor) and restores class defaults when the
   part style is removed.
-- `Node::state_style(State, Style)` and `Node::part_state_style(Part, State,
+- `View::state_style(State, Style)` and `View::part_state_style(Part, State,
   Style)` style a widget while it is in a state (`State::PRESSED`,
   `CHECKED`, `FOCUSED`, `FOCUS_KEY`, `EDITED`, `HOVERED`, `DISABLED`, combined
   with `|`). LVGL switches between them natively; no message or render is
   involved. Object-wide fields (`hidden`, `disabled`, `gap`, `floating`,
   `flex_align`) only apply in the main style.
-- `Node::checked(bool)` controls `LV_STATE_CHECKED` on any widget, so a list
+- `View::checked(bool)` controls `LV_STATE_CHECKED` on any widget, so a list
   row or a tab-like button can show `State::CHECKED` styles for the selected
   item. Switches and checkboxes keep their own checked value and ignore it.
-- `Node::map(f)` converts every message of a subtree. Components with their
+- `View::map(f)` converts every message of a subtree. Components with their
   own message type are embedded with `component::view(&state).map(Msg::Item)`.
   Object identity, keys and handlers are kept; `f` should be a pure conversion.
 - `Style::floating(true)` takes a widget out of its parent's layout and
@@ -231,7 +276,7 @@ animation; call it from the render loop, outside `lv_timer_handler`.
 - `rs_lvgl_ui::symbol` contains LVGL's built-in icon glyphs (`symbol::OK`,
   `symbol::CLOSE`, `symbol::LEFT`, ...) for label and button text. The default
   Montserrat fonts include them; custom fonts must embed them to render them.
-- `Node::keyboard(target)` binds to the textarea registered with
+- `keyboard(target)` binds to the textarea registered with
   `keyboard_id(target)`. `keyboard_id` values must be unique across the whole
   tree. A binding is applied only when its target changes, and a keyboard is
   unbound before its textarea is deleted. Textarea focus and keyboard Ready/Cancel events are
@@ -249,7 +294,7 @@ animation; call it from the render loop, outside `lv_timer_handler`.
   hatches. `WidgetKind` is `#[non_exhaustive]`.
 - LVGL 9.6 deprecates `lv_list`, `lv_win` and `lv_menu` ("build ... from base
   widgets instead"), so they are not wrapped; build them from `column`, `row`,
-  `button` and `label`. `Node::canvas` retains an aligned native drawing buffer;
+  `button` and `label`. `canvas` retains an aligned native drawing buffer;
   custom widgets remain available for other rendering pipelines.
 - `on_value_changed` values: roller → selected index (the real index in
   `RollerMode::Infinite`); spinbox → integer value; button matrix → pressed
@@ -259,26 +304,26 @@ animation; call it from the render loop, outside `lv_timer_handler`.
   → the pressed date packed as `year * 10000 + month * 100 + day`, decoded
   with `CalendarDate::from_value`, or `-1` for day names and adjacent-month
   days; message box → clicked footer button index.
-- `Node::tileview(tiles, active)` takes one child per `Tile` (column, row and
+- `tileview(tiles, active)` takes one child per `Tile` (column, row and
   allowed `ScrollDir`); `active` is controlled. Changing the tile layout
   recreates the tileview.
-- `Node::msgbox(text)` is always inline (a child of its parent, never a modal
+- `msgbox(text)` is always inline (a child of its parent, never a modal
   on the top layer) and has no close button, because LVGL's close helper
   deletes the object behind the mounted tree. Hide it from the view instead.
   Children are placed below the text. Adding or removing the title, or
   changing the number of footer buttons, recreates the message box; texts are
   patched in place.
-- `Node::calendar(year, month)` shows a month without header controls; set
+- `calendar(year, month)` shows a month without header controls; set
   `today` and `highlighted` dates explicitly. Events of the calendar's inner
   button matrix are reported by the calendar node.
-- `Node::spans` reuses native spans when the count is unchanged; a span's
+- `spans` reuses native spans when the count is unchanged; a span's
   `color`/`font` of `None` inherits from the group.
-- `Node::image_button` and `Node::anim_image` keep generated RGB565 descriptors
+- `image_button` and `anim_image` keep generated RGB565 descriptors
   and the frame pointer array alive for LVGL; animated images accept
   `1..=ANIM_IMAGE_MAX_FRAMES` frames and loop until `repeat` is set.
-- `Node::arc_label(text, radius, start_angle, angle_size)` draws text along an
+- `arc_label(text, radius, start_angle, angle_size)` draws text along an
   arc; `angle_size` must be within `0..=360`.
-- `Node::line` and `Node::button_matrix` own the point buffer and the button
+- `line` and `button_matrix` own the point buffer and the button
   map that LVGL reads without copying; a changed value installs the new buffer
   before the old one is freed.
 - `Style` also supports per-side padding, text alignment, min/max sizes,
@@ -303,14 +348,14 @@ overlay building blocks:
 | `toast` | stateful overlay | `Toasts` queue with per-toast duration, `advance(elapsed_ms)` and a `view` |
 
 Components follow the application's Elm-style split. Stateless builders
-return `Node<M>` that emit the application's own messages. Stateful
+return `View<M>` that emit the application's own messages. Stateful
 components keep a plain state struct in the application; `update` changes it
 and `view` only reads it. Visibility is state too: a dialog is shown while
 `App::overlay` returns it, and closing it is a message. Toasts expire when the
 application calls `Toasts::advance`, for example from a tick message the
 platform posts while toasts are visible. Combine several overlays with
 `components::layers`. A component with its own message type embeds with
-`Node::map`.
+`View::map`.
 
 See `examples/components.rs` for a settings app that uses all of them.
 
@@ -318,7 +363,7 @@ See `examples/components.rs` for a settings app that uses all of them.
 
 Input payload handlers are available with every widget selection. They preserve
 the existing payload-free `Event` enum and compose with the click/value/text
-handlers and `Node::map`:
+handlers and `View::map`:
 
 | Handler | Message input |
 | --- | --- |
@@ -363,10 +408,10 @@ unchanged. Merely enabling the feature does not focus touch-only screens.
 
 After activation, managed interactive nodes join in view preorder followed by
 overlay preorder. LVGL class defaults determine membership, with
-`Node::focusable(true/false)` overrides. Hidden/disabled nodes and descendants
+`View::focusable(true/false)` overrides. Hidden/disabled nodes and descendants
 of hidden/disabled containers are excluded. Opaque custom descendants and
 implicit native children are not enrolled, except the managed Pinyin keyboard.
-`Node::modal(true)` restricts membership to a modal subtree; `Dialog::view` marks
+`View::modal(true)` restricts membership to a modal subtree; `Dialog::view` marks
 its backdrop automatically. See [grid and modal focus](#grid-navigation-and-modal-focus).
 
 `Ui::focus(Key)` requires a unique non-Auto key across both mounted trees.
@@ -426,16 +471,22 @@ They include `shadow_width/color/opacity/offset_x/offset_y/spread`,
 `blend_mode`. Scale 256 means 100%; rotation uses tenths of a degree.
 
 ```rust
-use rs_lvgl_ui::{Node, Style, State, StyleTransition, TransitionProperty};
-let button: Node<()> = Node::button("Focus me")
-    .style(Style::default().outline_width(0).transition(
-        StyleTransition::new(&[TransitionProperty::OutlineWidth], 150)))
+use rs_lvgl_ui::prelude::*;
+let button: View<()> = button("Focus me")
+    .style(
+        Style::default()
+            .outline_width(0)
+            .transition(StyleTransition::new(
+                &[TransitionProperty::OutlineWidth],
+                150,
+            )),
+    )
     .state_style(State::FOCUSED, Style::default().outline_width(2));
 ```
 
 `StyleTransition` retains its native property list and descriptor until detach
 or deletion. `Animation::new(property, from, to, duration_ms)` supports `delay`,
-`easing`, `repeat` and `reverse`; add it with `Node::animate`. Multiple properties
+`easing`, `repeat` and `reverse`; add it with `View::animate`. Multiple properties
 and delays form a timeline. Unchanged descriptors preserve playback; a changed
 descriptor restarts that property, and omission cancels it. Changing declarative
 styles while animating the same property applies the style immediately; the next
@@ -468,7 +519,7 @@ avoid rerendering the outgoing page before `show`.
 
 ## Canvas and snapshots
 
-`widget-canvas` adds `Node::canvas(Canvas::new(width, height))`. Frames support
+`widget-canvas` adds `canvas(Canvas::new(width, height))`. Frames support
 `background(color, opacity)` and ordered `DrawCommand::Pixel`, `Rect`, `Line`
 and `Text`. Drawing clips at the canvas bounds; a single `Pixel` must be in bounds.
 Dimensions, aligned native stride and arithmetic are checked before allocation.
@@ -489,11 +540,11 @@ configuration. Enable only the features needed by the application.
 
 | Feature | Typed API | Native requirement / behavior |
 | --- | --- | --- |
-| `widget-qrcode` | `Node::qrcode(QrCode::new(bytes, size))` | Canvas/image; length-delimited binary payload, including zero bytes |
-| `widget-barcode` | `Node::barcode(Barcode::new(text, height))` | Canvas/image; Raw Code128 preserves spaces; `BarcodeEncoding::Gs1` explicitly selects native GS1 conventions |
-| `widget-gif` | `Node::gif(Gif::new(bytes))` | Image + vendored GIF decoder; retained `Rc<[u8]>`, `paused` controls playback |
-| `widget-lottie` | `Node::lottie(Lottie::new(json, width, height))` | Canvas/image + vendored ThorVG C++14; checked parse/timing/render results; source or size changes recreate the widget |
-| `widget-ime-pinyin` | `Node::pinyin_keyboard(textarea_id, font)` | 26-key keyboard, buttonmatrix, textarea, bundled Pinyin dictionary |
+| `widget-qrcode` | `qrcode(QrCode::new(bytes, size))` | Canvas/image; length-delimited binary payload, including zero bytes |
+| `widget-barcode` | `barcode(Barcode::new(text, height))` | Canvas/image; Raw Code128 preserves spaces; `BarcodeEncoding::Gs1` explicitly selects native GS1 conventions |
+| `widget-gif` | `gif(Gif::new(bytes))` | Image + vendored GIF decoder; retained `Rc<[u8]>`, `paused` controls playback |
+| `widget-lottie` | `lottie(Lottie::new(json, width, height))` | Canvas/image + vendored ThorVG C++14; checked parse/timing/render results; source or size changes recreate the widget |
+| `widget-ime-pinyin` | `pinyin_keyboard(textarea_id, font)` | 26-key keyboard, buttonmatrix, textarea, bundled Pinyin dictionary |
 | `font-cjk-14`, `font-cjk-16` | `Font::cjk_14()`, `Font::cjk_16()` | Vendored Source Han Sans SC CJK glyphs |
 
 Lottie enables native vector graphics, matrix support and floating-point precise
@@ -524,7 +575,7 @@ and Enter emits its activation message. Focus follows entry identity across reor
 ## Grid navigation and modal focus
 
 `input-gridnav` includes `input-keypad` and native GRIDNAV. Add
-`Node::grid_navigation(GridNavigation { rollover, scroll_first, axis })` to an
+`View::grid_navigation(GridNavigation { rollover, scroll_first, axis })` to an
 Obj, Row, Column or Grid. The direct children form the spatial navigation set;
 only the container enters the Tab order. Arrow keys select eligible clickable
 children, Enter activates them and Tab moves to the next group member. `Ui::focus`
@@ -536,7 +587,7 @@ Navigation is limited to direct children. Nested grid scopes, modal scopes insid
 a grid, and Pinyin private keyboard targets inside a grid return `InvalidProperty`.
 Place independent grids in sibling containers and dialogs in `App::overlay`.
 
-With `input-keypad`, `Node::modal(true)` restricts focus to the last visible,
+With `input-keypad`, `View::modal(true)` restricts focus to the last visible,
 enabled modal subtree in view-then-overlay preorder. Nested scopes restore the
 previous scope and focus on close. Restoration uses mounted identity, including
 auto-keyed nodes, and restores editing mode only if that identity remains eligible;
@@ -577,7 +628,7 @@ can return `InvalidProperty` after creation, with the same partial-tree cleanup.
 
 ## Raw escape
 
-`Node::raw` creates an opaque native subtree. The reconciler does not inspect or
+`raw` creates an opaque native subtree. The reconciler does not inspect or
 reconcile its children, and its callbacks and deletion belong to the raw widget
 implementation. The factory is `unsafe`; it must return a live direct child of
 the supplied parent that LVGL deletes with the mounted subtree. A raw node has
@@ -585,7 +636,7 @@ no update hook and is never visited by `Ui::tick`.
 
 ## Custom widget lifecycle
 
-`Node::custom` mounts a widget that owns one native subtree and has a lifecycle:
+`custom` mounts a widget that owns one native subtree and has a lifecycle:
 
 ```rust
 pub trait CustomWidget: 'static {
@@ -594,9 +645,7 @@ pub trait CustomWidget: 'static {
     fn delete(&mut self, object: &mut CustomObject);
 }
 
-impl<M> Node<M> {
-    pub fn custom(widget: impl CustomWidget) -> Self;
-}
+pub fn custom<M>(widget: impl CustomWidget) -> View<M>;
 
 impl<M: Clone + 'static> Ui<M> {
     pub fn tick(&mut self, elapsed_ms: u32) -> Result<(), UiError>;
@@ -625,7 +674,7 @@ Lifecycle rules:
   mutate only their own native subtree. Reentrant `tick`, `mount`, `drain`,
   `update` and `post` calls return `UiError::Reentrant`; a nested
   `timer_handler` returns `0`.
-- The mounted tree retains the widget instance. A new `Node::custom` value from
+- The mounted tree retains the widget instance. A new `custom` value from
   a later `App::view` is used only when the node key or custom variant changes;
   otherwise it is dropped. Keep shared application state in an `Rc`/`RefCell`
   that both the widget and the app can see, or change the key to swap
@@ -641,6 +690,24 @@ refactor.
 
 ## Migration notes
 
+### Function constructors
+
+Import `rs_lvgl_ui::prelude::*`, or import the functions and types explicitly
+from the crate root. Replace `Node::label(text)` with `label(text)`, and use
+`View<Msg>` in view signatures. `View<M>` is an alias of the existing `Node<M>`
+descriptor, so modifiers, `.map`, keys and ownership retain their behavior.
+Associated constructors on both `Node` and `View` are removed.
+
+Layouts accept their children directly: `row([first, second])`,
+`column(items.iter().map(item_view))`, and `grid(columns, rows, children)`.
+Use an empty array for an empty row or column. `.child` and `.children` remain
+available for incremental assembly. `obj()` remains a plain container, and
+`tabview(tabs, active)` / `tileview(tiles, active)` use the existing child
+builders for their pages. Optional functions keep their existing feature gates;
+`raw(factory)` still requires `unsafe` and its documented lifetime obligations.
+
+### Earlier changes
+
 Changes since the first `rs_lvgl_ui` release that can affect existing code:
 
 - `CustomObject::new` is now `unsafe`. Wrap the call in `unsafe { .. }` and
@@ -652,9 +719,9 @@ Changes since the first `rs_lvgl_ui` release that can affect existing code:
 - `Ui::drain` no longer reconciles when no message was processed. Call
   `Ui::mark_dirty()` (or `Ui::update`) after changing state outside messages.
 - Combined handlers no longer replace each other. `Handlers` is kept for source
-  compatibility but is no longer used by `Node`.
-- `Node::obj()` with a handler is no longer forced clickable (LVGL objects are
-  clickable by default); use `Node::clickable(false)` to opt out.
+  compatibility but is no longer used by `View`.
+- `obj()` with a handler is no longer forced clickable (LVGL objects are
+  clickable by default); use `View::clickable(false)` to opt out.
 - Plain containers and the root no longer carry the default theme's card style,
   and labels now inherit text color and font. Views that relied on the theme
   card look should style the container explicitly (for example

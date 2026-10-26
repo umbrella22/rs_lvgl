@@ -7,7 +7,7 @@
 //!
 //! All three hooks run on the UI thread, inside the `Ui` method that owns the
 //! LVGL access. They receive only their own [`CustomObject`] (or the parent
-//! object during creation). A widget must not reconcile `Node` children, mutate
+//! object during creation). A widget must not reconcile `View` children, mutate
 //! sibling objects, or call back into [`crate::Ui`]; the `Ui` reentrancy guard
 //! rejects such calls.
 //!
@@ -93,7 +93,7 @@ impl CustomObject {
     }
 
     /// Construct a handle for an object whose parent linkage was already
-    /// validated by `Node::raw`.
+    /// validated by `crate::raw`.
     pub(crate) fn from_raw_checked(raw: NonNull<lv_obj_t>) -> Self {
         Self {
             raw,
@@ -143,7 +143,7 @@ impl fmt::Debug for CustomObject {
     }
 }
 
-/// The factory behind [`crate::Node::raw`].
+/// The factory behind [`crate::raw`].
 ///
 /// This is the static escape hatch: it has no update or delete hook and the
 /// native subtree and its callbacks belong to the caller.
@@ -162,9 +162,9 @@ impl RawWidget {
 /// The variant decides whether the reconciler treats the node as a static raw
 /// subtree or as a lifecycle widget that [`crate::Ui::tick`] visits.
 pub enum CustomWidgetKind {
-    /// A one-shot opaque subtree created by `Node::raw`.
+    /// A one-shot opaque subtree created by `crate::raw`.
     Raw(RawWidget),
-    /// A lifecycle widget created by `Node::custom`.
+    /// A lifecycle widget created by `crate::custom`.
     Lifecycle(Box<dyn CustomWidget>),
 }
 

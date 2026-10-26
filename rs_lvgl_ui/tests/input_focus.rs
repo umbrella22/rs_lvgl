@@ -1,7 +1,7 @@
 mod common;
 
 use rs_lvgl::input_device::{key, Keypad, KeypadInputData};
-use rs_lvgl_ui::{App, Key, Node, Style, Theme, Ui, UiError};
+use rs_lvgl_ui::prelude::*;
 use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
 #[derive(Default)]
@@ -18,27 +18,27 @@ impl App for Form {
     fn update(&mut self, msg: u64) {
         self.clicks.push(msg);
     }
-    fn view(&self, _: &Theme) -> Node<u64> {
-        let mut node = Node::column()
-            .child(Node::label("not focusable"))
+    fn view(&self, _: &Theme) -> View<u64> {
+        let mut node = column([])
+            .child(label("not focusable"))
             .children(
                 self.ids
                     .iter()
-                    .map(|id| Node::button("activate").key(Key::Id(*id)).on_click(*id)),
+                    .map(|id| button("activate").key(Key::Id(*id)).on_click(*id)),
             )
-            .child(Node::button("excluded").focusable(false))
+            .child(button("excluded").focusable(false))
             .child(
-                Node::button("disabled")
+                button("disabled")
                     .key(Key::Named("disabled"))
                     .style(Style::default().disabled(self.disabled)),
             )
             .child(
-                Node::column()
+                column([])
                     .style(Style::default().hidden(self.hidden))
-                    .child(Node::button("nested").key(Key::Named("nested"))),
+                    .child(button("nested").key(Key::Named("nested"))),
             );
         if self.duplicate {
-            node = node.child(Node::column().child(Node::button("duplicate").key(Key::Id(1))));
+            node = node.child(column([]).child(button("duplicate").key(Key::Id(1))));
         }
         node
     }
@@ -176,14 +176,14 @@ fn focus_activation_is_explicit_and_unmount_releases_native_state() {
         fn update(&mut self, _: ()) {
             self.focused += 1;
         }
-        fn view(&self, _: &Theme) -> Node<()> {
-            Node::label("explicit label focus")
+        fn view(&self, _: &Theme) -> View<()> {
+            label("explicit label focus")
                 .key(Key::Named("label"))
                 .focusable(true)
                 .on_event(|e| (*e == rs_lvgl_ui::Event::Focused).then_some(()))
         }
-        fn overlay(&self, _: &Theme) -> Option<Node<()>> {
-            Some(Node::button("overlay").key(Key::Named("overlay")))
+        fn overlay(&self, _: &Theme) -> Option<View<()>> {
+            Some(button("overlay").key(Key::Named("overlay")))
         }
     }
     let mut app = Screen { focused: 0 };
@@ -213,12 +213,12 @@ fn failed_subtree_reconcile_removes_group_members_and_can_retry() {
     impl App for Fallible {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, _: &Theme) -> Node<()> {
-            let node = Node::column().child(Node::button("live").key(Key::Id(1)));
+        fn view(&self, _: &Theme) -> View<()> {
+            let node = column([]).child(button("live").key(Key::Id(1)));
             if self.0 {
                 // SAFETY: the factory returns failure without creating or
                 // retaining any native object.
-                node.child(unsafe { Node::raw(|_| None) }.key(Key::Id(2)))
+                node.child(unsafe { raw(|_| None) }.key(Key::Id(2)))
             } else {
                 node
             }

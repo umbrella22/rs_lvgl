@@ -1,6 +1,6 @@
 [package]
 name = "rs_lvgl_codegen"
-version = "0.1.0"
+version = "0.2.0"
 description = "Code generation based on LVGL source code"
 authors = ["Rafael Caricio <crates.lvgl@caric.io>", "Nia Espera <a5b6@riseup.net>"]
 readme = "README.md"

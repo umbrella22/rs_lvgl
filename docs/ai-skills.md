@@ -51,6 +51,10 @@ the matching API. Local uncommitted files are available only through local copyi
 
 ## Versioning and distribution
 
+The UI skill uses ordinary function constructors and `View<M>`. Install the skill
+from the ref matching the application's dependency so examples, features and
+resource-lifetime guidance stay aligned with the code.
+
 Co-location makes API changes, examples and skill guidance reviewable together.
 A separate repository is useful when skills need their own release cadence,
 compatibility matrix or maintainers, or cover several unrelated LVGL wrappers.

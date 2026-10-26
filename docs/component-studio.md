@@ -1,5 +1,8 @@
 # Component studio
 
+The [component preview](../website/docs/en/studio.mdx) compiles the same views to WebAssembly with a canvas display, native input devices and a browser frame loop. All nine categories run without a local compiler service. See the [site build guide](../website/README.md).
+
+
 The studio is an original native LVGL application with nine categories, shared
 application state and light/dark themes. It uses synthetic device data and local
 assets; it needs no network service or application filesystem access.
@@ -8,7 +11,7 @@ assets; it needs no network service or application filesystem access.
 cargo run -p rs_lvgl_ui --example studio --features showcase
 ```
 
-The 1280 x 860 window uses the same `App`, `Node` and `Ui` APIs as downstream
+The 1280 x 860 window uses the same `App`, `View` and `Ui` APIs as downstream
 applications. The layout reserves space around focus outlines and uses explicit
 flat button styles. Sidebar navigation changes keyed page trees. Sliders,
 switches, text fields, selections and overlays update a shared Rust state.
@@ -25,7 +28,7 @@ switches, text fields, selections and overlays update a shared Rust state.
 | Media & codes | Image, ImageButton, AnimImage, GIF, Lottie, QRCode, Barcode | Retained images, pressed image, native animation timers, encoded data |
 | Canvas & motion | Canvas, ArcLabel, custom lifecycle widget, native Animation | Lines/rectangles/text/pixels, curved text, reversible motion, tick-driven opacity |
 | Composition | Panel, List/ListItem, NavState, FileExplorer, Dialog, Toasts, layers, Msgbox | Push/back, sample file selection, modal focus, dismissal and toast expiry |
-| Native extras | Native List, Menu, Window via `Node::raw` | Native menu page/back, descendant click events observed by a typed parent |
+| Native extras | Native List, Menu, Window via `raw` | Native menu page/back, descendant click events observed by a typed parent |
 
 The table covers the current declarative widget/component surface and the three
 raw widgets retained by `widgets-all`. It is not a claim to expose every LVGL C
@@ -74,3 +77,11 @@ separate smoke test; neither layer establishes physical-board acceptance.
 ![Native media, codes and Lottie](images/studio-media.png)
 
 ![Dark theme](images/studio-dark.png)
+
+## Editable interactive examples
+
+The documentation playground accepts `fn app() -> impl rs_lvgl_ui::App`. Its switch
+example includes state, messages, `update` and `view`; clicking the rendered switch
+updates both native pixels and application text. Bundled presets work on static
+hosting. Edited Rust uses the local compiler and then runs in a browser Worker.
+See the [playground guide](../website/README.md#interactive-playground).

@@ -9,7 +9,7 @@
 //! enum Page { Root, Wifi }
 //! enum Msg { Nav(NavMsg<Page>), /* ... */ }
 //!
-//! fn view(&self, theme: &Theme) -> Node<Msg> {
+//! fn view(&self, theme: &Theme) -> View<Msg> {
 //!     let page = match self.nav.current() {
 //!         Page::Root => list::list(theme, [
 //!             nav::link(theme, "Wi-Fi", Msg::Nav(NavMsg::Push(Page::Wifi))),
@@ -20,13 +20,14 @@
 //! }
 //! ```
 
+use crate::View;
 use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
 
 use super::list::ListItem;
 use super::panel::icon_button;
-use crate::node::{FlexAlign, Key, LabelLongMode, Node, Size, WidgetKind};
+use crate::node::{FlexAlign, Key, LabelLongMode, Size, WidgetKind};
 use crate::symbol;
 use crate::theme::{Style, Theme};
 
@@ -103,7 +104,7 @@ impl<P: Clone> NavState<P> {
 }
 
 /// A list row that navigates: text with a chevron.
-pub fn link<M: Clone + 'static>(theme: &Theme, text: impl Into<String>, msg: M) -> Node<M> {
+pub fn link<M: Clone + 'static>(theme: &Theme, text: impl Into<String>, msg: M) -> View<M> {
     ListItem::new(text).chevron(true).on_click(msg).view(theme)
 }
 
@@ -116,10 +117,10 @@ pub fn view<M: Clone + 'static, P: Clone>(
     state: &NavState<P>,
     theme: &Theme,
     title: impl Into<String>,
-    page: Node<M>,
+    page: View<M>,
     back: M,
-) -> Node<M> {
-    let mut header = Node::row()
+) -> View<M> {
+    let mut header = crate::row([])
         .key(Key::Named("nav-header"))
         .style(
             Style::default()
@@ -133,14 +134,14 @@ pub fn view<M: Clone + 'static, P: Clone>(
         header = header.child(icon_button(theme, symbol::LEFT, back).key(Key::Named("back")));
     }
     header = header.child(
-        Node::new(WidgetKind::Label {
+        View::new(WidgetKind::Label {
             text: title.into(),
             long_mode: LabelLongMode::Dots,
         })
         .key(Key::Named("title"))
         .style(Style::title(theme).flex_grow(1)),
     );
-    let body = Node::column()
+    let body = crate::column([page])
         .key(Key::Id(state.depth() as u64))
         .style(
             Style::default()
@@ -148,15 +149,11 @@ pub fn view<M: Clone + 'static, P: Clone>(
                 .pad(8)
                 .gap(8)
                 .flex_grow(1),
-        )
-        .child(page);
-    Node::column()
-        .style(
-            Style::screen(theme)
-                .fg(theme.text)
-                .font(theme.body_font)
-                .gap(0),
-        )
-        .child(header)
-        .child(body)
+        );
+    crate::column([header, body]).style(
+        Style::screen(theme)
+            .fg(theme.text)
+            .font(theme.body_font)
+            .gap(0),
+    )
 }

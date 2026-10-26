@@ -2,7 +2,7 @@
 //!
 //! `rs_lvgl_ui` adds a retained, declarative composition layer above the
 //! imperative [`rs_lvgl`] crate. An application describes a screen as a
-//! [`Node<Msg>`] tree, changes one application state value through messages,
+//! [`View<Msg>`] tree, changes one application state value through messages,
 //! and lets [`Ui`] create, update, reorder and delete the native LVGL objects.
 //!
 //! # Runtime rule
@@ -14,48 +14,35 @@
 //!
 //! ```text
 //! platform event -> callback -> EventQueue -> Ui::drain -> App::update
-//!   -> App::view -> Node tree -> reconciler -> LVGL objects
+//!   -> App::view -> View tree -> reconciler -> LVGL objects
 //! ```
 //!
 //! # Example
 //!
-//! ```ignore
-//! use rs_lvgl_ui::{App, Key, Node, Style, Theme, Ui};
+//! ```
+//! use rs_lvgl_ui::prelude::*;
 //!
 //! #[derive(Clone)]
-//! enum Msg {
-//!     SpeedChanged(i32),
-//!     Save,
-//! }
+//! enum Msg { Increment }
 //!
-//! struct Settings {
-//!     speed: i32,
-//! }
+//! struct Counter { value: u32 }
 //!
-//! impl App for Settings {
+//! impl App for Counter {
 //!     type Msg = Msg;
 //!
-//!     fn update(&mut self, msg: Msg) {
-//!         match msg {
-//!             Msg::SpeedChanged(value) => self.speed = value,
-//!             Msg::Save => {}
-//!         }
+//!     fn update(&mut self, _: Msg) {
+//!         self.value += 1;
 //!     }
 //!
-//!     fn view(&self, theme: &Theme) -> Node<Msg> {
-//!         Node::column()
-//!             .gap(12)
-//!             .child(Node::label("Fan").style(Style::title(theme)))
-//!             .child(
-//!                 Node::slider(0, 100, self.speed)
-//!                     .key(Key::Named("speed"))
-//!                     .on_value_changed(Msg::SpeedChanged),
-//!             )
-//!             .child(
-//!                 Node::button("Save")
-//!                     .key(Key::Named("save"))
-//!                     .on_click(Msg::Save),
-//!             )
+//!     fn view(&self, theme: &Theme) -> View<Msg> {
+//!         column([
+//!             label(format!("Count: {}", self.value)),
+//!             button("Add one")
+//!                 .key(Key::Named("increment"))
+//!                 .style(Style::accent(theme))
+//!                 .on_click(Msg::Increment),
+//!         ])
+//!         .style(Style::default().gap(12))
 //!     }
 //! }
 //! ```
@@ -96,6 +83,8 @@
 extern crate alloc;
 
 mod app;
+mod constructors;
+pub use constructors::*;
 #[cfg(feature = "components")]
 pub mod components;
 mod custom;
@@ -104,6 +93,7 @@ mod events;
 mod focus;
 #[cfg(feature = "input-gridnav")]
 mod gridnav;
+pub mod prelude;
 #[cfg(feature = "input-gridnav")]
 pub use gridnav::{GridNavigation, NavigationAxis};
 mod extensions;
@@ -139,6 +129,14 @@ pub use animation::{Animation, AnimationProperty, Easing, StyleTransition, Trans
 mod style_properties;
 pub use style_properties::{BlendMode, GradientDirection, TextDecoration};
 pub use theme::{Style, Theme};
+
+/// A declarative view description returned by [`App::view`] and component functions.
+///
+/// [`Node`] is the backing descriptor type; `View` is an alias for that same type.
+/// Use ordinary
+/// constructors such as [`column()`], [`label()`] and [`button()`] to build views;
+/// constructing a view does not create any native LVGL objects.
+pub type View<M> = Node<M>;
 
 // Re-exported so custom widgets can implement [`CustomWidget`] without adding
 // a direct `rs_lvgl` dependency.

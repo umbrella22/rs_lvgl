@@ -1,7 +1,7 @@
 mod common;
 
 use common::{init, lock, screen};
-use rs_lvgl_ui::{App, Key, Node, Theme, Ui};
+use rs_lvgl_ui::prelude::*;
 
 struct LifecycleApp {
     items: Vec<u64>,
@@ -12,11 +12,11 @@ impl App for LifecycleApp {
 
     fn update(&mut self, _: ()) {}
 
-    fn view(&self, _: &Theme) -> Node<()> {
-        Node::column().children(
+    fn view(&self, _: &Theme) -> View<()> {
+        column([]).children(
             self.items
                 .iter()
-                .map(|id| Node::button(format!("item {id}")).key(Key::Id(*id))),
+                .map(|id| button(format!("item {id}")).key(Key::Id(*id))),
         )
     }
 }

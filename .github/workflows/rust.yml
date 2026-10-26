@@ -78,6 +78,8 @@ jobs:
           for capability in input-keypad input-gridnav widget-canvas widget-qrcode widget-barcode widget-gif widget-lottie widget-ime-pinyin font-cjk-14 font-cjk-16; do
             cargo check -p rs_lvgl_ui --locked --no-default-features --features "alloc,$capability" --lib
           done
+      - name: Check the public view API
+        run: python3 scripts/check-ui-api.py --locked --artifacts target/ui-api-audit
       - name: Keep images and native diagnostics
         if: always()
         uses: actions/upload-artifact@v7
@@ -88,6 +90,9 @@ jobs:
             target/ui-audit/*.json
             target/ui-audit/images/
             target/studio-audit/
+            target/ui-api-audit/*.log
+            target/ui-api-audit/*.json
+            target/ui-api-audit/*.rs
           if-no-files-found: warn
           retention-days: 7
 

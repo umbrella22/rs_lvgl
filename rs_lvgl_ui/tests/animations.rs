@@ -1,8 +1,5 @@
 mod common;
-use rs_lvgl_ui::{
-    Animation, AnimationProperty, App, Node, State, Style, StyleTransition, Theme,
-    TransitionProperty, Ui, UiError,
-};
+use rs_lvgl_ui::prelude::*;
 
 fn advance(ms: u32) {
     rs_lvgl::tick_inc(core::time::Duration::from_millis(ms.into()));
@@ -17,7 +14,7 @@ struct Motion {
 impl App for Motion {
     type Msg = ();
     fn update(&mut self, _: ()) {}
-    fn view(&self, _: &Theme) -> Node<()> {
+    fn view(&self, _: &Theme) -> View<()> {
         let mut style = Style::default()
             .outline_width(0)
             .width(rs_lvgl_ui::Size::Px(32))
@@ -29,7 +26,7 @@ impl App for Motion {
                 100,
             ));
         }
-        let mut node = Node::obj()
+        let mut node = obj()
             .style(style)
             .state_style(State::PRESSED, Style::default().outline_width(10));
         if let Some(animation) = self.animation {

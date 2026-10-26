@@ -4,13 +4,11 @@
 mod common;
 
 use core::ptr::{self, NonNull};
+use rs_lvgl_ui::prelude::*;
 use std::ffi::CStr;
 
 use common::{app_root, child, init, lock};
 use rs_lvgl_sys::lv_obj_t;
-use rs_lvgl_ui::{
-    App, CalendarDate, Color, ImageSource, Node, ScrollDir, Span, Theme, Tile, Ui, UiError,
-};
 
 #[derive(Clone, Debug, PartialEq)]
 enum Msg {
@@ -18,14 +16,14 @@ enum Msg {
 }
 
 /// A view built from a function of a small state value.
-struct View {
+struct TestApp {
     state: u32,
-    view: fn(u32) -> Node<Msg>,
+    view: fn(u32) -> View<Msg>,
     received: Vec<Msg>,
 }
 
-impl View {
-    fn new(view: fn(u32) -> Node<Msg>) -> Self {
+impl TestApp {
+    fn new(view: fn(u32) -> View<Msg>) -> Self {
         Self {
             state: 0,
             view,
@@ -34,19 +32,19 @@ impl View {
     }
 }
 
-impl App for View {
+impl App for TestApp {
     type Msg = Msg;
 
     fn update(&mut self, msg: Msg) {
         self.received.push(msg);
     }
 
-    fn view(&self, _: &Theme) -> Node<Msg> {
-        Node::column().child((self.view)(self.state))
+    fn view(&self, _: &Theme) -> View<Msg> {
+        column([]).child((self.view)(self.state))
     }
 }
 
-fn mount(app: &View) -> (Ui<Msg>, NonNull<lv_obj_t>) {
+fn mount(app: &TestApp) -> (Ui<Msg>, NonNull<lv_obj_t>) {
     let display = init();
     let mut ui = Ui::new(&display, Theme::dark()).unwrap();
     ui.mount(app).unwrap();
@@ -86,16 +84,16 @@ fn tiles() -> [Tile; 3] {
 #[test]
 fn tileview_active_tile_is_controlled_and_reported() {
     let _guard = lock();
-    let mut app = View::new(|state| {
+    let mut app = TestApp::new(|state| {
         let active = state.min(2);
         let mut tiles = tiles().to_vec();
         if state == 9 {
             tiles[2] = Tile::new(0, 1, ScrollDir::TOP);
         }
-        Node::tileview(tiles, active)
-            .child(Node::label("a"))
-            .child(Node::label("b"))
-            .child(Node::label("c"))
+        tileview(tiles, active)
+            .child(label("a"))
+            .child(label("b"))
+            .child(label("c"))
             .on_value_changed(Msg::Value)
     });
     app.state = 1;
@@ -134,15 +132,15 @@ fn tileview_active_tile_is_controlled_and_reported() {
 #[test]
 fn msgbox_places_title_text_children_and_reports_footer_clicks() {
     let _guard = lock();
-    let mut app = View::new(|state| {
-        let mut node = Node::msgbox(if state == 0 { "hello" } else { "bye" })
+    let mut app = TestApp::new(|state| {
+        let mut node = msgbox(if state == 0 { "hello" } else { "bye" })
             .msgbox_title(if state == 0 { "Title" } else { "Other" })
             .msgbox_buttons(if state == 0 {
                 ["OK", "Cancel"]
             } else {
                 ["Yes", "No"]
             })
-            .child(Node::label("extra"))
+            .child(label("extra"))
             .on_value_changed(Msg::Value);
         if state == 2 {
             node = node.msgbox_buttons(["Only"]);
@@ -217,8 +215,8 @@ fn msgbox_places_title_text_children_and_reports_footer_clicks() {
 #[test]
 fn calendar_shows_month_marks_dates_and_reports_pressed_date() {
     let _guard = lock();
-    let mut app = View::new(|state| {
-        let mut node = Node::calendar(2026, if state == 0 { 10 } else { 11 })
+    let mut app = TestApp::new(|state| {
+        let mut node = calendar(2026, if state == 0 { 10 } else { 11 })
             .highlighted([
                 CalendarDate::new(2026, 10, 3),
                 CalendarDate::new(2026, 10, 9),
@@ -294,10 +292,10 @@ fn calendar_shows_month_marks_dates_and_reports_pressed_date() {
 #[test]
 fn spans_reuse_native_spans_and_restore_styles() {
     let _guard = lock();
-    let mut app = View::new(|state| match state {
-        0 => Node::spans([Span::new("a").color(Color::rgb(255, 0, 0)), Span::new("b")]),
-        1 => Node::spans([Span::new("x"), Span::new("b")]),
-        _ => Node::spans([Span::new("one")]),
+    let mut app = TestApp::new(|state| match state {
+        0 => spans([Span::new("a").color(Color::rgb(255, 0, 0)), Span::new("b")]),
+        1 => spans([Span::new("x"), Span::new("b")]),
+        _ => spans([Span::new("one")]),
     });
     let (mut ui, group) = mount(&app);
     let raw = group.as_ptr();
@@ -348,8 +346,8 @@ static PIXELS_C: [u8; 8] = [0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88];
 #[test]
 fn image_button_keeps_generated_descriptors_alive() {
     let _guard = lock();
-    let mut app = View::new(|state| {
-        let node = Node::image_button(ImageSource::rgb565(2, 2, &PIXELS_A));
+    let mut app = TestApp::new(|state| {
+        let node = image_button(ImageSource::rgb565(2, 2, &PIXELS_A));
         if state == 0 {
             node.pressed_image(ImageSource::rgb565(2, 2, &PIXELS_B))
         } else {
@@ -392,9 +390,9 @@ fn image_button_keeps_generated_descriptors_alive() {
 #[test]
 fn anim_image_swaps_frames_without_dangling_pointers() {
     let _guard = lock();
-    let mut app = View::new(|state| {
+    let mut app = TestApp::new(|state| {
         if state == 0 {
-            Node::anim_image(
+            anim_image(
                 [
                     ImageSource::rgb565(2, 2, &PIXELS_A),
                     ImageSource::rgb565(2, 2, &PIXELS_B),
@@ -402,7 +400,7 @@ fn anim_image_swaps_frames_without_dangling_pointers() {
                 100,
             )
         } else {
-            Node::anim_image([ImageSource::rgb565(2, 2, &PIXELS_C)], 50).repeat(3)
+            anim_image([ImageSource::rgb565(2, 2, &PIXELS_C)], 50).repeat(3)
         }
     });
     let (mut ui, image) = mount(&app);
@@ -445,11 +443,11 @@ fn anim_image_swaps_frames_without_dangling_pointers() {
 #[test]
 fn arc_label_updates_geometry_in_place() {
     let _guard = lock();
-    let mut app = View::new(|state| {
+    let mut app = TestApp::new(|state| {
         if state == 0 {
-            Node::arc_label("round", 20, 180, 90)
+            arc_label("round", 20, 180, 90)
         } else {
-            Node::arc_label("again", 25, 90, 180)
+            arc_label("again", 25, 90, 180)
         }
     });
     let (mut ui, label) = mount(&app);
@@ -475,32 +473,32 @@ fn arc_label_updates_geometry_in_place() {
 #[test]
 fn invalid_batch_two_properties_are_rejected() {
     let _guard = lock();
-    let cases: [fn(u32) -> Node<Msg>; 9] = [
+    let cases: [fn(u32) -> View<Msg>; 9] = [
         // Tile count differs from the child count.
-        |_| Node::tileview(tiles(), 0).child(Node::label("a")),
+        |_| tileview(tiles(), 0).child(label("a")),
         // Active tile out of range.
-        |_| Node::tileview([Tile::new(0, 0, ScrollDir::NONE)], 1).child(Node::label("a")),
+        |_| tileview([Tile::new(0, 0, ScrollDir::NONE)], 1).child(label("a")),
         // Duplicate tile position.
         |_| {
-            Node::tileview(
+            tileview(
                 [
                     Tile::new(0, 0, ScrollDir::NONE),
                     Tile::new(0, 0, ScrollDir::NONE),
                 ],
                 0,
             )
-            .child(Node::label("a"))
-            .child(Node::label("b"))
+            .child(label("a"))
+            .child(label("b"))
         },
-        |_| Node::msgbox("a\0b"),
-        |_| Node::calendar(2026, 13),
-        |_| Node::calendar(2026, 1).highlighted([CalendarDate::new(2026, 2, 0)]),
-        |_| Node::anim_image([], 100),
-        |_| Node::anim_image([ImageSource::rgb565(2, 2, &PIXELS_A)], 0),
-        |_| Node::arc_label("a", 10, 0, 400),
+        |_| msgbox("a\0b"),
+        |_| calendar(2026, 13),
+        |_| calendar(2026, 1).highlighted([CalendarDate::new(2026, 2, 0)]),
+        |_| anim_image([], 100),
+        |_| anim_image([ImageSource::rgb565(2, 2, &PIXELS_A)], 0),
+        |_| arc_label("a", 10, 0, 400),
     ];
     for case in cases {
-        let app = View::new(case);
+        let app = TestApp::new(case);
         let display = init();
         let mut ui = Ui::new(&display, Theme::dark()).unwrap();
         assert_eq!(ui.mount(&app).unwrap_err(), UiError::InvalidProperty);

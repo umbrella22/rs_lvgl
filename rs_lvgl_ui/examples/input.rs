@@ -3,9 +3,7 @@
 //! Set INPUT_FRAMES for a bounded run; Tab changes focus and Enter activates.
 
 use core::ptr::NonNull;
-use rs_lvgl_ui::{
-    App, Key, Node, ScrollDir, ScrollOffset, ScrollbarMode, Size, State, Style, Theme, Ui,
-};
+use rs_lvgl_ui::prelude::*;
 use std::time::{Duration, Instant};
 
 #[derive(Clone)]
@@ -38,66 +36,60 @@ impl App for InputDemo {
         }
         println!("count={} {}", self.count, self.last);
     }
-    fn view(&self, theme: &Theme) -> Node<Msg> {
+    fn view(&self, theme: &Theme) -> View<Msg> {
         let focus = Style::default()
             .outline_width(2)
             .outline_pad(3)
             .outline_color(theme.accent)
             .outline_opacity(255);
-        Node::column()
-            .style(Style::screen(theme).pad(20).gap(12))
-            .child(Node::label("Touch + keys").style(Style::title(theme)))
-            .child(
-                Node::label("Click Add, or use Tab and Enter. Drag the list to scroll.")
-                    .style(Style::body(theme)),
+        column([
+            label("Touch + keys").style(Style::title(theme)),
+            label("Click Add, or use Tab and Enter. Drag the list to scroll.")
+                .style(Style::body(theme)),
+            label(format!("Count: {}", self.count)).style(Style::title(theme)),
+            row([])
+                // Reserve the outline width, gap and one antialiasing pixel.
+                .style(Style::default().pad(6).gap(12))
+                .child(
+                    button("Add +1")
+                        .key(Key::Named("add"))
+                        .style(Style::default().shadow_width(0).outline_width(0))
+                        .state_style(State::FOCUSED, focus)
+                        .state_style(State::FOCUS_KEY, focus)
+                        .on_click(Msg::Add)
+                        .on_key(Msg::Key),
+                )
+                .child(
+                    button("Reset")
+                        .key(Key::Named("reset"))
+                        .style(Style::default().shadow_width(0).outline_width(0))
+                        .state_style(State::FOCUSED, focus)
+                        .state_style(State::FOCUS_KEY, focus)
+                        .on_click(Msg::Reset)
+                        .on_key(Msg::Key),
+                ),
+            column(
+                (1..=8).map(|n| label(format!("Scrollable item {n}")).style(Style::body(theme))),
             )
-            .child(Node::label(format!("Count: {}", self.count)).style(Style::title(theme)))
-            .child(
-                Node::row()
-                    // Reserve the outline width, gap and one antialiasing pixel.
-                    .style(Style::default().pad(6).gap(12))
-                    .child(
-                        Node::button("Add +1")
-                            .key(Key::Named("add"))
-                            .style(Style::default().shadow_width(0).outline_width(0))
-                            .state_style(State::FOCUSED, focus)
-                            .state_style(State::FOCUS_KEY, focus)
-                            .on_click(Msg::Add)
-                            .on_key(Msg::Key),
-                    )
-                    .child(
-                        Node::button("Reset")
-                            .key(Key::Named("reset"))
-                            .style(Style::default().shadow_width(0).outline_width(0))
-                            .state_style(State::FOCUSED, focus)
-                            .state_style(State::FOCUS_KEY, focus)
-                            .on_click(Msg::Reset)
-                            .on_key(Msg::Key),
-                    ),
+            .style(
+                Style::surface(theme)
+                    .width(Size::Percent(100))
+                    .height(Size::Px(80))
+                    .pad(8)
+                    .gap(8)
+                    .outline_width(0),
             )
-            .child(
-                Node::column()
-                    .style(
-                        Style::surface(theme)
-                            .width(Size::Percent(100))
-                            .height(Size::Px(80))
-                            .pad(8)
-                            .gap(8)
-                            .outline_width(0),
-                    )
-                    .state_style(State::FOCUSED, focus)
-                    .state_style(State::FOCUS_KEY, focus)
-                    .scroll_dir(ScrollDir::VER)
-                    .focusable(true)
-                    .scrollbar_mode(ScrollbarMode::Auto)
-                    .scroll_momentum(true)
-                    .scroll_elastic(true)
-                    .on_scroll(Msg::Scroll)
-                    .children((1..=8).map(|n| {
-                        Node::label(format!("Scrollable item {n}")).style(Style::body(theme))
-                    })),
-            )
-            .child(Node::label(&self.last).style(Style::body(theme)))
+            .state_style(State::FOCUSED, focus)
+            .state_style(State::FOCUS_KEY, focus)
+            .scroll_dir(ScrollDir::VER)
+            .focusable(true)
+            .scrollbar_mode(ScrollbarMode::Auto)
+            .scroll_momentum(true)
+            .scroll_elastic(true)
+            .on_scroll(Msg::Scroll),
+            label(&self.last).style(Style::body(theme)),
+        ])
+        .style(Style::screen(theme).pad(20).gap(12))
     }
 }
 

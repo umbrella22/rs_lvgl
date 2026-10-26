@@ -1,8 +1,6 @@
 mod common;
 use rs_lvgl::input_device::{key, Keypad, KeypadInputData};
-use rs_lvgl_ui::{
-    App, GridNavigation, GridTrack, Key, NavigationAxis, Node, Size, Style, Theme, Ui, UiError,
-};
+use rs_lvgl_ui::prelude::*;
 use std::{cell::Cell, rc::Rc};
 
 struct Keys {
@@ -56,7 +54,7 @@ fn file_entries_accept_keys_and_preserve_focus_across_reorder() {
         fn update(&mut self, id: u64) {
             self.selected.push(id);
         }
-        fn view(&self, theme: &Theme) -> Node<u64> {
+        fn view(&self, theme: &Theme) -> View<u64> {
             file_explorer::view(
                 theme,
                 "/samples",
@@ -116,15 +114,16 @@ impl App for Board {
     fn update(&mut self, id: u64) {
         self.clicks.push(id);
     }
-    fn view(&self, _: &Theme) -> Node<u64> {
-        let mut grid = Node::grid(
+    fn view(&self, _: &Theme) -> View<u64> {
+        let mut grid = grid(
             [GridTrack::Px(25), GridTrack::Px(25)],
             [GridTrack::Px(25), GridTrack::Px(25)],
+            [],
         )
         .key(Key::Named("grid"))
         .style(Style::neutral().width(Size::Px(55)).height(Size::Px(55)))
         .children(self.ids.iter().enumerate().map(|(i, id)| {
-            Node::button("X")
+            button("X")
                 .key(Key::Id(*id))
                 .grid_cell((i % 2) as u16, (i / 2) as u16, 1, 1)
                 .style(
@@ -140,17 +139,15 @@ impl App for Board {
         if let Some(config) = self.config {
             grid = grid.grid_navigation(config);
         }
-        Node::column().child(grid).child(
-            Node::button("Outside")
-                .key(Key::Named("outside"))
-                .on_click(99),
-        )
+        column([])
+            .child(grid)
+            .child(button("Outside").key(Key::Named("outside")).on_click(99))
     }
-    fn overlay(&self, _: &Theme) -> Option<Node<u64>> {
+    fn overlay(&self, _: &Theme) -> Option<View<u64>> {
         self.modal.then(|| {
-            Node::column()
+            column([])
                 .modal(true)
-                .child(Node::button("Close").key(Key::Named("close")))
+                .child(button("Close").key(Key::Named("close")))
         })
     }
 }
@@ -280,29 +277,29 @@ struct Modals {
 impl App for Modals {
     type Msg = ();
     fn update(&mut self, _: ()) {}
-    fn view(&self, _: &Theme) -> Node<()> {
-        let mut root = Node::column();
+    fn view(&self, _: &Theme) -> View<()> {
+        let mut root = column([]);
         if !self.remove_origin {
-            root = root.child(Node::button("Auto origin"));
+            root = root.child(button("Auto origin"));
         }
-        root.child(Node::button("Fallback").key(Key::Named("fallback")))
+        root.child(button("Fallback").key(Key::Named("fallback")))
     }
-    fn overlay(&self, _: &Theme) -> Option<Node<()>> {
+    fn overlay(&self, _: &Theme) -> Option<View<()>> {
         if self.depth == 0 {
             return None;
         }
-        let mut scope = Node::column()
+        let mut scope = column([])
             .key(Key::Id(10))
             .modal(true)
             .style(Style::neutral().hidden(self.hidden).disabled(self.disabled))
-            .child(Node::button("First").key(Key::Id(11)))
-            .child(Node::button("Second").key(Key::Id(12)));
+            .child(button("First").key(Key::Id(11)))
+            .child(button("Second").key(Key::Id(12)));
         if self.depth == 2 {
             scope = scope.child(
-                Node::column()
+                column([])
                     .key(Key::Id(20))
                     .modal(true)
-                    .child(Node::button("Nested").key(Key::Id(21))),
+                    .child(button("Nested").key(Key::Id(21))),
             );
         }
         Some(scope.map(|()| ()))
@@ -393,23 +390,23 @@ fn hidden_disabled_modal_is_ignored_and_focus_activation_stays_explicit() {
 #[test]
 fn dialog_marks_modal_and_invalid_grid_scope_preserves_existing_tree() {
     use rs_lvgl_ui::components::dialog::Dialog;
-    struct View(u8);
-    impl App for View {
+    struct TestApp(u8);
+    impl App for TestApp {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, _: &Theme) -> Node<()> {
+        fn view(&self, _: &Theme) -> View<()> {
             match self.0 {
-                1 => Node::button("Invalid").grid_navigation(GridNavigation::default()),
-                2 => Node::row()
+                1 => button("Invalid").grid_navigation(GridNavigation::default()),
+                2 => row([])
                     .grid_navigation(GridNavigation::default())
-                    .child(Node::row().grid_navigation(GridNavigation::default())),
-                3 => Node::row()
+                    .child(row([]).grid_navigation(GridNavigation::default())),
+                3 => row([])
                     .grid_navigation(GridNavigation::default())
-                    .child(Node::row().modal(true)),
-                _ => Node::button("Behind").key(Key::Named("behind")),
+                    .child(row([]).modal(true)),
+                _ => button("Behind").key(Key::Named("behind")),
             }
         }
-        fn overlay(&self, theme: &Theme) -> Option<Node<()>> {
+        fn overlay(&self, theme: &Theme) -> Option<View<()>> {
             Some(Dialog::new("Confirm").button("OK", ()).view(theme))
         }
     }
@@ -417,13 +414,13 @@ fn dialog_marks_modal_and_invalid_grid_scope_preserves_existing_tree() {
     let display = common::init();
     let keys = Keys::new(&display);
     let mut ui = Ui::new(&display, common::theme()).unwrap();
-    ui.mount(&View(0)).unwrap();
+    ui.mount(&TestApp(0)).unwrap();
     let root = common::app_root();
     ui.bind_keypad(&keys.device).unwrap();
     assert_eq!(keys.count(), 1);
     assert!(!ui.focus(Key::Named("behind")).unwrap());
     for invalid in 1..=3 {
-        assert_eq!(ui.update(&View(invalid)), Err(UiError::InvalidProperty));
+        assert_eq!(ui.update(&TestApp(invalid)), Err(UiError::InvalidProperty));
         assert_eq!(common::app_root(), root);
     }
 }

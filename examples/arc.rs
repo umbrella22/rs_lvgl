@@ -1,5 +1,5 @@
 //! Run: `cargo run -p rs_lvgl_ui --example arc --features simulator`
-use rs_lvgl_ui::{App, Node, Part, Size, Style, Theme};
+use rs_lvgl_ui::prelude::*;
 mod support;
 
 #[derive(Clone)]
@@ -23,7 +23,7 @@ impl App for Gauge {
             Msg::Step => (self.value + 10) % 101,
         };
     }
-    fn view(&self, theme: &Theme) -> Node<Msg> {
+    fn view(&self, theme: &Theme) -> View<Msg> {
         support::frame(
             theme,
             "Arc control",
@@ -32,7 +32,7 @@ impl App for Gauge {
                 .child(
                     support::row()
                         .child(
-                            Node::arc(0, 100, self.value)
+                            arc(0, 100, self.value)
                                 .style(
                                     Style::default()
                                         .width(Size::Px(176))

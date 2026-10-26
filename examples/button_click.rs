@@ -1,5 +1,5 @@
 //! Run: `cargo run -p rs_lvgl_ui --example button_click --features simulator`
-use rs_lvgl_ui::{App, Node, Theme};
+use rs_lvgl_ui::{App, Theme, View};
 mod support;
 
 #[derive(Clone)]
@@ -15,7 +15,7 @@ impl App for Counter {
     fn update(&mut self, _: Msg) {
         self.count += 1;
     }
-    fn view(&self, theme: &Theme) -> Node<Msg> {
+    fn view(&self, theme: &Theme) -> View<Msg> {
         support::frame(
             theme,
             "Button clicks",

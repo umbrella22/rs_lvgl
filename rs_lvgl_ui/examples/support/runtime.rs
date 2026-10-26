@@ -1,5 +1,5 @@
 //! The native SDL backend may delete its display inside the timer handler.
-use rs_lvgl_ui::{App, DrainStats, Ui, UiError};
+use rs_lvgl_ui::prelude::*;
 
 pub fn frame<A: App>(
     ui: &mut Ui<A::Msg>,
@@ -18,7 +18,7 @@ pub fn frame<A: App>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rs_lvgl_ui::{Node, Theme};
+    use rs_lvgl_ui::{Theme, View};
 
     #[test]
     fn closing_during_dispatch_does_not_drain_a_queued_update() {
@@ -32,13 +32,13 @@ mod tests {
             fn update(&mut self, _: ()) {
                 self.0 += 1;
             }
-            fn view(&self, _: &Theme) -> Node<()> {
+            fn view(&self, _: &Theme) -> View<()> {
                 // A red oracle stops before rendering touches freed pointers.
                 assert!(
                     !unsafe { rs_lvgl_sys::lv_display_get_default() }.is_null(),
                     "queued update rendered after native display deletion"
                 );
-                Node::label("close regression")
+                label("close regression")
             }
         }
         let mut app = AppState(0);

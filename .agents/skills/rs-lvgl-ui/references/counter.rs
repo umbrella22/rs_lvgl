@@ -1,6 +1,7 @@
-//! Memory-display example for the rs_lvgl workspace API.
-//! Dependencies: lvgl (alloc), rs_lvgl_ui (alloc); no SDL or optional widget needed.
-use rs_lvgl_ui::{App, Key, Node, Style, Theme, Ui};
+//! Memory-display example for rs_lvgl 0.2.
+//! Dependencies: rs_lvgl 0.2 (alloc), rs_lvgl_ui 0.2 (alloc).
+//! No SDL or optional widget is needed.
+use rs_lvgl_ui::prelude::*;
 
 #[derive(Clone)]
 enum Msg {
@@ -18,16 +19,15 @@ impl App for Counter {
         self.value += 1;
     }
 
-    fn view(&self, theme: &Theme) -> Node<Msg> {
-        Node::column()
-            .style(Style::default().gap(12))
-            .child(Node::label(format!("Count: {}", self.value)))
-            .child(
-                Node::button("Add one")
-                    .key(Key::Named("increment"))
-                    .style(Style::accent(theme))
-                    .on_click(Msg::Increment),
-            )
+    fn view(&self, theme: &Theme) -> View<Msg> {
+        column([
+            label(format!("Count: {}", self.value)),
+            button("Add one")
+                .key(Key::Named("increment"))
+                .style(Style::accent(theme))
+                .on_click(Msg::Increment),
+        ])
+        .style(Style::default().gap(12))
     }
 }
 

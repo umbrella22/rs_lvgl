@@ -2,6 +2,8 @@
 
 [English](https://github.com/umbrella22/rs_lvgl/blob/main/README.md) · **简体中文**
 
+[文档](https://umbrella22.github.io/rs_lvgl/) · [快速开始](https://umbrella22.github.io/rs_lvgl/guide/getting-started.html) · [组件预览](https://umbrella22.github.io/rs_lvgl/studio.html) · [演练场](https://umbrella22.github.io/rs_lvgl/playground.html)
+
 面向 [LVGL](https://lvgl.io/) 9.6 的 Rust 绑定与声明式 UI 库。
 
 可以直接使用 Rust 封装的 LVGL 控件，也可以用 `rs_lvgl_ui` 描述界面，通过消息更新状态。
@@ -10,6 +12,9 @@
 ![rs_lvgl 组件工作台](https://raw.githubusercontent.com/umbrella22/rs_lvgl/main/docs/images/studio-overview.png)
 
 ## 运行示例
+
+[组件预览](https://umbrella22.github.io/rs_lvgl/studio.html)使用 WebAssembly 运行同一套 Rust/LVGL 视图，支持输入和动画。
+也可以在[演练场](https://umbrella22.github.io/rs_lvgl/playground.html)修改示例，直接在浏览器中操作运行结果。
 
 组件工作台包含基础控件、图表、文本输入、布局、多媒体和导航，支持明暗主题。
 也可以浏览[组件图集](https://github.com/umbrella22/rs_lvgl/blob/main/docs/component-studio.md)或从[小型示例](https://github.com/umbrella22/rs_lvgl/blob/main/examples/README.md)入手。
@@ -39,12 +44,12 @@ cargo run -p rs_lvgl_ui --example studio --features showcase
 | [`rs_lvgl_sys`](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_sys/README.md) | 原始 LVGL 绑定、原生配置、自定义 C 源码与字体 |
 | [`rs_lvgl_codegen`](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_codegen/README.md) | 构建时使用的控件封装生成器 |
 
-从 crates.io 添加依赖：
+在项目中添加 crates.io 依赖：
 
 ```toml
 [dependencies]
-rs_lvgl = { version = "0.1.0", default-features = false, features = ["alloc"] }
-rs_lvgl_ui = { version = "0.1.0" }
+rs_lvgl = { version = "0.2", default-features = false, features = ["alloc"] }
+rs_lvgl_ui = "0.2"
 ```
 
 `rs_lvgl` 和 `rs_lvgl_ui` 支持 `no_std`。在嵌入式设备上使用 UI 层时，
@@ -52,11 +57,11 @@ rs_lvgl_ui = { version = "0.1.0" }
 
 ## 描述界面
 
-`App` 保存应用状态，`view` 返回节点树，输入通过消息交给 `update` 处理。
+`App` 保存应用状态，`view` 用普通函数构建 `View<Msg>`，输入通过消息交给 `update` 处理。
 `Ui` 负责将变化应用到 LVGL 控件。
 
 ```rust
-use rs_lvgl_ui::{App, Key, Node, Style, Theme};
+use rs_lvgl_ui::prelude::*;
 
 #[derive(Clone)]
 enum Msg {
@@ -74,16 +79,15 @@ impl App for Counter {
         self.value += 1;
     }
 
-    fn view(&self, theme: &Theme) -> Node<Msg> {
-        Node::column()
-            .style(Style::default().gap(12))
-            .child(Node::label(format!("Count: {}", self.value)))
-            .child(
-                Node::button("Add one")
-                    .key(Key::Named("increment"))
-                    .style(Style::accent(theme))
-                    .on_click(Msg::Increment),
-            )
+    fn view(&self, theme: &Theme) -> View<Msg> {
+        column([
+            label(format!("Count: {}", self.value)),
+            button("Add one")
+                .key(Key::Named("increment"))
+                .style(Style::accent(theme))
+                .on_click(Msg::Increment),
+        ])
+        .style(Style::default().gap(12))
     }
 }
 ```
@@ -96,9 +100,12 @@ impl App for Counter {
 关闭默认 feature 后，可以按需选择控件和字体：
 
 ```toml
-rs_lvgl_ui = { version = "0.1.0", default-features = false, features = [
+[dependencies.rs_lvgl_ui]
+version = "0.2"
+default-features = false
+features = [
     "alloc", "components", "widget-slider", "widget-switch", "font-montserrat-16"
-] }
+]
 ```
 
 标签、按钮、行列布局和网格布局始终可用。
@@ -107,6 +114,7 @@ rs_lvgl_ui = { version = "0.1.0", default-features = false, features = [
 
 ## 文档
 
+- [使用指南（中文）](https://umbrella22.github.io/rs_lvgl/) · [English](https://umbrella22.github.io/rs_lvgl/en/)：安装、声明式界面、组件、输入、原生集成与开发检查。
 - [UI 指南](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_ui/README.md)：组件、状态、样式与输入。
 - [原生集成](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_sys/README.md)：`lv_conf.h`、自定义 C 源码与字体。
 - [测试指南](https://github.com/umbrella22/rs_lvgl/blob/main/docs/testing.md)：测试命令与模拟器检查。

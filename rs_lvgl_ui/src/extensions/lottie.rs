@@ -1,4 +1,4 @@
-use crate::{widgets::Retained, Node, UiError, WidgetKind};
+use crate::{widgets::Retained, UiError};
 use alloc::rc::Rc;
 use core::ptr::NonNull;
 /// JSON Lottie animation rendered by the selected vendored ThorVG provider.
@@ -52,13 +52,5 @@ impl Lottie {
             }
         }
         Ok(())
-    }
-}
-impl<M> Node<M> {
-    pub fn lottie(animation: Lottie) -> Self {
-        let style = crate::Style::default()
-            .width(crate::Size::Px(animation.width as i16))
-            .height(crate::Size::Px(animation.height as i16));
-        Self::new(WidgetKind::Lottie { animation }).style(style)
     }
 }

@@ -8,6 +8,7 @@
 mod common;
 
 use core::ptr::{self, NonNull};
+use rs_lvgl_ui::prelude::*;
 use std::cell::Cell;
 use std::rc::Rc;
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -15,10 +16,6 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use common::{app_root, child, init, lock};
 use rs_lvgl::Widget;
 use rs_lvgl_sys::lv_obj_t;
-use rs_lvgl_ui::{
-    App, Color, CustomObject, CustomWidget, Event, Font, Key, NativeObject, Node, Obj, Part, Style,
-    Theme, Ui, UiError,
-};
 
 const MAIN: u32 = rs_lvgl_sys::lv_part_t_LV_PART_MAIN;
 
@@ -35,12 +32,12 @@ fn has_flag(obj: NonNull<lv_obj_t>, flag: rs_lvgl_sys::lv_obj_flag_t) -> bool {
 /// A view driven by a closure over a `u8` state.
 struct FnApp<M: Clone + 'static> {
     state: u8,
-    view: fn(u8, &Theme) -> Node<M>,
+    view: fn(u8, &Theme) -> View<M>,
     received: Vec<M>,
 }
 
 impl<M: Clone + 'static> FnApp<M> {
-    fn new(view: fn(u8, &Theme) -> Node<M>) -> Self {
+    fn new(view: fn(u8, &Theme) -> View<M>) -> Self {
         Self {
             state: 0,
             view,
@@ -56,7 +53,7 @@ impl<M: Clone + 'static> App for FnApp<M> {
         self.received.push(msg);
     }
 
-    fn view(&self, theme: &Theme) -> Node<M> {
+    fn view(&self, theme: &Theme) -> View<M> {
         (self.view)(self.state, theme)
     }
 }
@@ -68,10 +65,10 @@ fn bg_opacity_merges_over_a_surface_color() {
     let theme = Theme::dark();
     let mut ui = Ui::new(&display, theme).unwrap();
     let mut app = FnApp::<()>::new(|state, theme| match state {
-        0 => Node::obj()
+        0 => obj()
             .style(Style::surface(theme))
             .style(Style::default().bg_opacity(128)),
-        _ => Node::obj().style(Style::default().bg(Color::rgb(255, 0, 0)).bg_opacity(64)),
+        _ => obj().style(Style::default().bg(Color::rgb(255, 0, 0)).bg_opacity(64)),
     });
     ui.mount(&app).unwrap();
     let obj = app_root();
@@ -108,9 +105,9 @@ fn labels_inherit_text_color_and_font_from_containers() {
     let theme = Theme::dark();
     let mut ui = Ui::new(&display, theme).unwrap();
     let app = FnApp::<()>::new(|_, theme| {
-        Node::column()
+        column([])
             .style(Style::surface(theme).font(Font::montserrat_28()))
-            .child(Node::label("x"))
+            .child(label("x"))
     });
     ui.mount(&app).unwrap();
     let label = child(app_root(), 0);
@@ -131,7 +128,7 @@ fn root_key_change_recreates_the_root() {
     let _guard = lock();
     let display = init();
     let mut ui = Ui::new(&display, Theme::dark()).unwrap();
-    let mut app = FnApp::<()>::new(|state, _| Node::label("x").key(Key::Id(u64::from(state))));
+    let mut app = FnApp::<()>::new(|state, _| label("x").key(Key::Id(u64::from(state))));
     ui.mount(&app).unwrap();
     let before = app_root();
     let created = ui.stats().created_nodes;
@@ -159,8 +156,8 @@ impl App for ClampApp {
         self.value = value.min(50);
     }
 
-    fn view(&self, _: &Theme) -> Node<ClampMsg> {
-        Node::column().child(Node::slider(0, 100, self.value).on_value_changed(ClampMsg::Set))
+    fn view(&self, _: &Theme) -> View<ClampMsg> {
+        column([]).child(slider(0, 100, self.value).on_value_changed(ClampMsg::Set))
     }
 }
 
@@ -219,12 +216,12 @@ unsafe extern "C" fn count_state_changes(_: *mut rs_lvgl_sys::lv_event_t) {
     STATE_CHANGES.fetch_add(1, Ordering::SeqCst);
 }
 
-fn keyboard_view(state: u8, _: &Theme) -> Node<()> {
-    let mut column = Node::column();
+fn keyboard_view(state: u8, _: &Theme) -> View<()> {
+    let mut column = column([]);
     if state == 0 {
-        column = column.child(Node::textarea("a").keyboard_id(1).key(Key::Id(1)));
+        column = column.child(textarea("a").keyboard_id(1).key(Key::Id(1)));
     }
-    column.child(Node::keyboard(1).key(Key::Id(2)))
+    column.child(keyboard(1).key(Key::Id(2)))
 }
 
 #[test]
@@ -297,8 +294,8 @@ fn handlers_combine_instead_of_replacing_each_other() {
     let display = init();
     let mut ui = Ui::new(&display, Theme::dark()).unwrap();
     let mut app = FnApp::new(|_, _| {
-        Node::column().child(
-            Node::button("b")
+        column([]).child(
+            button("b")
                 .on_click(TwoMsg::Click)
                 .on_event(|event| matches!(event, Event::Pressed).then_some(TwoMsg::Pressed)),
         )
@@ -317,8 +314,8 @@ fn handlers_added_on_update_attach_lazily_without_duplicates() {
     let display = init();
     let mut ui = Ui::new(&display, Theme::dark()).unwrap();
     let mut app = FnApp::new(|state, _| {
-        let slider = Node::slider(0, 10, 5);
-        Node::column().child(match state {
+        let slider = slider(0, 10, 5);
+        column([]).child(match state {
             0 => slider,
             1 => slider.on_click(TwoMsg::Click),
             _ => slider
@@ -361,11 +358,11 @@ fn handlerless_nodes_have_no_callbacks_and_keep_class_flags() {
     let display = init();
     let mut ui = Ui::new(&display, Theme::dark()).unwrap();
     let mut app = FnApp::<()>::new(|state, _| match state {
-        0 => Node::column().child(Node::label("no handlers")),
-        _ => Node::column()
+        0 => column([]).child(label("no handlers")),
+        _ => column([])
             .clickable(false)
             .scrollable(false)
-            .child(Node::label("no handlers").clickable(true)),
+            .child(label("no handlers").clickable(true)),
     });
     ui.mount(&app).unwrap();
     let column = app_root();
@@ -398,9 +395,9 @@ fn bubbled_child_events_do_not_reach_parent_handlers() {
     let display = init();
     let mut ui = Ui::new(&display, Theme::dark()).unwrap();
     let mut app = FnApp::new(|_, _| {
-        Node::column()
+        column([])
             .on_event(|event| matches!(event, Event::Pressed).then_some(TwoMsg::Pressed))
-            .child(Node::button("child"))
+            .child(button("child"))
     });
     ui.mount(&app).unwrap();
     let button = child(app_root(), 0);
@@ -425,9 +422,7 @@ fn tabview_active_tab_is_controlled() {
     let _guard = lock();
     let display = init();
     let mut ui = Ui::new(&display, Theme::dark()).unwrap();
-    let app = FnApp::<()>::new(|_, _| {
-        Node::tabview(["a", "b"], 0).children([Node::label("a"), Node::label("b")])
-    });
+    let app = FnApp::<()>::new(|_, _| tabview(["a", "b"], 0).children([label("a"), label("b")]));
     ui.mount(&app).unwrap();
     let tabview = app_root();
     // SAFETY: `tabview` is live.
@@ -481,8 +476,8 @@ fn lifecycle_widget_must_return_a_direct_child() {
     impl App for CustomApp {
         type Msg = ();
         fn update(&mut self, _: ()) {}
-        fn view(&self, _: &Theme) -> Node<()> {
-            Node::column().child(Node::custom(WrongParent {
+        fn view(&self, _: &Theme) -> View<()> {
+            column([]).child(custom(WrongParent {
                 deleted: self.0.clone(),
             }))
         }
@@ -498,15 +493,14 @@ fn validation_covers_keyboard_ids_and_part_styles() {
     let display = init();
     let mut ui = Ui::new(&display, Theme::dark()).unwrap();
     let duplicate = FnApp::<()>::new(|_, _| {
-        Node::column()
-            .child(Node::column().child(Node::textarea("a").keyboard_id(7)))
-            .child(Node::textarea("b").keyboard_id(7))
+        column([])
+            .child(column([]).child(textarea("a").keyboard_id(7)))
+            .child(textarea("b").keyboard_id(7))
     });
     assert_eq!(ui.mount(&duplicate), Err(UiError::InvalidProperty));
 
     let bad_part = FnApp::<()>::new(|_, _| {
-        Node::column()
-            .child(Node::slider(0, 10, 5).part_style(Part::Knob, Style::default().radius(-1)))
+        column([]).child(slider(0, 10, 5).part_style(Part::Knob, Style::default().radius(-1)))
     });
     assert_eq!(ui.mount(&bad_part), Err(UiError::InvalidProperty));
 }

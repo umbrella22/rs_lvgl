@@ -2,7 +2,7 @@
 use super::*;
 use rs_lvgl::NativeObject;
 
-pub(super) fn view(app: &Studio, t: &Theme) -> Node<Msg> {
+pub(super) fn view(app: &Studio, t: &Theme) -> View<Msg> {
     let mut samples = Vec::new();
     for (kind, title, caption) in [
         (0, "Native list", "Select a sample action"),
@@ -12,7 +12,7 @@ pub(super) fn view(app: &Studio, t: &Theme) -> Node<Msg> {
         // SAFETY: each factory returns a direct child of the supplied parent.
         // All descendants and native menu callbacks are owned by that subtree;
         // strings are static or copied by LVGL. No pointers escape the factory.
-        let sample = unsafe { Node::raw(move |parent| {
+        let sample = unsafe { raw(move |parent| {
             let obj = match kind {
                 0 => rs_lvgl_sys::lv_list_create(parent.as_ptr()),
                 1 => rs_lvgl_sys::lv_menu_create(parent.as_ptr()),
@@ -22,27 +22,27 @@ pub(super) fn view(app: &Studio, t: &Theme) -> Node<Msg> {
             rs_lvgl_sys::lv_obj_set_size(obj, rs_lvgl_sys::lv_pct(100), 306);
             match kind {
                 0 => {
-                    rs_lvgl_sys::lv_list_add_text(obj, c"STUDIO COLLECTION".as_ptr());
+                    rs_lvgl_sys::lv_list_add_text(obj, c"STUDIO COLLECTION".as_ptr().cast());
                     for name in [c"New workspace", c"Open a sample", c"Save a preset", c"Export a snapshot"] {
-                        rs_lvgl_sys::lv_list_add_button(obj, core::ptr::null(), name.as_ptr());
+                        rs_lvgl_sys::lv_list_add_button(obj, core::ptr::null(), name.as_ptr().cast());
                     }
                 }
                 1 => {
-                    let page = rs_lvgl_sys::lv_menu_page_create(obj, c"Device".as_ptr());
-                    let details = rs_lvgl_sys::lv_menu_page_create(obj, c"Display".as_ptr());
+                    let page = rs_lvgl_sys::lv_menu_page_create(obj, c"Device".as_ptr().cast());
+                    let details = rs_lvgl_sys::lv_menu_page_create(obj, c"Display".as_ptr().cast());
                     let settings = rs_lvgl_sys::lv_menu_cont_create(page);
                     let label = rs_lvgl_sys::lv_label_create(settings);
-                    rs_lvgl_sys::lv_label_set_text(label, c"Display  >".as_ptr());
+                    rs_lvgl_sys::lv_label_set_text(label, c"Display  >".as_ptr().cast());
                     let label = rs_lvgl_sys::lv_label_create(details);
-                    rs_lvgl_sys::lv_label_set_text(label, c"1280 x 860\nRGB color\nNative rendering".as_ptr());
+                    rs_lvgl_sys::lv_label_set_text(label, c"1280 x 860\nRGB color\nNative rendering".as_ptr().cast());
                     rs_lvgl_sys::lv_menu_set_load_page_event(obj, settings, details);
                     rs_lvgl_sys::lv_menu_set_page(obj, page);
                 }
                 _ => {
-                    rs_lvgl_sys::lv_win_add_title(obj, c"Sample device".as_ptr());
+                    rs_lvgl_sys::lv_win_add_title(obj, c"Sample device".as_ptr().cast());
                     rs_lvgl_sys::lv_win_add_button(obj, c"\u{f067}".as_ptr().cast(), 42);
                     let label = rs_lvgl_sys::lv_label_create(rs_lvgl_sys::lv_win_get_content(obj));
-                    rs_lvgl_sys::lv_label_set_text(label, c"A native window.\n\nComposed inside a Rust view.\n\nPress the header action.".as_ptr());
+                    rs_lvgl_sys::lv_label_set_text(label, c"A native window.\n\nComposed inside a Rust view.\n\nPress the header action.".as_ptr().cast());
                 }
             }
             enable_bubbling(obj);
@@ -70,7 +70,7 @@ pub(super) fn view(app: &Studio, t: &Theme) -> Node<Msg> {
                 }),
         );
     }
-    column().child(row().children(samples))
+    studio_column().child(studio_row().children(samples))
         .child(card("One native provider. Three ways to build.", "Typed views / imperative widgets / raw C bindings",t).style(Style::default().height(Size::Px(128)))
             .child(text(&format!("{} native actions received. Native samples keep their children and callbacks inside one mounted subtree.",app.clicks),t)
                 .style(Style::default().width(Size::Percent(100)))))

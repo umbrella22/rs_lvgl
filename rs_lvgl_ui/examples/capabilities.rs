@@ -1,13 +1,11 @@
 //! Native capability gallery. See README's "Capability gallery" for features.
 //! UI_FRAMES bounds the run; UI_AUTORUN=1 walks the pages and dialog automatically.
 use core::ptr::NonNull;
-use rs_lvgl_ui::{
-    components::{
-        dialog::Dialog,
-        file_explorer::{self, FileEntry},
-    },
-    *,
+use rs_lvgl_ui::components::{
+    dialog::Dialog,
+    file_explorer::{self, FileEntry},
 };
+use rs_lvgl_ui::prelude::*;
 use std::{
     rc::Rc,
     time::{Duration, Instant},
@@ -50,22 +48,11 @@ impl App for Gallery {
             Msg::Quit => self.quit = true,
         }
     }
-    fn view(&self, theme: &Theme) -> Node<Msg> {
-        let tabs = Node::row()
-            .key(Key::Named("tabs"))
-            .style(
-                Style::neutral()
-                    .pad(FOCUS_SPACE)
-                    .gap(12)
-                    .height(Size::Px(52)),
-            )
-            .grid_navigation(GridNavigation {
-                axis: NavigationAxis::Horizontal,
-                rollover: true,
-                ..Default::default()
-            })
-            .children(TABS.iter().enumerate().map(|(i, title)| {
-                button(title, Msg::Page(i)).key(Key::Named(TABS[i])).style(
+    fn view(&self, theme: &Theme) -> View<Msg> {
+        let tabs = row(TABS.iter().enumerate().map(|(i, title)| {
+            action_button(title, Msg::Page(i))
+                .key(Key::Named(TABS[i]))
+                .style(
                     Style::default()
                         .bg(if i == self.page { ACCENT } else { PANEL })
                         .fg(if i == self.page {
@@ -74,54 +61,56 @@ impl App for Gallery {
                             theme.text
                         }),
                 )
-            }));
+        }))
+        .key(Key::Named("tabs"))
+        .style(
+            Style::neutral()
+                .pad(FOCUS_SPACE)
+                .gap(12)
+                .height(Size::Px(52)),
+        )
+        .grid_navigation(GridNavigation {
+            axis: NavigationAxis::Horizontal,
+            rollover: true,
+            ..Default::default()
+        });
         let content = match self.page {
             0 => styles(theme),
-            1 => canvas(theme),
+            1 => canvas_page(theme),
             2 => media(theme),
             _ => self.text_and_files(theme),
         };
-        Node::column()
+        column([
+            label("LVGL / CAPABILITY LAB")
+                .style(Style::body(theme).fg(ACCENT).text_letter_space(3)),
+            label(TABS[self.page]).style(Style::title(theme)),
+            tabs,
+            content
+                .key(Key::Named("content"))
+                .style(Style::default().width(Size::Percent(100)).flex_grow(1)),
+            row([
+                action_button("Open dialog", Msg::Dialog(true)).key(Key::Named("dialog-trigger")),
+                action_button("Snapshot", Msg::Snapshot),
+                label(&self.status).style(Style::body(theme).flex_grow(1)),
+                action_button("Quit", Msg::Quit),
+            ])
             .style(
-                Style::screen(theme)
-                    .bg(Color::rgb(12, 20, 32))
-                    .pad(24)
-                    .gap(14),
-            )
-            .child(
-                Node::label("LVGL / CAPABILITY LAB")
-                    .style(Style::body(theme).fg(ACCENT).text_letter_space(3)),
-            )
-            .child(Node::label(TABS[self.page]).style(Style::title(theme)))
-            .child(tabs)
-            .child(
-                content
-                    .key(Key::Named("content"))
-                    .style(Style::default().width(Size::Percent(100)).flex_grow(1)),
-            )
-            .child(
-                Node::row()
-                    .style(
-                        Style::neutral()
-                            .width(Size::Percent(100))
-                            .pad(FOCUS_SPACE)
-                            .gap(12),
-                    )
-                    .child(
-                        button("Open dialog", Msg::Dialog(true)).key(Key::Named("dialog-trigger")),
-                    )
-                    .child(button("Snapshot", Msg::Snapshot))
-                    .child(Node::label(&self.status).style(Style::body(theme).flex_grow(1)))
-                    .child(button("Quit", Msg::Quit)),
-            )
-            .child(
-                Node::label(
-                    "Tab to move between groups / Arrow keys to select a tab / Enter to activate",
-                )
+                Style::neutral()
+                    .width(Size::Percent(100))
+                    .pad(FOCUS_SPACE)
+                    .gap(12),
+            ),
+            label("Tab to move between groups / Arrow keys to select a tab / Enter to activate")
                 .style(Style::body(theme).fg(Color::rgb(155, 171, 190))),
-            )
+        ])
+        .style(
+            Style::screen(theme)
+                .bg(Color::rgb(12, 20, 32))
+                .pad(24)
+                .gap(14),
+        )
     }
-    fn overlay(&self, theme: &Theme) -> Option<Node<Msg>> {
+    fn overlay(&self, theme: &Theme) -> Option<View<Msg>> {
         self.dialog.then(|| {
             Dialog::new("Modal focus")
                 .text("Tab stays inside this dialog. Closing it restores the previous focus.")
@@ -132,13 +121,13 @@ impl App for Gallery {
         })
     }
 }
-fn button(text: &str, msg: Msg) -> Node<Msg> {
+fn action_button(text: &str, msg: Msg) -> View<Msg> {
     let focus = Style::default()
         .outline_color(ACCENT)
         .outline_width(FOCUS_WIDTH)
         .outline_opacity(255)
         .outline_pad(FOCUS_PAD);
-    Node::button(text)
+    rs_lvgl_ui::button(text)
         .style(
             Style::default()
                 .bg(PANEL)
@@ -162,95 +151,88 @@ fn button(text: &str, msg: Msg) -> Node<Msg> {
         .state_style(State::PRESSED, Style::default().opacity(150))
         .on_click(msg)
 }
-fn card(theme: &Theme, title: &str) -> Node<Msg> {
-    Node::column()
+fn card(theme: &Theme, title: &str) -> View<Msg> {
+    column([label(title).style(Style::body(theme).fg(ACCENT).text_letter_space(1))])
         .style(Style::surface(theme).bg(PANEL).pad(20).gap(16).radius(14))
-        .child(Node::label(title).style(Style::body(theme).fg(ACCENT).text_letter_space(1)))
 }
-fn styles(theme: &Theme) -> Node<Msg> {
-    Node::column()
-        .style(Style::neutral().gap(24))
-        .child(
-            Node::row()
-                // Preserve the cards' outer outline and the blurred shadow,
-                // including its downward offset, inside this clipping row.
-                .style(Style::neutral().width(Size::Percent(100)).pad(20).gap(24))
-                .child(
-                    card(theme, "GRADIENT / SHADOW")
-                        .style(
-                            Style::default()
-                                .width(Size::Percent(48))
-                                .height(Size::Px(164))
-                                .bg(Color::rgb(25, 75, 105))
-                                .bg_grad_color(Color::rgb(31, 45, 72))
-                                .bg_grad_dir(GradientDirection::Horizontal)
-                                .shadow_width(20)
-                                .shadow_color(Color::rgb(0, 0, 0))
-                                .shadow_opacity(130)
-                                .shadow_offset_y(8),
-                        )
-                        .child(
-                            Node::label("Native styles, retained per state")
-                                .style(Style::body(theme)),
-                        )
-                        .child(button("Press and focus", Msg::Select(1))),
-                )
-                .child(
-                    card(theme, "OUTLINE / TEXT")
-                        .style(
-                            Style::default()
-                                .width(Size::Percent(48))
-                                .height(Size::Px(164))
-                                .outline_width(1)
-                                .outline_color(ACCENT),
-                        )
-                        .child(
-                            Node::label("Spacing + underline").style(
-                                Style::body(theme)
-                                    .text_letter_space(2)
-                                    .text_decoration(TextDecoration::UNDERLINE),
+fn styles(theme: &Theme) -> View<Msg> {
+    column([
+        row([])
+            // Preserve the cards' outer outline and the blurred shadow,
+            // including its downward offset, inside this clipping row.
+            .style(Style::neutral().width(Size::Percent(100)).pad(20).gap(24))
+            .child(
+                card(theme, "GRADIENT / SHADOW")
+                    .style(
+                        Style::default()
+                            .width(Size::Percent(48))
+                            .height(Size::Px(164))
+                            .bg(Color::rgb(25, 75, 105))
+                            .bg_grad_color(Color::rgb(31, 45, 72))
+                            .bg_grad_dir(GradientDirection::Horizontal)
+                            .shadow_width(20)
+                            .shadow_color(Color::rgb(0, 0, 0))
+                            .shadow_opacity(130)
+                            .shadow_offset_y(8),
+                    )
+                    .child(label("Native styles, retained per state").style(Style::body(theme)))
+                    .child(action_button("Press and focus", Msg::Select(1))),
+            )
+            .child(
+                card(theme, "OUTLINE / TEXT")
+                    .style(
+                        Style::default()
+                            .width(Size::Percent(48))
+                            .height(Size::Px(164))
+                            .outline_width(1)
+                            .outline_color(ACCENT),
+                    )
+                    .child(
+                        label("Spacing + underline").style(
+                            Style::body(theme)
+                                .text_letter_space(2)
+                                .text_decoration(TextDecoration::UNDERLINE),
+                        ),
+                    )
+                    .child(
+                        label("Soft state transitions")
+                            .style(Style::body(theme).text_line_space(5)),
+                    ),
+            ),
+        card(theme, "EXPLICIT ANIMATION")
+            .style(
+                Style::default()
+                    .width(Size::Percent(100))
+                    .height(Size::Px(120)),
+            )
+            .child(
+                obj()
+                    .style(
+                        Style::neutral()
+                            .width(Size::Percent(100))
+                            .height(Size::Px(28)),
+                    )
+                    .child(
+                        obj()
+                            .style(
+                                Style::neutral()
+                                    .width(Size::Px(52))
+                                    .height(Size::Px(18))
+                                    .bg(ACCENT)
+                                    .radius(9),
+                            )
+                            .animate(
+                                Animation::new(AnimationProperty::X, 0, 600, 1500)
+                                    .easing(Easing::EaseInOut)
+                                    .reverse(1500)
+                                    .repeat(u32::MAX),
                             ),
-                        )
-                        .child(
-                            Node::label("Soft state transitions")
-                                .style(Style::body(theme).text_line_space(5)),
-                        ),
-                ),
-        )
-        .child(
-            card(theme, "EXPLICIT ANIMATION")
-                .style(
-                    Style::default()
-                        .width(Size::Percent(100))
-                        .height(Size::Px(120)),
-                )
-                .child(
-                    Node::obj()
-                        .style(
-                            Style::neutral()
-                                .width(Size::Percent(100))
-                                .height(Size::Px(28)),
-                        )
-                        .child(
-                            Node::obj()
-                                .style(
-                                    Style::neutral()
-                                        .width(Size::Px(52))
-                                        .height(Size::Px(18))
-                                        .bg(ACCENT)
-                                        .radius(9),
-                                )
-                                .animate(
-                                    Animation::new(AnimationProperty::X, 0, 600, 1500)
-                                        .easing(Easing::EaseInOut)
-                                        .reverse(1500)
-                                        .repeat(u32::MAX),
-                                ),
-                        ),
-                ),
-        )
+                    ),
+            ),
+    ])
+    .style(Style::neutral().gap(24))
 }
-fn canvas(theme: &Theme) -> Node<Msg> {
+fn canvas_page(theme: &Theme) -> View<Msg> {
     let mut frame = Canvas::new(820, 260).background(Color::rgb(18, 30, 45), 255);
     for x in (20..820).step_by(40) {
         frame = frame.draw(DrawCommand::Line {
@@ -283,90 +265,78 @@ fn canvas(theme: &Theme) -> Node<Msg> {
     });
     card(theme, "DRAW COMMANDS")
         .style(Style::default().width(Size::Percent(100)))
-        .child(Node::canvas(frame))
+        .child(rs_lvgl_ui::canvas(frame))
         .child(
-            Node::label("Snapshot copies the mounted view into an independent RGBA image.")
+            label("Snapshot copies the mounted view into an independent RGBA image.")
                 .style(Style::body(theme)),
         )
 }
-fn media(theme: &Theme) -> Node<Msg> {
-    Node::row()
-        .style(Style::neutral().width(Size::Percent(100)).gap(20))
-        .child(
-            card(theme, "QR / CODE 128")
-                .style(Style::default().width(Size::Px(340)).height(Size::Px(340)))
-                .child(Node::qrcode(QrCode::new(b"LVGL Rust UI".to_vec(), 144)))
-                .child(Node::barcode(Barcode::new("LVGL 2026", 45)))
-                .child(
-                    Node::label("Binary QR payload / preserved spaces").style(Style::body(theme)),
-                ),
-        )
-        .child(
-            card(theme, "LOTTIE / GIF")
-                .style(Style::default().flex_grow(1).height(Size::Px(340)))
-                .child(
-                    Node::row()
-                        .style(Style::neutral().gap(40).height(Size::Px(170)))
-                        .child(Node::lottie(Lottie::new(
-                            include_str!("../tests/assets/moving-square.json"),
-                            160,
-                            160,
-                        )))
-                        .child(
-                            Node::obj()
-                                .style(Style::neutral().width(Size::Px(70)).height(Size::Px(70)))
-                                .child(Node::gif(Gif::new(Rc::<[u8]>::from(
-                                    include_bytes!("assets/status.gif").as_slice(),
-                                )))),
-                        ),
-                )
-                .child(
-                    Node::label("Vector motion + animated red/blue GIF").style(Style::body(theme)),
-                ),
-        )
+fn media(theme: &Theme) -> View<Msg> {
+    row([
+        card(theme, "QR / CODE 128")
+            .style(Style::default().width(Size::Px(340)).height(Size::Px(340)))
+            .child(qrcode(QrCode::new(b"LVGL Rust UI".to_vec(), 144)))
+            .child(barcode(Barcode::new("LVGL 2026", 45)))
+            .child(label("Binary QR payload / preserved spaces").style(Style::body(theme))),
+        card(theme, "LOTTIE / GIF")
+            .style(Style::default().flex_grow(1).height(Size::Px(340)))
+            .child(
+                row([
+                    lottie(Lottie::new(
+                        include_str!("../tests/assets/moving-square.json"),
+                        160,
+                        160,
+                    )),
+                    obj()
+                        .style(Style::neutral().width(Size::Px(70)).height(Size::Px(70)))
+                        .child(gif(Gif::new(Rc::<[u8]>::from(
+                            include_bytes!("assets/status.gif").as_slice(),
+                        )))),
+                ])
+                .style(Style::neutral().gap(40).height(Size::Px(170))),
+            )
+            .child(label("Vector motion + animated red/blue GIF").style(Style::body(theme))),
+    ])
+    .style(Style::neutral().width(Size::Percent(100)).gap(20))
 }
 impl Gallery {
-    fn text_and_files(&self, theme: &Theme) -> Node<Msg> {
-        Node::row()
-            .style(Style::neutral().width(Size::Percent(100)).gap(20))
-            .child(
-                card(theme, "CJK / PINYIN")
-                    .style(Style::default().width(Size::Px(520)).height(Size::Px(380)))
-                    .child(
-                        Node::textarea(&self.text)
-                            .key(Key::Named("text"))
-                            .keyboard_id(1)
-                            .style(
-                                Style::default()
-                                    .font(Font::cjk_16())
-                                    .width(Size::Percent(100))
-                                    .height(Size::Px(50)),
-                            )
-                            .on_text_changed(|text| Msg::Text(text.into())),
-                    )
-                    .child(Node::pinyin_keyboard(1, Font::cjk_16()).key(Key::Named("ime")))
-                    .child(
-                        Node::label("Type ni, then select a Chinese candidate.")
-                            .style(Style::body(theme)),
-                    ),
-            )
-            .child(
-                card(theme, "FILE EXPLORER")
-                    .style(Style::default().flex_grow(1).height(Size::Px(380)))
-                    .child(
-                        file_explorer::view(
-                            theme,
-                            "/samples",
-                            None,
-                            [
-                                FileEntry::directory(1, "Animations", Msg::Select(1)),
-                                FileEntry::file(2, "moving-square.json", Msg::Select(2)),
-                                FileEntry::file(3, "status.gif", Msg::Select(3)),
-                            ],
+    fn text_and_files(&self, theme: &Theme) -> View<Msg> {
+        row([
+            card(theme, "CJK / PINYIN")
+                .style(Style::default().width(Size::Px(520)).height(Size::Px(380)))
+                .child(
+                    textarea(&self.text)
+                        .key(Key::Named("text"))
+                        .keyboard_id(1)
+                        .style(
+                            Style::default()
+                                .font(Font::cjk_16())
+                                .width(Size::Percent(100))
+                                .height(Size::Px(50)),
                         )
-                        .style(Style::default().flex_grow(1)),
-                    ),
-            )
+                        .on_text_changed(|text| Msg::Text(text.into())),
+                )
+                .child(pinyin_keyboard(1, Font::cjk_16()).key(Key::Named("ime")))
+                .child(
+                    label("Type ni, then select a Chinese candidate.").style(Style::body(theme)),
+                ),
+            card(theme, "FILE EXPLORER")
+                .style(Style::default().flex_grow(1).height(Size::Px(380)))
+                .child(
+                    file_explorer::view(
+                        theme,
+                        "/samples",
+                        None,
+                        [
+                            FileEntry::directory(1, "Animations", Msg::Select(1)),
+                            FileEntry::file(2, "moving-square.json", Msg::Select(2)),
+                            FileEntry::file(3, "status.gif", Msg::Select(3)),
+                        ],
+                    )
+                    .style(Style::default().flex_grow(1)),
+                ),
+        ])
+        .style(Style::neutral().width(Size::Percent(100)).gap(20))
     }
 }
 fn main() {

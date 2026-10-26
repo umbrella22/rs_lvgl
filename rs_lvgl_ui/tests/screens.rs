@@ -1,5 +1,5 @@
 mod common;
-use rs_lvgl_ui::{App, Node, ScreenEffect, ScreenTransition, Screens, Size, Style, Theme, UiError};
+use rs_lvgl_ui::prelude::*;
 struct Page {
     invalid: bool,
     overlay: bool,
@@ -7,15 +7,11 @@ struct Page {
 impl App for Page {
     type Msg = ();
     fn update(&mut self, _: ()) {}
-    fn view(&self, _: &Theme) -> Node<()> {
-        Node::button("Page").style(Style::default().width(Size::Px(if self.invalid {
-            -1
-        } else {
-            40
-        })))
+    fn view(&self, _: &Theme) -> View<()> {
+        button("Page").style(Style::default().width(Size::Px(if self.invalid { -1 } else { 40 })))
     }
-    fn overlay(&self, _: &Theme) -> Option<Node<()>> {
-        self.overlay.then(|| Node::button("Overlay"))
+    fn overlay(&self, _: &Theme) -> Option<View<()>> {
+        self.overlay.then(|| button("Overlay"))
     }
 }
 fn advance(screens: &mut Screens<()>, ms: u32) {
@@ -163,8 +159,8 @@ fn switching_detaches_old_group_and_suspends_keypad_input_until_completion() {
         fn update(&mut self, _: ()) {
             self.0 += 1;
         }
-        fn view(&self, _: &Theme) -> Node<()> {
-            Node::button("Click").on_click(())
+        fn view(&self, _: &Theme) -> View<()> {
+            button("Click").on_click(())
         }
     }
     let _guard = common::lock();
