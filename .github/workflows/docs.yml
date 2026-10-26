@@ -30,6 +30,8 @@ jobs:
           cache-dependency-path: website/package-lock.json
       - uses: dtolnay/rust-toolchain@1.99.1
         with:
+          # Bindgen formats its output so diagnostics do not repeat entire bindings.
+          components: rustfmt
           targets: wasm32-unknown-emscripten
       - name: Install native build dependencies
         run: |

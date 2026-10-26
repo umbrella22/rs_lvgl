@@ -118,6 +118,7 @@ activate its environment before invoking the build. From the repository root:
 ```sh
 # macOS SDK installation; use emsdk on other hosts.
 brew install emscripten
+rustup component add rustfmt
 rustup target add wasm32-unknown-emscripten
 npm --prefix website ci
 cargo build
