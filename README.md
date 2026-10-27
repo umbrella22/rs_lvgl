@@ -2,7 +2,7 @@
 
 **English** · [简体中文](https://github.com/umbrella22/rs_lvgl/blob/main/README.zh.md)
 
-[Documentation](https://umbrella22.github.io/rs_lvgl/en/) · [Getting started](https://umbrella22.github.io/rs_lvgl/en/guide/getting-started.html) · [Component preview](https://umbrella22.github.io/rs_lvgl/en/studio.html) · [Playground](https://umbrella22.github.io/rs_lvgl/en/playground.html)
+[Documentation](https://umbrella22.github.io/rs_lvgl_website/en/) · [Getting started](https://umbrella22.github.io/rs_lvgl_website/en/guide/getting-started.html) · [Component preview](https://umbrella22.github.io/rs_lvgl_website/en/studio.html) · [Playground](https://umbrella22.github.io/rs_lvgl_website/en/playground.html)
 
 Rust bindings and declarative UI for [LVGL](https://lvgl.io/) 9.6.
 
@@ -14,9 +14,9 @@ then connect it to your device's display and input drivers.
 
 ## Try the demo
 
-The [component preview](https://umbrella22.github.io/rs_lvgl/en/studio.html) runs
+The [component preview](https://umbrella22.github.io/rs_lvgl_website/en/studio.html) runs
 the same Rust/LVGL views in WebAssembly, including input and animations. In the
-[playground](https://umbrella22.github.io/rs_lvgl/en/playground.html), edit an
+[playground](https://umbrella22.github.io/rs_lvgl_website/en/playground.html), edit an
 example and interact with the result directly in your browser.
 
 The component studio includes controls, charts, text input, layouts, media,
@@ -121,7 +121,9 @@ See [feature selection](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_
 
 ## Documentation
 
-- [Usage guide (Chinese)](https://umbrella22.github.io/rs_lvgl/) · [English](https://umbrella22.github.io/rs_lvgl/en/) — installation, declarative UI, components, input, native integration and development checks.
+The guides and GitHub Pages deployment are maintained in [rs_lvgl_website](https://github.com/umbrella22/rs_lvgl_website).
+
+- [Usage guide (Chinese)](https://umbrella22.github.io/rs_lvgl_website/) · [English](https://umbrella22.github.io/rs_lvgl_website/en/) — installation, declarative UI, components, input, native integration and development checks.
 - [UI guide](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_ui/README.md) — components, state, styling, and input.
 - [Native integration](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_sys/README.md) — `lv_conf.h`, custom C sources, and fonts.
 - [Testing](https://github.com/umbrella22/rs_lvgl/blob/main/docs/testing.md) — test commands and simulator checks.

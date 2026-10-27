@@ -1,6 +1,6 @@
 # Component studio
 
-The [component preview](../website/docs/en/studio.mdx) compiles the same views to WebAssembly with a canvas display, native input devices and a browser frame loop. All nine categories run without a local compiler service. See the [site build guide](../website/README.md).
+The [component preview](https://umbrella22.github.io/rs_lvgl_website/en/studio.html) compiles the same views to WebAssembly with a canvas display, native input devices and a browser frame loop. All nine categories run without a local compiler service. See the [site build guide](https://github.com/umbrella22/rs_lvgl_website).
 
 
 The studio is an original native LVGL application with nine categories, shared
@@ -84,4 +84,4 @@ The documentation playground accepts `fn app() -> impl rs_lvgl_ui::App`. Its swi
 example includes state, messages, `update` and `view`; clicking the rendered switch
 updates both native pixels and application text. Bundled presets work on static
 hosting. Edited Rust uses the local compiler and then runs in a browser Worker.
-See the [playground guide](../website/README.md#interactive-playground).
+See the [playground guide](https://github.com/umbrella22/rs_lvgl_website#interactive-playground).

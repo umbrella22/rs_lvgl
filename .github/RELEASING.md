@@ -42,12 +42,16 @@ dependencies; the original published lockfile remains in the registry archive.
 After all four versions are indexed, independent raw and UI applications run
 using only crates.io dependencies. GitHub Release is created last.
 
-The documentation workflow builds and deploys the matching `main` source to
-[GitHub Pages](https://umbrella22.github.io/rs_lvgl/), including the WebAssembly
-studio and editable browser examples. Keep README installation versions and
-the release's changelog section in sync. Verify the public guides and playground
-after the deployment job succeeds; see [site maintenance](../website/README.md)
-for the Pages configuration and deployment base.
+The [website repository](https://github.com/umbrella22/rs_lvgl_website) builds
+and deploys the bilingual guides, WebAssembly studio and editable browser examples
+through its own GitHub Pages environment at
+[the documentation site](https://umbrella22.github.io/rs_lvgl_website/).
+Its `source` submodule pins the documented library revision. Update that revision
+and run the website acceptance checks when preparing documentation for a release.
+Keep README installation versions and the release's changelog section in sync.
+Verify the public guides and playground after the website deployment succeeds;
+see [site maintenance](https://github.com/umbrella22/rs_lvgl_website#build-from-a-clean-checkout)
+for build and Pages configuration.
 
 ## Resume
 

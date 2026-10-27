@@ -1,6 +1,6 @@
 # rs_lvgl_ui
 
-The [browser studio](../website/docs/en/studio.mdx) runs all nine component categories in WebAssembly. It shares these Rust views with the desktop studio; see [build instructions](../website/README.md).
+The [browser studio](https://umbrella22.github.io/rs_lvgl_website/en/studio.html) runs all nine component categories in WebAssembly. It shares these Rust views with the desktop studio; see [build instructions](https://github.com/umbrella22/rs_lvgl_website).
 
 
 A declarative, typed Rust UI layer for LVGL 9.6, built on the `rs_lvgl` bindings in

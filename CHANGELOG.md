@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Documentation
+
+- Move the bilingual website, browser studio and playground to the independent
+  [rs_lvgl_website](https://github.com/umbrella22/rs_lvgl_website) repository.
+  Publish through its own GitHub Pages workflow at
+  [the new documentation address](https://umbrella22.github.io/rs_lvgl_website/),
+  with a pinned library source revision for native and WebAssembly builds.
+  Update README, testing, studio and future release links.
+
 ## 0.2.0 — 2026-10-27
 
 ### Breaking changes

@@ -15,10 +15,6 @@ examples/demo/target/
 rs_lvgl_sys/target/
 rs_lvgl/target/
 
-# Rspress site dependencies and generated output.
-/website/node_modules/
-/website/doc_build/
-
 # Publish usage documentation; keep local plans and handoffs in the checkout.
 /docs/*
 !/docs/ai-skills.md
@@ -27,13 +23,6 @@ rs_lvgl/target/
 !/docs/images/
 /docs/images/*
 !/docs/images/*.png
-
-# Browser studio binaries are reproducible build outputs.
-/website/docs/public/wasm/
-!/website/wasm/Cargo.lock
-
-# Generated interactive playground modules
-website/docs/public/playground-wasm/
 
 # Local Archify candidates, generation receipts and browser evidence.
 /.archify/

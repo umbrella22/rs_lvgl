@@ -156,9 +156,9 @@ jobs:
           notes.write_text(
               f"Rust bindings and declarative UI for LVGL 9.6.\n\n"
               f"{changes}\n\n"
-              "[Documentation](https://umbrella22.github.io/rs_lvgl/en/) · "
-              "[中文文档](https://umbrella22.github.io/rs_lvgl/) · "
-              "[Playground](https://umbrella22.github.io/rs_lvgl/en/playground.html)\n\n"
+              "[Documentation](https://umbrella22.github.io/rs_lvgl_website/en/) · "
+              "[中文文档](https://umbrella22.github.io/rs_lvgl_website/) · "
+              "[Playground](https://umbrella22.github.io/rs_lvgl_website/en/playground.html)\n\n"
               f"```toml\n[dependencies]\nrs_lvgl_ui = \"{version}\"\n```\n\n"
               + "\n".join(f"- [{name} {version}](https://crates.io/crates/{name}/{version})" for name in packages)
               + "\n\nA C/C++ compiler and libclang are required. SDL2 is optional for desktop examples.\n"

@@ -1,6 +1,6 @@
 # Host validation
 
-The [WebAssembly acceptance script](../website/scripts/check-wasm.mjs) executes the compiled Rust/LVGL module, checks all nine categories, input, animation, independent instances and teardown/reinitialization. Build first with `npm --prefix website run wasm:build`, then run `npm --prefix website run check-wasm -- --three-passes`. These checks complement visible browser acceptance; they do not validate hardware.
+The [WebAssembly acceptance script](https://github.com/umbrella22/rs_lvgl_website/blob/main/scripts/check-wasm.mjs) executes the compiled Rust/LVGL module, checks all nine categories, input, animation, independent instances and teardown/reinitialization. Run these website checks from a recursively initialized [rs_lvgl_website](https://github.com/umbrella22/rs_lvgl_website) checkout: build with `npm run wasm:build`, then run `npm run check-wasm -- --three-passes`. The [website build guide](https://github.com/umbrella22/rs_lvgl_website#build-from-a-clean-checkout) lists toolchains and dependency preparation. These checks complement visible browser acceptance; they do not validate hardware.
 
 
 The workspace compiles vendored LVGL 9.6. Tests sharing its native global state run
@@ -152,7 +152,7 @@ before a cross-target run: the checked-in Xtensa runner flashes hardware.
 
 ## Interactive documentation playground
 
-`npm --prefix website run check-interactive -- --passes 3` compiles complete Rust
+From the website checkout, `npm run check-interactive -- --passes 3` compiles complete Rust
 `App` examples to WebAssembly, verifies switch messages and text changes, edited
 pixels, source diagnostics, invalid views, cleanup/reinitialization, superseding
 compilation and concurrent consumer isolation. `playground:wasm:check` binds
