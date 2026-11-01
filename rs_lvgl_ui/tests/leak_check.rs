@@ -6,6 +6,7 @@ use rs_lvgl_ui::{components::dialog::Dialog, *};
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering::SeqCst};
+use std::{cell::Cell, ptr::NonNull, rc::Rc};
 
 use rs_lvgl::input_device::{key, Keypad, KeypadInputData};
 
@@ -206,6 +207,135 @@ fn advance() {
     }
 }
 
+struct FontBacking {
+    destroyed: Rc<Cell<bool>>,
+    dropped: Rc<Cell<bool>>,
+}
+impl Drop for FontBacking {
+    fn drop(&mut self) {
+        assert!(
+            self.destroyed.get(),
+            "native font destructor precedes backing drop"
+        );
+        assert!(!self.dropped.replace(true), "backing drops once");
+    }
+}
+unsafe extern "C" fn release_loaded_font(font: *mut rs_lvgl_sys::lv_font_t) {
+    // SAFETY: loaded_font allocated the descriptor with lv_malloc, and its
+    // user_data points to a Cell retained by FontBacking until after this call.
+    unsafe {
+        (*((*font).user_data.cast::<Cell<bool>>())).set(true);
+        rs_lvgl_sys::lv_free(font.cast());
+    }
+}
+fn loaded_font(dropped: Rc<Cell<bool>>) -> FontResource {
+    let destroyed = Rc::new(Cell::new(false));
+    // SAFETY: the serial child has initialized LVGL. Only the descriptor uses
+    // native storage; all glyph tables/callbacks are static Montserrat data.
+    unsafe {
+        let font = NonNull::new(
+            rs_lvgl_sys::lv_malloc(core::mem::size_of::<rs_lvgl_sys::lv_font_t>())
+                .cast::<rs_lvgl_sys::lv_font_t>(),
+        )
+        .unwrap();
+        font.as_ptr()
+            .write(core::ptr::addr_of!(rs_lvgl_sys::lv_font_montserrat_14).read());
+        (*font.as_ptr()).user_data = Rc::as_ptr(&destroyed).cast_mut().cast();
+        FontResource::from_raw_owned(
+            font,
+            FontBacking { destroyed, dropped },
+            release_loaded_font,
+        )
+    }
+}
+
+struct FailingResourceWidget;
+impl CustomWidget for FailingResourceWidget {
+    fn create(&mut self, _: &mut Obj<'_>) -> Result<CustomObject, UiError> {
+        Err(UiError::Allocation)
+    }
+    fn update(&mut self, _: &mut CustomObject, _: u32) -> Result<(), UiError> {
+        Ok(())
+    }
+    fn delete(&mut self, _: &mut CustomObject) {
+        panic!("failed create has no delete hook")
+    }
+}
+struct ResourcePage {
+    image: Option<ImageResource>,
+    font: Option<FontResource>,
+    fail: bool,
+}
+impl App for ResourcePage {
+    type Msg = String;
+    fn update(&mut self, _: String) {}
+    fn view(&self, _: &Theme) -> View<String> {
+        let image = || match &self.image {
+            Some(source) => image_resource(source.clone()),
+            None => rs_lvgl_ui::image(ImageSource::rgb565(1, 1, &[0, 0])),
+        };
+        let root = column([
+            image().key(Key::Id(1)),
+            image().key(Key::Id(2)),
+            if self.fail {
+                custom(FailingResourceWidget)
+            } else {
+                label_static("valid")
+            }
+            .key(Key::Id(3)),
+        ]);
+        match &self.font {
+            Some(font) => root.font_resource(font.clone()),
+            None => root,
+        }
+    }
+}
+
+fn resource_workload(ui: &mut Ui<String>) {
+    let dropped = Rc::new(Cell::new(false));
+    let pixels: Rc<[u8]> = Rc::from([0xe0u8, 0x07]);
+    let weak = Rc::downgrade(&pixels);
+    let mut page = ResourcePage {
+        image: Some(ImageResource::rgb565(1, 1, 2, pixels).unwrap()),
+        font: Some(loaded_font(dropped.clone())),
+        fail: false,
+    };
+    ui.mount(&page).unwrap();
+    drop(ui.snapshot().unwrap());
+    ui.update(&page).unwrap(); // sharing and stable-order update
+    page.image = None;
+    page.font = None;
+    assert!(weak.upgrade().is_some());
+    assert!(!dropped.get());
+    ui.update(&page).unwrap(); // install static/inherited resources before release
+    assert!(weak.upgrade().is_none());
+    assert!(dropped.get());
+    drop(ui.snapshot().unwrap());
+    for on_update in [false, true] {
+        let dropped = Rc::new(Cell::new(false));
+        let pixels: Rc<[u8]> = Rc::from([0u8, 0]);
+        let weak = Rc::downgrade(&pixels);
+        let mut page = ResourcePage {
+            image: Some(ImageResource::rgb565(1, 1, 2, pixels).unwrap()),
+            font: Some(loaded_font(dropped.clone())),
+            fail: !on_update,
+        };
+        if on_update {
+            ui.mount(&page).unwrap();
+            page.fail = true;
+            assert_eq!(ui.update(&page), Err(UiError::Allocation));
+        } else {
+            assert_eq!(ui.mount(&page), Err(UiError::Allocation));
+        }
+        drop(page);
+        assert!(weak.upgrade().is_none());
+        assert!(dropped.get());
+        assert_eq!(ui.stats().mounted_nodes, 0);
+    }
+    ui.mount(&page).unwrap(); // retry after a later-sibling failure
+    ui.unmount();
+}
+
 fn workload(case: &str) {
     if case == "display" {
         display_cycle(|_| advance());
@@ -238,7 +368,25 @@ fn workload(case: &str) {
         }
         let mut ui = Ui::new(display, Theme::dark()).unwrap();
         match case {
+            "loaded-resources" => resource_workload(&mut ui),
             "callbacks" => {
+                #[cfg(feature = "diagnostics")]
+                let diagnostic_weak = {
+                    let retained = Rc::new(vec![0u8; 93]);
+                    let weak = Rc::downgrade(&retained);
+                    ui.set_diagnostic_sink(Some(Rc::new(move |_| {
+                        std::hint::black_box(&retained);
+                    })));
+                    weak
+                };
+                let observed = Rc::new(Cell::new(0));
+                let owned = vec![0u8; 91];
+                let weak = Rc::downgrade(&observed);
+                let captured = observed.clone();
+                ui.set_event_queue_observer(Some(Rc::new(move |_| {
+                    std::hint::black_box(&owned);
+                    captured.set(captured.get() + 1);
+                })));
                 ui.mount(&app).unwrap();
                 for _ in 0..3 {
                     // SAFETY: all three children belong to this mounted view.
@@ -254,6 +402,21 @@ fn workload(case: &str) {
                         );
                     }
                     assert_eq!(ui.drain(&mut app, 8).unwrap().processed, 1);
+                }
+                assert_eq!(observed.get(), 3);
+                drop(observed);
+                ui.set_event_queue_observer(None);
+                assert!(
+                    weak.upgrade().is_none(),
+                    "observer replacement releases captures"
+                );
+                #[cfg(feature = "diagnostics")]
+                {
+                    ui.set_diagnostic_sink(None);
+                    assert!(
+                        diagnostic_weak.upgrade().is_none(),
+                        "sink replacement releases captures"
+                    );
                 }
             }
             "styles" => {
@@ -394,6 +557,7 @@ fn both_heaps_balance_across_resource_lifecycles() {
         "pinyin",
         "screens",
         "rollback",
+        "loaded-resources",
     ] {
         child(case, None);
     }

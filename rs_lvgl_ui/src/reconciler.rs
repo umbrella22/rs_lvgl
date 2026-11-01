@@ -50,6 +50,7 @@ pub(crate) struct MountedNode<M: Clone + 'static> {
     tag: KindTag,
     props: Props,
     style: Style,
+    font_resource: Option<crate::FontResource>,
     transitions: Vec<crate::animation::NativeTransition>,
     animations: Vec<crate::Animation>,
     slot: Option<NonNull<HandlerSlot<M>>>,
@@ -257,8 +258,29 @@ pub(crate) fn create<M: Clone + 'static>(
     node: Node<M>,
     queue: &Rc<EventQueue<M>>,
     counters: &mut Counters,
+    child_index: usize,
+) -> Result<MountedNode<M>, UiError> {
+    queue.diagnostics.node(
+        node.key,
+        child_index,
+        widgets::tag(&node.kind),
+        crate::diagnostics::DiagnosticStage::Create,
+        crate::Property::Value,
+        || create_inner(parent, node, queue, counters),
+    )
+}
+
+fn create_inner<M: Clone + 'static>(
+    parent: NonNull<lv_obj_t>,
+    node: Node<M>,
+    queue: &Rc<EventQueue<M>>,
+    counters: &mut Counters,
 ) -> Result<MountedNode<M>, UiError> {
     let Node {
+        static_text,
+        font_resource,
+        #[cfg(feature = "widget-image")]
+        image_resource,
         key,
         kind,
         style,
@@ -278,10 +300,12 @@ pub(crate) fn create<M: Clone + 'static>(
         modal,
         #[cfg(feature = "input-gridnav")]
         grid_navigation,
+        ..
     } = node;
 
     let tag = widgets::tag(&kind);
-    let (props, entry) = widgets::into_props(kind);
+    let (mut props, entry) = widgets::into_props(kind);
+    widgets::retain_static_text(&mut props, static_text);
 
     let mut custom = None;
     let (obj, parts) = match entry {
@@ -322,11 +346,18 @@ pub(crate) fn create<M: Clone + 'static>(
         abort_create(custom, obj);
         return Err(error);
     }
+    #[cfg(feature = "widget-image")]
+    if let Some(image) = image_resource {
+        retained = widgets::Retained::LoadedImage(image);
+    }
     if tag != KindTag::Custom {
         widgets::apply_style(obj, &style, tag);
         for (selector, part_style) in &part_styles {
             widgets::apply_style_for_selector(obj, part_style, tag, *selector);
         }
+    }
+    if font_resource.is_some() {
+        apply_resource_font(obj, &style, font_resource.as_ref());
     }
     let transitions = if tag != KindTag::Custom {
         crate::animation::install_transitions(obj, &style, &part_styles)
@@ -388,6 +419,7 @@ pub(crate) fn create<M: Clone + 'static>(
         tag,
         props,
         style,
+        font_resource,
         transitions,
         animations,
         slot,
@@ -427,7 +459,7 @@ pub(crate) fn create<M: Clone + 'static>(
             .as_ref()
             .map(|pages| pages[index])
             .unwrap_or(children_parent);
-        match create(parent, child, queue, counters) {
+        match create(parent, child, queue, counters, index) {
             Ok(child) => {
                 mounted.count += child.count;
                 mounted.customs += child.customs;
@@ -450,6 +482,7 @@ fn update_styles<M: Clone + 'static>(
     mounted: &mut MountedNode<M>,
     style: Style,
     part_styles: Vec<(Selector, Style)>,
+    font_resource: Option<crate::FontResource>,
 ) {
     let tag = mounted.tag;
     if tag == KindTag::Custom {
@@ -489,10 +522,51 @@ fn update_styles<M: Clone + 'static>(
         mounted.transitions =
             crate::animation::install_transitions(mounted.obj, &style, &mounted.part_styles);
     }
+    if (font_resource != mounted.font_resource || styles_changed)
+        && (font_resource.is_some() || mounted.font_resource.is_some())
+    {
+        apply_resource_font(mounted.obj, &style, font_resource.as_ref());
+    }
+    mounted.font_resource = font_resource;
     mounted.style = style;
 }
 
+fn apply_resource_font(obj: NonNull<lv_obj_t>, style: &Style, font: Option<&crate::FontResource>) {
+    // SAFETY: the caller retains old and new font resources during assignment;
+    // obj is live and rendering is synchronous under validate_support.
+    unsafe {
+        if let Some(font) = font {
+            rs_lvgl_sys::lv_obj_set_style_text_font(obj.as_ptr(), font.as_ptr(), 0);
+        } else if style.is_set(crate::theme::STYLE_FONT) {
+            rs_lvgl_sys::lv_obj_set_style_text_font(obj.as_ptr(), style.font.0, 0);
+        } else {
+            rs_lvgl_sys::lv_obj_remove_local_style_prop(
+                obj.as_ptr(),
+                rs_lvgl_sys::_lv_style_id_t_LV_STYLE_TEXT_FONT as _,
+                0,
+            );
+        }
+    }
+}
+
 pub(crate) fn update<M: Clone + 'static>(
+    mounted: &mut MountedNode<M>,
+    node: Node<M>,
+    queue: &Rc<EventQueue<M>>,
+    counters: &mut Counters,
+    child_index: usize,
+) -> Result<(), UiError> {
+    queue.diagnostics.node(
+        node.key,
+        child_index,
+        widgets::tag(&node.kind),
+        crate::diagnostics::DiagnosticStage::Update,
+        crate::Property::Value,
+        || update_inner(mounted, node, queue, counters),
+    )
+}
+
+fn update_inner<M: Clone + 'static>(
     mounted: &mut MountedNode<M>,
     node: Node<M>,
     queue: &Rc<EventQueue<M>>,
@@ -516,8 +590,12 @@ pub(crate) fn update<M: Clone + 'static>(
     }
 
     let Node {
+        static_text,
         key: _,
         kind,
+        font_resource,
+        #[cfg(feature = "widget-image")]
+        image_resource,
         style,
         part_styles,
         keyboard_id,
@@ -535,10 +613,12 @@ pub(crate) fn update<M: Clone + 'static>(
         modal,
         #[cfg(feature = "input-gridnav")]
         grid_navigation,
+        ..
     } = node;
     // A mounted lifecycle widget keeps its instance; the new descriptor's
     // factory is dropped here.
-    let (props, _entry) = widgets::into_props(kind);
+    let (mut props, _entry) = widgets::into_props(kind);
+    widgets::retain_static_text(&mut props, static_text);
 
     sync_handlers(&mut mounted.slot, mounted.obj, tag, handlers, queue)?;
     apply_flags(
@@ -569,7 +649,7 @@ pub(crate) fn update<M: Clone + 'static>(
     });
 
     if tag.is_pager() {
-        update_styles(mounted, style, part_styles);
+        update_styles(mounted, style, part_styles, font_resource);
         crate::animation::sync(mounted.obj, &mounted.animations, &animations)?;
         mounted.animations = animations;
         if mounted.grid_cell != grid_cell {
@@ -612,8 +692,8 @@ pub(crate) fn update<M: Clone + 'static>(
                 slot.clear_suppress();
             }
         }
-        for (page, child) in mounted.children.iter_mut().zip(children) {
-            if let Err(error) = update(page, child, queue, counters) {
+        for (index, (page, child)) in mounted.children.iter_mut().zip(children).enumerate() {
+            if let Err(error) = update(page, child, queue, counters, index) {
                 mounted.recount();
                 return Err(error);
             }
@@ -632,7 +712,12 @@ pub(crate) fn update<M: Clone + 'static>(
         slot,
         &mut mounted.retained,
     )?;
-    update_styles(mounted, style, part_styles);
+    #[cfg(feature = "widget-image")]
+    if let Some(image) = image_resource {
+        mounted.retained = widgets::Retained::LoadedImage(image);
+    }
+
+    update_styles(mounted, style, part_styles, font_resource);
     crate::animation::sync(mounted.obj, &mounted.animations, &animations)?;
     mounted.animations = animations;
     let grid_changed = match (&mounted.props, &props) {
@@ -701,7 +786,7 @@ fn recreate<M: Clone + 'static>(
         rs_lvgl_sys::lv_obj_get_index(mounted.obj.as_ptr())
     };
 
-    let replacement = create(parent, node, queue, counters)?;
+    let replacement = create_inner(parent, node, queue, counters)?;
     // Preserve the identity position before the old object disappears.
     // SAFETY: both objects are children of `parent`.
     unsafe { rs_lvgl_sys::lv_obj_move_to_index(replacement.obj.as_ptr(), index) };
@@ -730,12 +815,40 @@ impl MatchKey {
 
 fn reconcile_children<M: Clone + 'static>(
     parent: NonNull<lv_obj_t>,
-    old_children: Vec<MountedNode<M>>,
+    mut old_children: Vec<MountedNode<M>>,
     new_children: Vec<Node<M>>,
     queue: &Rc<EventQueue<M>>,
     counters: &mut Counters,
     first_index: i32,
 ) -> Result<Vec<MountedNode<M>>, UiError> {
+    // A stable key sequence in native order needs neither a match map nor a
+    // reorder plan. Reuse the mounted vector, including for empty containers.
+    // Check native positions too: raw/custom code may have moved the objects.
+    let stable_order = old_children.len() == new_children.len()
+        && old_children
+            .iter()
+            .zip(&new_children)
+            .enumerate()
+            .all(|(index, (old, new))| {
+                old.key == new.key
+                // SAFETY: mounted children are live native siblings.
+                && unsafe { rs_lvgl_sys::lv_obj_get_index(old.obj.as_ptr()) }
+                    == first_index + index as i32
+            });
+    if stable_order {
+        for (index, child) in new_children.into_iter().enumerate() {
+            if let Err(error) = update(&mut old_children[index], child, queue, counters, index) {
+                // The parent has moved these children out. Every native object
+                // must be retired before their retained descriptors are dropped.
+                for old in old_children {
+                    delete_subtree(old, counters);
+                }
+                return Err(error);
+            }
+        }
+        return Ok(old_children);
+    }
+
     // Explicit keys are looked up in O(log n); auto-keyed children match the
     // next unused auto-keyed child in order.
     let mut keyed: BTreeMap<MatchKey, usize> = BTreeMap::new();
@@ -748,7 +861,7 @@ fn reconcile_children<M: Clone + 'static>(
     let mut result = Vec::with_capacity(new_children.len());
     let mut auto_cursor = 0usize;
 
-    for child in new_children {
+    for (index, child) in new_children.into_iter().enumerate() {
         let matched = match MatchKey::of(child.key) {
             None => {
                 let mut found = None;
@@ -771,11 +884,11 @@ fn reconcile_children<M: Clone + 'static>(
         };
 
         let next = match matched {
-            Some(index) => {
-                let mut existing = available[index]
+            Some(old_index) => {
+                let mut existing = available[old_index]
                     .take()
                     .expect("matched mounted child is present");
-                match update(&mut existing, child, queue, counters) {
+                match update(&mut existing, child, queue, counters, index) {
                     Ok(()) => Ok(existing),
                     Err(error) => {
                         delete_subtree(existing, counters);
@@ -783,7 +896,7 @@ fn reconcile_children<M: Clone + 'static>(
                     }
                 }
             }
-            None => create(parent, child, queue, counters),
+            None => create(parent, child, queue, counters, index),
         };
         match next {
             Ok(node) => result.push(node),

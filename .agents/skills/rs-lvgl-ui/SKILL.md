@@ -9,7 +9,7 @@ description: Build or modify declarative Rust screens using rs_lvgl_ui functions
 
 Identify the application's Cargo dependency and the actual source checkout. This
 skill targets `rs_lvgl_ui` from `umbrella22/rs_lvgl`, layered over LVGL 9.6.
-The 0.2 API is not interchangeable with older registry `lvgl`,
+The 0.3 API is not interchangeable with older registry `lvgl`,
 `lightvgl-sys` or C++ wrappers. Read the resolved manifests and relevant APIs
 before assuming a symbol or feature exists. In this source repository, the main
 entry points are `rs_lvgl_ui/src/{constructors,prelude,app,node,theme}.rs` and

@@ -4,7 +4,17 @@ use core::fmt::{self, Debug};
 use core::marker::PhantomData;
 use core::ptr::{self, NonNull};
 
-pub trait NativeObject {
+/// A non-owning handle accepted by safe LVGL wrapper operations.
+///
+/// # Safety
+/// Implementers must return a correctly aligned, initialized, live `lv_obj_t`
+/// belonging to the current LVGL lifecycle and UI thread. Its address must stay
+/// stable and valid throughout every operation that borrows this handle and any
+/// longer retention documented by that operation. Deleting an object, its parent
+/// or display must not leave usable handles behind. Returning `NonNull` alone
+/// does not establish these guarantees. This trait grants no deletion authority
+/// and does not make native state thread-safe.
+pub unsafe trait NativeObject {
     fn raw(&self) -> NonNull<rs_lvgl_sys::lv_obj_t>;
 }
 
@@ -52,7 +62,9 @@ impl<'a> Obj<'a> {
     }
 }
 
-impl NativeObject for Obj<'_> {
+// SAFETY: safe constructors use a live parent/default display. Raw construction
+// transfers validity and invalidation obligations through Widget::from_raw.
+unsafe impl NativeObject for Obj<'_> {
     fn raw(&self) -> ptr::NonNull<rs_lvgl_sys::lv_obj_t> {
         self.raw
     }
@@ -62,6 +74,19 @@ pub trait Widget<'a>: NativeObject + Sized + 'a {
     type SpecialEvent;
     type Part: Into<rs_lvgl_sys::lv_part_t>;
 
+    /// Borrow a native object without taking deletion responsibility.
+    ///
+    /// The lifetime parameter also tracks retained style borrows; it does not
+    /// independently prove that the native object remains alive.
+    ///
+    /// # Safety
+    /// `raw_pointer` must be aligned, initialized and live, with the native type
+    /// required by `Self`, in the current LVGL lifecycle on the UI thread. The
+    /// caller must retain the object, its parent/display and referenced resources
+    /// for every subsequent use of the returned handle. Aliases must not delete
+    /// or incompatibly mutate it during a borrow. All aliases become unusable
+    /// before native deletion or deinitialization; callbacks must obey the same
+    /// rule. This creates a non-owning handle and never extends native lifetime.
     unsafe fn from_raw(raw_pointer: ptr::NonNull<rs_lvgl_sys::lv_obj_t>) -> Option<Self>;
 
     fn add_style(&mut self, part: Self::Part, style: &'a mut Style) {
@@ -178,7 +203,9 @@ macro_rules! define_object {
             }
         }
 
-        impl $crate::NativeObject for $item<'_> {
+        // SAFETY: the inner Obj carries the native validity contract; safe
+        // constructors create the matching widget and from_raw is unsafe.
+        unsafe impl $crate::NativeObject for $item<'_> {
             fn raw(&self) -> core::ptr::NonNull<rs_lvgl_sys::lv_obj_t> {
                 self.core.raw()
             }

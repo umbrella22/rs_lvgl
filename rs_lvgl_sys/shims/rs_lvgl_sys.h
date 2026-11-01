@@ -9,6 +9,10 @@ extern "C" {
  * include path through build.rs). */
 #include "lvgl.h"
 
+/* Bits: 1 = synchronous software-only configuration, 2 = caches disabled.
+ * This reports the effective compiled header, including application headers. */
+uint32_t lv_rs_loaded_resource_support(void);
+
 #if LV_USE_BARCODE
 /* Returns the encoded pixel width, or zero for invalid/unrepresentable data. */
 uint32_t lv_rs_barcode_width(const char *data, lv_barcode_encoding_t encoding, uint16_t scale);

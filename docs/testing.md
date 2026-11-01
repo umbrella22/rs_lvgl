@@ -17,6 +17,8 @@ cargo check -p rs_lvgl_ui --examples --features showcase,rust_timer
 cargo check -p rs_lvgl --no-default-features --lib
 cargo test -p rs_lvgl --no-default-features --features lvgl_alloc,rust_timer -- --test-threads=1
 cargo test -p rs_lvgl_ui --features showcase,font-cjk-14,rust_timer -- --test-threads=1
+cargo test -p rs_lvgl_ui --features diagnostics,strict-properties -- --test-threads=1
+cargo check -p rs_lvgl_ui --no-default-features --features alloc,diagnostics,strict-properties --lib
 cargo test -p rs_lvgl_ui --no-default-features --features alloc,components -- --test-threads=1
 python3 scripts/check-ui-api.py --artifacts target/ui-api-audit
 ```
@@ -45,6 +47,9 @@ constructors and `View`, including arrays, iterators and message mapping. It
 checks root/prelude feature gates, keeps transitive native widgets out of the
 typed API, and verifies that old associated constructors and safe calls to
 `raw` fail for their intended Rust diagnostics.
+It also checks safe `NativeObject` implementation rejection, an external adapter
+delegating to a borrowed `Obj`, loaded-font unsafe transfer, loaded-image feature
+gates, static/short-borrowed text compatibility and the new `no_std` APIs.
 
 On macOS, the native linker may need the SDL2 library search path explicitly:
 
@@ -66,6 +71,11 @@ intended capability/path/header failure. It also verifies unchanged-input cache 
 configuration switching, independent output directories, failed-build recovery,
 interrupted C compilation and recovery, disabled/enabled generated widget APIs, and
 an executable built against an unpacked `.crate`.
+The loaded-resource consumer checks supported admission, rejects images and font
+mounts with image/header caches enabled in an application header, then restores
+the supported header in the same output directory.
+It also disables RGB565 input drawing, checks explicit image rejection with fonts
+still admitted, and restores the format in the same output directory.
 
 The interruption fixture needs POSIX process groups and terminates only its own
 compiler process group. Windows interruption acceptance is not implemented. Font
@@ -97,6 +107,9 @@ cover:
 - QR, barcode, GIF, Lottie and Pinyin individually, plus sequential replacement.
 - Completed/interrupted screen transitions and unmount.
 - Validation failures, failed Lottie setup and recovery.
+- Loaded image sharing, static replacement, inherited fonts, native destructor
+  before backing-data destruction, later-sibling creation/update failure and retry.
+- Native event observer capture replacement and release.
 
 The software renderer retains up to four radius-mask cache entries across displays.
 Replacing entries can change their allocated size without increasing block count.
@@ -123,6 +136,33 @@ ThorVG, are outside those counters. RSS, allocator fragmentation, sanitizers and
 physical memory budgets are separate evidence. Three consecutive unchanged-input
 passes are required for the repository readiness acceptance, not a universal proof
 of leak freedom for every application or native configuration.
+
+## Update costs
+
+```sh
+python3 scripts/check-ui-costs.py --artifacts target/update-costs/owned
+python3 scripts/check-ui-costs.py --static-text --artifacts target/update-costs/static
+```
+
+The test uses the same isolated BUILTIN configuration as heap accounting. A
+64-node memory-display page runs 16 iterations of idle drain, unchanged explicit
+update and one changed number. The static variant replaces 63 fixed owned label
+strings with `label_static`; the changing number remains dynamic. A deliberate
+257-byte Rust allocation verifies counter and peak sensitivity. Receipts include
+source identities before/after the command; drift makes the measurement fail.
+
+The Rust meter reports cumulative allocation calls/requested bytes, live-byte
+delta and maximum extra live bytes above the per-update baseline. Native metrics
+report live bytes before/after and high-water **since LVGL initialization**, not
+per-update native peak or native allocation-call counts. `update-metrics` counts
+only native label-text setter calls. Host test-profile elapsed time is recorded
+without a device-performance threshold. Neither leak balance nor a reduced
+allocation count establishes physical memory-budget or board-render acceptance.
+
+The full keyed matching/reorder tests remain required alongside the stable-order
+path: matching key sequences cannot assume native order after raw/custom moves.
+See [runtime contracts](ui-runtime.md) for render-skip obligations and resource
+configuration limits.
 
 ## Example and native display checks
 

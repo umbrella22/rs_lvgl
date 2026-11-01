@@ -20,6 +20,7 @@ rs_lvgl/target/
 !/docs/ai-skills.md
 !/docs/component-studio.md
 !/docs/testing.md
+!/docs/ui-runtime.md
 !/docs/images/
 /docs/images/*
 !/docs/images/*.png

@@ -17,10 +17,14 @@ pub use crate::components;
 pub use crate::constructors::*;
 #[cfg(feature = "widget-gif")]
 pub use crate::Gif;
+#[cfg(feature = "widget-image")]
+pub use crate::ImageResource;
 #[cfg(feature = "widget-lottie")]
 pub use crate::Lottie;
 #[cfg(feature = "widget-qrcode")]
 pub use crate::QrCode;
+pub use crate::RenderDecision;
+pub use crate::{resource_support, FontResource, ResourceError, ResourceSupport};
 pub use crate::{
     symbol, table_cell, Align, Animation, AnimationProperty, App, BlendMode, CalendarDate,
     ChartSeries, ChartType, Color, CustomObject, CustomWidget, CustomWidgetKind, DrainStats,
@@ -37,3 +41,4 @@ pub use crate::{Barcode, BarcodeEncoding};
 pub use crate::{Canvas, DrawCommand};
 #[cfg(feature = "input-gridnav")]
 pub use crate::{GridNavigation, NavigationAxis};
+pub use crate::{PostOutcome, QueueOverflow, QueuePolicy, QueueStats};

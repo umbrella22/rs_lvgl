@@ -2,14 +2,46 @@
 
 ## Unreleased
 
+## 0.3.0 — 2026-11-01
+
+### Breaking changes
+
+- Make `NativeObject` an unsafe trait. External implementations must guarantee
+  valid native object lifetimes and UI-thread access; migrate through a reviewed
+  `unsafe impl`. Expand `Widget::from_raw` safety requirements. This does not add
+  automatic object/display deletion or certify every existing FFI wrapper.
+
+### Added
+
+- Add explicit bounded queue outcomes, rejection/eviction policies, caller-defined
+  tail merging and native-handler outcome observers without changing `Ui::post`.
+- Add optional `diagnostics` path metadata and opt-in `strict-properties` checking
+  for wrong-kind modifiers, preserving metadata through message mapping.
+- Retain loaded RGB565 images and native font resources across mount, replacement,
+  failure cleanup and unmount. Admission checks the effective synchronous software
+  renderer configuration with image/header caches disabled. Font import remains
+  an unsafe transfer requiring a matching destructor and stable backing data.
+- Add defaulted `App::update_with_render` feedback, borrowed static label/button
+  constructors and a stable-child-order reconciliation path. Add an isolated
+  update-cost harness for cumulative Rust allocations, peak bytes and label setters.
+
 ### Documentation
 
+- Document [runtime/resource contracts and migration](docs/ui-runtime.md),
+  configuration limits and the validation/measurement entrypoints.
 - Move the bilingual website, browser studio and playground to the independent
   [rs_lvgl_website](https://github.com/umbrella22/rs_lvgl_website) repository.
   Publish through its own GitHub Pages workflow at
   [the new documentation address](https://umbrella22.github.io/rs_lvgl_website/),
   with a pinned library source revision for native and WebAssembly builds.
   Update README, testing, studio and future release links.
+
+### Fixed
+
+- Detect failed native image source installation before releasing the previous
+  descriptor/data. Decoder rejection now returns `InvalidProperty` and cleans the
+  failed subtree; native string-allocation failure preserves prior data until
+  cleanup. Loaded RGB565 images reject configurations that disable RGB565 drawing.
 
 ## 0.2.0 — 2026-10-27
 

@@ -105,6 +105,21 @@ pub fn button<M>(text: impl Into<String>) -> View<M> {
     Node::new(WidgetKind::Button { text: text.into() })
 }
 
+/// Borrow fixed label text without allocating a Rust String for each view.
+/// LVGL still copies changed text into its native label allocation.
+pub fn label_static<M>(text: &'static str) -> View<M> {
+    let mut node = label(String::new());
+    node.static_text = Some(text);
+    node
+}
+
+/// Borrow fixed button text while preserving the unified View type.
+pub fn button_static<M>(text: &'static str) -> View<M> {
+    let mut node = button(String::new());
+    node.static_text = Some(text);
+    node
+}
+
 /// A controlled slider with a value in `min..=max`.
 #[cfg(feature = "widget-slider")]
 pub fn slider<M>(min: i32, max: i32, value: i32) -> View<M> {
@@ -133,6 +148,22 @@ pub fn image<M>(source: ImageSource) -> View<M> {
 #[cfg(feature = "widget-image")]
 pub fn image_scaled<M>(source: ImageSource, scale: u16) -> View<M> {
     Node::new(WidgetKind::Image { source, scale })
+}
+
+/// An already loaded image retained through source replacement and unmount.
+#[cfg(feature = "widget-image")]
+pub fn image_resource<M>(source: crate::ImageResource) -> View<M> {
+    image_resource_scaled(source, 256)
+}
+
+#[cfg(feature = "widget-image")]
+pub fn image_resource_scaled<M>(source: crate::ImageResource, scale: u16) -> View<M> {
+    // SAFETY: the node retains source and transfers it into native retention
+    // before its descriptor is discarded, including failure/deletion paths.
+    let raw = unsafe { ImageSource::from_raw(source.as_ptr()) };
+    let mut node = Node::new(WidgetKind::Image { source: raw, scale });
+    node.image_resource = Some(source);
+    node
 }
 
 /// A checkbox with a text label and controlled checked state.

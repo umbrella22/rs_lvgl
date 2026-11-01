@@ -66,6 +66,8 @@ jobs:
         run: cargo generate-lockfile
       - name: Test all UI capabilities
         run: cargo test -p rs_lvgl_ui --locked --features showcase,font-cjk-14,rust_timer -- --test-threads=1
+      - name: Test diagnostics and strict property checking
+        run: cargo test -p rs_lvgl_ui --locked --features diagnostics,strict-properties -- --test-threads=1
       - name: Test actual views and native SDL journeys
         run: xvfb-run -a python3 scripts/check-ui-examples.py --locked --artifacts target/ui-audit
       - name: Render the component studio
@@ -75,6 +77,7 @@ jobs:
           cargo test -p rs_lvgl_ui --locked --no-default-features --features alloc,components -- --test-threads=1
           cargo check -p rs_lvgl_ui --locked --no-default-features --lib
           cargo check -p rs_lvgl_ui --locked --no-default-features --features alloc,no-autoinit --lib
+          cargo check -p rs_lvgl_ui --locked --no-default-features --features alloc,diagnostics,strict-properties --lib
           for capability in input-keypad input-gridnav widget-canvas widget-qrcode widget-barcode widget-gif widget-lottie widget-ime-pinyin font-cjk-14 font-cjk-16; do
             cargo check -p rs_lvgl_ui --locked --no-default-features --features "alloc,$capability" --lib
           done
@@ -144,6 +147,10 @@ jobs:
         run: cargo generate-lockfile
       - name: Verify strict balance and leak sensitivity
         run: python3 scripts/check-ui-leaks.py --locked --artifacts target/leak-audit
+      - name: Measure descriptor updates with owned and static text
+        run: |
+          python3 scripts/check-ui-costs.py --locked --artifacts target/update-costs/owned
+          python3 scripts/check-ui-costs.py --locked --static-text --artifacts target/update-costs/static
       - name: Keep heap diagnostics
         if: always()
         uses: actions/upload-artifact@v7
@@ -152,5 +159,9 @@ jobs:
           path: |
             target/leak-audit/*.log
             target/leak-audit/*.json
+            target/update-costs/owned/*.log
+            target/update-costs/owned/*.json
+            target/update-costs/static/*.log
+            target/update-costs/static/*.json
           if-no-files-found: warn
           retention-days: 7

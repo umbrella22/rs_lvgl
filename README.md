@@ -53,12 +53,15 @@ Add the crates.io dependencies to your project:
 
 ```toml
 [dependencies]
-rs_lvgl = { version = "0.2", default-features = false, features = ["alloc"] }
-rs_lvgl_ui = "0.2"
+rs_lvgl = { version = "0.3", default-features = false, features = ["alloc"] }
+rs_lvgl_ui = "0.3"
 ```
 
 `rs_lvgl` and `rs_lvgl_ui` support `no_std`. Embedded applications using the UI
 layer need an allocator and platform-specific display and input drivers.
+
+Upgrading from 0.2? Review the [0.3 migration and runtime contracts](https://github.com/umbrella22/rs_lvgl/blob/main/docs/ui-runtime.md),
+including external `NativeObject` implementations and loaded-resource configuration.
 
 ## Define a screen
 
@@ -108,7 +111,7 @@ Disable the default feature set to select the widgets and fonts you need:
 
 ```toml
 [dependencies.rs_lvgl_ui]
-version = "0.2"
+version = "0.3"
 default-features = false
 features = [
     "alloc", "components", "widget-slider", "widget-switch", "font-montserrat-16"

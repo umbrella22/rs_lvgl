@@ -2,6 +2,22 @@
  * additional C shims the Rust side needs here. */
 #include "rs_lvgl_sys.h"
 
+uint32_t lv_rs_loaded_resource_support(void)
+{
+    uint32_t support = 0;
+#if LV_USE_OS == LV_OS_NONE && LV_USE_DRAW_SW && \
+    !LV_USE_DRAW_VG_LITE && !LV_USE_DRAW_DAVE2D && !LV_USE_DRAW_PXP && \
+    !LV_USE_DRAW_DMA2D && !LV_USE_DRAW_EVE && !LV_USE_DRAW_G2D && \
+    !LV_USE_DRAW_NANOVG && !LV_USE_DRAW_OPENGLES && !LV_USE_DRAW_SDL && \
+    !LV_USE_DRAW_ARM2D_SYNC
+    support |= 1;
+#endif
+#if LV_CACHE_DEF_SIZE == 0 && LV_IMAGE_HEADER_CACHE_DEF_CNT == 0
+    support |= 2;
+#endif
+    return support;
+}
+
 #if LV_USE_LOTTIE
 #include "widgets/lottie/lv_lottie_private.h"
 #include "misc/lv_anim_private.h"

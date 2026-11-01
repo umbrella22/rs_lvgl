@@ -1,7 +1,7 @@
 [package]
 name = "rs_lvgl_ui"
 description = "Declarative, typed Rust UI layer for LVGL 9.6 with keyed reconciliation."
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/umbrella22/rs_lvgl"
@@ -11,10 +11,10 @@ publish = ["crates-io"]
 readme = "README.md"
 
 [dependencies]
-rs_lvgl = { version = "0.2.0", path = "../rs_lvgl", default-features = false }
+rs_lvgl = { version = "0.3.0", path = "../rs_lvgl", default-features = false }
 # rs_lvgl_ui always selects LVGL widgets and fonts through its own features, so
 # LVGL only compiles what they enable (see "Choosing widgets" in README.md).
-rs_lvgl_sys = { version = "0.2.0", path = "../rs_lvgl_sys", features = ["minimal-config"] }
+rs_lvgl_sys = { version = "0.3.0", path = "../rs_lvgl_sys", features = ["minimal-config"] }
 cstr_core = { version = "0.2.6", default-features = false, features = ["alloc"] }
 cty = "0.2.2"
 
@@ -27,6 +27,12 @@ alloc = ["rs_lvgl/alloc"]
 # Composite components (`rs_lvgl_ui::components`): lists, panels, stack
 # navigation, dialogs and toasts built from plain nodes.
 components = []
+# Acceptance-only static text comparison; production defaults are unchanged.
+cost-static-text = ["update-metrics"]
+update-metrics = []
+# Optional path diagnostics; strict rejection of ignored modifiers is opt-in.
+diagnostics = []
+strict-properties = []
 input-keypad = ["rs_lvgl/input-keypad"]
 input-gridnav = ["input-keypad", "rs_lvgl_sys/gridnav"]
 # Host acceptance harness; requires the dedicated BUILTIN allocator config.
@@ -206,6 +212,10 @@ required-features = ["simulator", "components", "widget-switch"]
 [[test]]
 name = "leak_check"
 required-features = ["leak-check"]
+
+[[test]]
+name = "update_cost"
+required-features = ["leak-check", "update-metrics"]
 
 [[test]]
 name = "input_focus"

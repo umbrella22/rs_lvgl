@@ -22,7 +22,7 @@ def main():
     args = parser.parse_args()
     out = args.artifacts.resolve()
     out.mkdir(parents=True, exist_ok=True)
-    command = ["cargo", "test", "-p", "rs_lvgl_ui", "--test", "leak_check", "--features", "leak-check"]
+    command = ["cargo", "test", "-p", "rs_lvgl_ui", "--test", "leak_check", "--features", "leak-check,diagnostics,strict-properties"]
     command += (["--locked"] if args.locked else []) + (["--offline"] if args.offline else [])
     env = os.environ.copy()
     env["CARGO_TERM_COLOR"] = "never"

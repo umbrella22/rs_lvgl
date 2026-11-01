@@ -11,7 +11,8 @@ impl Screen<'_> {
     }
 }
 
-impl NativeObject for Screen<'_> {
+// SAFETY: Screen delegates to its live Obj; conversion checks the native parent.
+unsafe impl NativeObject for Screen<'_> {
     fn raw(&self) -> core::ptr::NonNull<rs_lvgl_sys::lv_obj_t> {
         self.raw.raw()
     }

@@ -17,6 +17,15 @@ use crate::UiError;
 /// Default capacity of the message queue.
 pub const DEFAULT_QUEUE_CAPACITY: usize = 64;
 
+/// Visual work required after a message. Skip is an explicit application
+/// promise: neither view/overlay changes nor controlled-native correction are
+/// required. An unchanged model alone does not establish this promise.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum RenderDecision {
+    Reconcile,
+    Skip,
+}
+
 /// An application screen.
 ///
 /// `update` changes application state only. `view` reads state and returns a
@@ -28,6 +37,17 @@ pub trait App {
     type Msg: Clone + 'static;
 
     fn update(&mut self, msg: Self::Msg);
+
+    /// Process a message with optional reconciliation feedback. Existing apps
+    /// call update and reconcile by default. A batch reconciles if any message
+    /// requests it; dirty/theme/first-mount requirements always take priority.
+    ///
+    /// A user may change a native slider from 50 to 80 while update clamps its
+    /// model back to 50. That still requires Reconcile to restore the widget.
+    fn update_with_render(&mut self, msg: Self::Msg) -> RenderDecision {
+        self.update(msg);
+        RenderDecision::Reconcile
+    }
     fn view(&self, theme: &Theme) -> View<Self::Msg>;
 
     /// Optional tree mounted above the view, on the display's top layer.
@@ -170,15 +190,16 @@ impl<M: Clone + 'static> Ui<M> {
         let _guard = enter(&self.busy)?;
         let dropped_before = self.queue.dropped();
         let mut processed = 0;
+        let mut requested = false;
         while processed < max_messages {
             let Some(message) = self.queue.pop() else {
                 break;
             };
-            app.update(message);
+            requested |= app.update_with_render(message) == RenderDecision::Reconcile;
             processed += 1;
         }
         self.messages_processed += processed as u64;
-        let reconciled = processed > 0 || self.dirty || self.mounted.is_none();
+        let reconciled = requested || self.dirty || self.mounted.is_none();
         if reconciled {
             let tree = app.view(&self.theme);
             let overlay = app.overlay(&self.theme);
@@ -292,6 +313,47 @@ impl<M: Clone + 'static> Ui<M> {
         let _guard = enter(&self.busy)?;
         self.queue.post(message);
         Ok(())
+    }
+
+    /// Enqueue with an explicit policy and return any rejected/evicted value.
+    /// The legacy `post` method always retains its drop-oldest behavior.
+    pub fn post_with(
+        &mut self,
+        message: M,
+        policy: crate::QueuePolicy<M>,
+    ) -> Result<crate::PostOutcome<M>, UiError> {
+        let _guard = enter(&self.busy)?;
+        Ok(self.queue.post_with(message, policy))
+    }
+
+    /// Select congestion behavior for messages produced by native handlers.
+    /// Existing queued messages retain their order. Defaults to drop-oldest.
+    pub fn set_event_queue_policy(&mut self, policy: crate::QueuePolicy<M>) {
+        self.queue.set_event_policy(policy);
+    }
+
+    /// Observe native-handler outcomes, including rejected message values.
+    ///
+    /// This runs synchronously inside the native callback on the UI thread.
+    /// It must not unwind, block, or call Ui methods. Save work for the next
+    /// platform-loop iteration. `None` releases the observer.
+    pub fn set_event_queue_observer(
+        &mut self,
+        observer: Option<Rc<dyn Fn(crate::PostOutcome<M>)>>,
+    ) {
+        self.queue.set_event_observer(observer);
+    }
+
+    pub fn queue_stats(&self) -> crate::QueueStats {
+        self.queue.stats()
+    }
+
+    /// Install an optional structured path sink. The sink runs during UI
+    /// operations; it must not unwind or reenter Ui. No property values appear.
+    /// A sink panic aborts at an internal non-unwinding callback boundary.
+    #[cfg(feature = "diagnostics")]
+    pub fn set_diagnostic_sink(&mut self, sink: Option<crate::DiagnosticSink>) {
+        self.queue.diagnostics.set(sink);
     }
 
     /// Advance every mounted custom widget by `elapsed_ms`.
@@ -411,9 +473,16 @@ impl<M: Clone + 'static> Ui<M> {
     }
 
     fn render(&mut self, tree: View<M>, overlay: Option<View<M>>) -> Result<(), UiError> {
-        node::validate(&tree)?;
+        use crate::diagnostics::{DiagnosticEvent, DiagnosticTree};
+        self.queue
+            .diagnostics
+            .emit(DiagnosticEvent::Tree(DiagnosticTree::View));
+        node::validate(&tree, &self.queue.diagnostics)?;
         if let Some(overlay) = &overlay {
-            node::validate(overlay)?;
+            self.queue
+                .diagnostics
+                .emit(DiagnosticEvent::Tree(DiagnosticTree::Overlay));
+            node::validate(overlay, &self.queue.diagnostics)?;
         }
         #[cfg(feature = "input-keypad")]
         if let Some(group) = &mut self.focus {
@@ -426,10 +495,16 @@ impl<M: Clone + 'static> Ui<M> {
         self.ensure_root()?;
         let root = self.root.expect("root was just ensured");
         let queue = self.queue.clone();
+        queue
+            .diagnostics
+            .emit(DiagnosticEvent::Tree(DiagnosticTree::View));
         reconcile_tree(root, &mut self.mounted, tree, &queue, &mut self.counters)?;
 
         match overlay {
             Some(overlay) => {
+                queue
+                    .diagnostics
+                    .emit(DiagnosticEvent::Tree(DiagnosticTree::Overlay));
                 let overlay_root = self.ensure_overlay_root()?;
                 reconcile_tree(
                     overlay_root,
@@ -562,10 +637,10 @@ fn reconcile_tree<M: Clone + 'static>(
 ) -> Result<(), UiError> {
     match slot.take() {
         None => {
-            *slot = Some(reconciler::create(root, tree, queue, counters)?);
+            *slot = Some(reconciler::create(root, tree, queue, counters, 0)?);
             Ok(())
         }
-        Some(mut mounted) => match reconciler::update(&mut mounted, tree, queue, counters) {
+        Some(mut mounted) => match reconciler::update(&mut mounted, tree, queue, counters, 0) {
             Ok(()) => {
                 *slot = Some(mounted);
                 Ok(())

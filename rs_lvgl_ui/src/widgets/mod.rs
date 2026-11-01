@@ -1,3 +1,4 @@
+use alloc::borrow::Cow;
 use alloc::boxed::Box;
 use alloc::string::String;
 use alloc::vec::Vec;
@@ -48,7 +49,7 @@ impl KindTag {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum KindTag {
+pub enum KindTag {
     #[cfg(feature = "widget-ime-pinyin")]
     PinyinKeyboard,
     #[cfg(feature = "widget-qrcode")]
@@ -278,11 +279,11 @@ pub(crate) enum Props {
         target: u64,
     },
     Label {
-        text: String,
+        text: Cow<'static, str>,
         long_mode: LabelLongMode,
     },
     Button {
-        text: String,
+        text: Cow<'static, str>,
     },
     #[cfg(feature = "widget-slider")]
     Slider {
@@ -424,6 +425,18 @@ pub(crate) enum Props {
     Custom,
 }
 
+pub(crate) fn retain_static_text(props: &mut Props, text: Option<&'static str>) {
+    if let Some(text) = text {
+        match props {
+            Props::Label {
+                text: destination, ..
+            }
+            | Props::Button { text: destination } => *destination = Cow::Borrowed(text),
+            _ => unreachable!("only label/button descriptors carry static text"),
+        }
+    }
+}
+
 /// Native buffers LVGL references without copying, owned by a mounted node.
 ///
 /// Heap buffers keep their address when the owning `MountedNode` moves.
@@ -433,6 +446,8 @@ pub(crate) enum Props {
 // them stable while the vectors grow.
 #[allow(clippy::vec_box)]
 pub(crate) enum Retained {
+    #[cfg(feature = "widget-image")]
+    LoadedImage(#[allow(dead_code)] crate::ImageResource),
     #[cfg(feature = "widget-gif")]
     Gif {
         _data: alloc::rc::Rc<[u8]>,
@@ -566,8 +581,11 @@ pub(crate) fn into_props(kind: WidgetKind) -> (Props, Option<CustomWidgetKind>) 
         WidgetKind::Tabview { tabs, active } => Props::Tabview { tabs, active },
         #[cfg(feature = "widget-keyboard")]
         WidgetKind::Keyboard { target } => Props::Keyboard { target },
-        WidgetKind::Label { text, long_mode } => Props::Label { text, long_mode },
-        WidgetKind::Button { text } => Props::Button { text },
+        WidgetKind::Label { text, long_mode } => Props::Label {
+            text: text.into(),
+            long_mode,
+        },
+        WidgetKind::Button { text } => Props::Button { text: text.into() },
         #[cfg(feature = "widget-slider")]
         WidgetKind::Slider { min, max, value } => Props::Slider { min, max, value },
         #[cfg(feature = "widget-bar")]
@@ -992,10 +1010,10 @@ pub(crate) fn apply_props<M: Clone + 'static>(
         (Props::Keyboard { .. }, _) => {}
         (Props::Label { text, long_mode }, old) => {
             let (old_text, old_mode) = match old {
-                Some(Props::Label { text, long_mode }) => (Some(text.as_str()), Some(*long_mode)),
+                Some(Props::Label { text, long_mode }) => (Some(text.as_ref()), Some(*long_mode)),
                 _ => (None, None),
             };
-            if old_text != Some(text.as_str()) {
+            if old_text != Some(text.as_ref()) {
                 set_label_text(obj, text);
             }
             if old_mode != Some(*long_mode) {
@@ -1097,7 +1115,25 @@ pub(crate) fn apply_props<M: Clone + 'static>(
                 if rebuild {
                     let new_descriptor = source.descriptor();
                     let pointer = source.ptr(new_descriptor.as_deref());
+                    let previous = rs_lvgl_sys::lv_image_get_src(obj.as_ptr());
                     rs_lvgl_sys::lv_image_set_src(obj.as_ptr(), pointer);
+                    // The native setter returns void. Decoder rejection clears
+                    // the source; string-allocation failure can leave the old
+                    // source installed. Preserve its retained data until the
+                    // caller deletes the failed subtree in either case.
+                    let installed = rs_lvgl_sys::lv_image_get_src(obj.as_ptr());
+                    match source {
+                        ImageSource::Text(_) => {
+                            if installed.is_null() {
+                                return Err(UiError::InvalidProperty);
+                            }
+                            if installed == previous && installed != pointer {
+                                return Err(UiError::Allocation);
+                            }
+                        }
+                        _ if installed != pointer => return Err(UiError::InvalidProperty),
+                        _ => {}
+                    }
                     *retained = match new_descriptor {
                         Some(descriptor) => Retained::Image(descriptor),
                         None => Retained::None,
@@ -2193,6 +2229,8 @@ fn set_label_text(obj: NonNull<lv_obj_t>, text: &str) {
     };
     // SAFETY: `obj` is a live label and `text` is a valid NUL-terminated
     // string. LVGL copies the text into its own allocation.
+    #[cfg(feature = "update-metrics")]
+    crate::metrics::label_text_set();
     unsafe { rs_lvgl_sys::lv_label_set_text(obj.as_ptr(), text.as_ptr()) };
 }
 

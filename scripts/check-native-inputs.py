@@ -195,6 +195,70 @@ os.execv({compiler!r}, [{compiler!r}, *sys.argv[1:]])
     settings(183, 1)
     run("enabled-wrapper", typed_command + (["--locked"] if args.locked else []))
 
+    # Loaded-resource admission follows the effective application header.
+    resource = out / "resource-consumer"
+    (resource / "src").mkdir(parents=True, exist_ok=True)
+    (resource / "Cargo.toml").write_text('[package]\nname="loaded-resource-consumer"\nversion="0.0.0"\nedition="2021"\n[workspace]\n[dependencies]\n'
+        f'rs_lvgl_ui={{path={json.dumps(str(ROOT / "rs_lvgl_ui"))},default-features=false,features=["alloc","widget-image"]}}\n'
+        f'rs_lvgl={{path={json.dumps(str(ROOT / "rs_lvgl"))},default-features=false,features=["alloc"]}}\n'
+        f'rs_lvgl_sys={{path={json.dumps(str(ROOT / "rs_lvgl_sys"))}}}\n')
+    (resource / "src/main.rs").write_text('''use rs_lvgl_ui::prelude::*;
+use std::rc::Rc;
+struct Page(FontResource);
+impl App for Page {
+    type Msg=();
+    fn update(&mut self,_:()) {}
+    fn view(&self,_:&Theme)->View<()> {label_static("font").font_resource(self.0.clone())}
+}
+unsafe extern "C" fn destroy(font:*mut rs_lvgl_sys::lv_font_t) {
+    // SAFETY: this fixture allocates only the outer descriptor with lv_malloc.
+    unsafe {rs_lvgl_sys::lv_free(font.cast())};
+}
+fn main() {
+    let supported=std::env::args().nth(1).unwrap()=="1";
+    let images=std::env::args().nth(2).map(|s|s=="1").unwrap_or(supported);
+    assert_eq!(resource_support().supported(),supported);
+    let image=ImageResource::rgb565(1,1,2,Rc::from([0u8,0]));
+    if images { assert!(image.is_ok()); }
+    else { assert_eq!(image.unwrap_err(),ResourceError::UnsupportedConfiguration); }
+    let font=unsafe {
+        let raw=core::ptr::NonNull::new(rs_lvgl_sys::lv_malloc(core::mem::size_of::<rs_lvgl_sys::lv_font_t>())
+            .cast::<rs_lvgl_sys::lv_font_t>()).unwrap();
+        raw.as_ptr().write(core::ptr::addr_of!(rs_lvgl_sys::lv_font_montserrat_14).read());
+        FontResource::from_raw_owned(raw,(),destroy)
+    };
+    let display=rs_lvgl::Display::register::<_,1024>(32,32,|_|{}).unwrap();
+    {
+        let mut ui=Ui::new(&display,Theme::dark()).unwrap();
+        let page=Page(font);
+        let result=ui.mount(&page);
+        if supported { result.unwrap(); drop(ui.snapshot().unwrap()); }
+        else { assert_eq!(result,Err(UiError::InvalidProperty)); assert_eq!(ui.stats().mounted_nodes,0); }
+        ui.unmount();
+    }
+    // SAFETY: all objects/resources are gone and the flush callback is synchronous.
+    unsafe {display.delete()};
+    println!("LOADED_RESOURCE_SUPPORTED:{}",supported as u8);
+}
+''')
+    resource_command=["cargo","run","--manifest-path",str(resource/"Cargo.toml"),*flags]
+    run("resolve-resource-lock",["cargo","generate-lockfile","--manifest-path",str(resource/"Cargo.toml"),*flags])
+    resource_command += (["--locked"] if args.locked else [])
+    run("loaded-resource-supported",resource_command+["--","1"])
+    cached_config=out/"resource-cached.h"
+    cached_config.write_text(f'#include {json.dumps(str(config/"lv_conf.h"))}\n'
+        '#undef LV_CACHE_DEF_SIZE\n#define LV_CACHE_DEF_SIZE 4096\n'
+        '#undef LV_IMAGE_HEADER_CACHE_DEF_CNT\n#define LV_IMAGE_HEADER_CACHE_DEF_CNT 4\n')
+    run("loaded-resource-rejects-cache",resource_command+["--","0"],
+        overrides={"LVGL_CONFIG_PATH":str(cached_config)})
+    run("loaded-resource-config-recovery",resource_command+["--","1"])
+    no_rgb565=out/"resource-no-rgb565.h"
+    no_rgb565.write_text(f'#include {json.dumps(str(config/"lv_conf.h"))}\n'
+        '#undef LV_DRAW_SW_SUPPORT_RGB565\n#define LV_DRAW_SW_SUPPORT_RGB565 0\n')
+    run("loaded-resource-rejects-disabled-format",resource_command+["--","1","0"],
+        overrides={"LVGL_CONFIG_PATH":str(no_rgb565)})
+    run("loaded-resource-format-recovery",resource_command+["--","1"])
+
     # Package from this checkout, then consume only its unpacked source path.
     saved = {key: env.pop(key) for key in ("LVGL_CONFIG_PATH", "LVGL_EXTRA_C_DIR", "LVGL_EXTRA_HEADERS")}
     try:

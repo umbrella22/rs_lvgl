@@ -48,12 +48,15 @@ cargo run -p rs_lvgl_ui --example studio --features showcase
 
 ```toml
 [dependencies]
-rs_lvgl = { version = "0.2", default-features = false, features = ["alloc"] }
-rs_lvgl_ui = "0.2"
+rs_lvgl = { version = "0.3", default-features = false, features = ["alloc"] }
+rs_lvgl_ui = "0.3"
 ```
 
 `rs_lvgl` 和 `rs_lvgl_ui` 支持 `no_std`。在嵌入式设备上使用 UI 层时，
 需要提供分配器以及对应的显示和输入驱动。
+
+从 0.2 升级时，请阅读 [0.3 迁移与运行时契约](https://github.com/umbrella22/rs_lvgl/blob/main/docs/ui-runtime.md)，
+复核外部 `NativeObject` 实现，并检查动态资源要求的原生配置。
 
 ## 描述界面
 
@@ -101,7 +104,7 @@ impl App for Counter {
 
 ```toml
 [dependencies.rs_lvgl_ui]
-version = "0.2"
+version = "0.3"
 default-features = false
 features = [
     "alloc", "components", "widget-slider", "widget-switch", "font-montserrat-16"

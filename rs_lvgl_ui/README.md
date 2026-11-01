@@ -30,6 +30,12 @@ platform event -> C callback -> EventQueue -> Ui::drain -> App::update
 
 ## Features
 
+Version 0.3 adds loaded resource handles, congestion policies, render feedback
+and static text constructors. See the
+[runtime and migration guide](https://github.com/umbrella22/rs_lvgl/blob/main/docs/ui-runtime.md)
+for the `NativeObject` unsafe-trait migration, resource contracts and effective
+native configuration limits.
+
 | Feature | Default | Meaning |
 | --- | --- | --- |
 | `alloc` | yes | Enables allocator support in the `rs_lvgl` dependency. Required on bare metal. |
@@ -38,6 +44,10 @@ platform event -> C callback -> EventQueue -> Ui::drain -> App::update
 | `input-gridnav` | no | Spatial arrow navigation; includes `input-keypad`. |
 | `capability-gallery` | no | Host demo feature set: simulator, grid navigation, Canvas, media, IME and CJK 16. |
 | `leak-check` | no | Isolated host lifecycle harness; run through `scripts/check-ui-leaks.py` with its BUILTIN allocator configuration. |
+| `diagnostics` | no | Structured node paths, stages and property identifiers through an optional sink. |
+| `strict-properties` | no | Reject dedicated modifiers applied to the wrong widget kind, before native mutation. |
+| `update-metrics` | no | Native label-text setter counter for update experiments. Other native setters are not counted. |
+| `cost-static-text` | no | Acceptance-only static-text comparison mode; includes `update-metrics`. |
 | `no-autoinit` | no | Forwards `lvgl/unsafe_no_autoinit`; target platforms call `rs_lvgl::init()` themselves. |
 | `components` | yes | The `rs_lvgl_ui::components` module. Uses only the core widgets. |
 | `widgets-all` | yes | The original widget set, including typed Canvas and raw list/menu/win; optional media/IME extensions are separate. |
@@ -60,7 +70,7 @@ widgets are not compiled at all. The defaults keep the full set.
 ```toml
 [dependencies]
 [dependencies.rs_lvgl_ui]
-version = "0.2"
+version = "0.3"
 default-features = false
 features = [
     "alloc", "components", "widget-slider", "widget-switch", "font-montserrat-20",

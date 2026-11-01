@@ -112,6 +112,7 @@ pub fn init() {
 /// refresh displays, or recursively delete displays or call `deinit`.
 /// After calling, ensure existing LVGL-related values are not accessed even if
 /// LVGL is reinitialized, including through their destructors.
+/// All loaded native font resources and their clones must also be released.
 #[cfg(not(feature = "custom_allocator"))]
 pub unsafe fn deinit() {
     unsafe {

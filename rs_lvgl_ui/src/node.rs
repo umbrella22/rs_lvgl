@@ -1124,6 +1124,12 @@ impl<M> HandlerSet<M> {
 /// functions return [`crate::View`] and use ordinary constructors such as
 /// [`crate::column`], [`crate::label`] and [`crate::button`].
 pub struct Node<M> {
+    #[cfg(any(feature = "diagnostics", feature = "strict-properties"))]
+    invalid_property: Option<crate::Property>,
+    pub(crate) static_text: Option<&'static str>,
+    pub(crate) font_resource: Option<crate::FontResource>,
+    #[cfg(feature = "widget-image")]
+    pub(crate) image_resource: Option<crate::ImageResource>,
     pub(crate) key: Key,
     pub(crate) kind: WidgetKind,
     pub(crate) style: Style,
@@ -1146,6 +1152,22 @@ pub struct Node<M> {
 }
 
 impl<M> Node<M> {
+    /// Retain a loaded font for this node's main style and inherited children.
+    /// This overrides a static main-style font; removing it restores that style.
+    pub fn font_resource(mut self, font: crate::FontResource) -> Self {
+        self.font_resource = Some(font);
+        self
+    }
+
+    fn record_invalid_property(&mut self, property: crate::Property) {
+        #[cfg(any(feature = "diagnostics", feature = "strict-properties"))]
+        {
+            self.invalid_property.get_or_insert(property);
+        }
+        #[cfg(not(any(feature = "diagnostics", feature = "strict-properties")))]
+        let _ = property;
+    }
+
     pub(crate) fn new(kind: WidgetKind) -> Self {
         let style = match &kind {
             WidgetKind::Obj
@@ -1160,6 +1182,12 @@ impl<M> Node<M> {
             _ => Style::default(),
         };
         Self {
+            #[cfg(any(feature = "diagnostics", feature = "strict-properties"))]
+            invalid_property: None,
+            static_text: None,
+            font_resource: None,
+            #[cfg(feature = "widget-image")]
+            image_resource: None,
             key: Key::Auto,
             kind,
             style,
@@ -1186,6 +1214,8 @@ impl<M> Node<M> {
     pub fn placeholder(mut self, text: impl Into<String>) -> Self {
         if let WidgetKind::Textarea { placeholder, .. } = &mut self.kind {
             *placeholder = text.into();
+        } else {
+            self.record_invalid_property(crate::Property::Placeholder);
         }
         self
     }
@@ -1194,6 +1224,8 @@ impl<M> Node<M> {
     pub fn password(mut self, enabled: bool) -> Self {
         if let WidgetKind::Textarea { password, .. } = &mut self.kind {
             *password = enabled;
+        } else {
+            self.record_invalid_property(crate::Property::Password);
         }
         self
     }
@@ -1202,6 +1234,8 @@ impl<M> Node<M> {
     pub fn multiline(mut self) -> Self {
         if let WidgetKind::Textarea { one_line, .. } = &mut self.kind {
             *one_line = false;
+        } else {
+            self.record_invalid_property(crate::Property::Multiline);
         }
         self
     }
@@ -1220,6 +1254,8 @@ impl<M> Node<M> {
     pub fn visible_rows(mut self, rows: u32) -> Self {
         if let WidgetKind::Roller { visible_rows, .. } = &mut self.kind {
             *visible_rows = rows;
+        } else {
+            self.record_invalid_property(crate::Property::VisibleRows);
         }
         self
     }
@@ -1229,6 +1265,8 @@ impl<M> Node<M> {
     pub fn roller_mode(mut self, roller_mode: RollerMode) -> Self {
         if let WidgetKind::Roller { mode, .. } = &mut self.kind {
             *mode = roller_mode;
+        } else {
+            self.record_invalid_property(crate::Property::RollerMode);
         }
         self
     }
@@ -1247,6 +1285,8 @@ impl<M> Node<M> {
         {
             *digit_count = count;
             *decimal_pos = decimal_position;
+        } else {
+            self.record_invalid_property(crate::Property::Digits);
         }
         self
     }
@@ -1257,6 +1297,8 @@ impl<M> Node<M> {
     pub fn step(mut self, value: u32) -> Self {
         if let WidgetKind::Spinbox { step, .. } = &mut self.kind {
             *step = value;
+        } else {
+            self.record_invalid_property(crate::Property::Step);
         }
         self
     }
@@ -1271,6 +1313,8 @@ impl<M> Node<M> {
         {
             *duration_ms = duration;
             *arc_angle = angle;
+        } else {
+            self.record_invalid_property(crate::Property::SpinnerAnimation);
         }
         self
     }
@@ -1281,6 +1325,8 @@ impl<M> Node<M> {
     pub fn brightness(mut self, value: u8) -> Self {
         if let WidgetKind::Led { brightness, .. } = &mut self.kind {
             *brightness = value;
+        } else {
+            self.record_invalid_property(crate::Property::Brightness);
         }
         self
     }
@@ -1292,6 +1338,8 @@ impl<M> Node<M> {
     pub fn column_widths(mut self, widths: impl IntoIterator<Item = i32>) -> Self {
         if let WidgetKind::Table { column_widths, .. } = &mut self.kind {
             *column_widths = widths.into_iter().collect();
+        } else {
+            self.record_invalid_property(crate::Property::ColumnWidths);
         }
         self
     }
@@ -1301,6 +1349,8 @@ impl<M> Node<M> {
     pub fn msgbox_title(mut self, text: impl Into<String>) -> Self {
         if let WidgetKind::Msgbox { title, .. } = &mut self.kind {
             *title = Some(text.into());
+        } else {
+            self.record_invalid_property(crate::Property::MessageBoxTitle);
         }
         self
     }
@@ -1311,6 +1361,8 @@ impl<M> Node<M> {
     pub fn msgbox_buttons(mut self, texts: impl IntoIterator<Item = impl Into<String>>) -> Self {
         if let WidgetKind::Msgbox { buttons, .. } = &mut self.kind {
             *buttons = texts.into_iter().map(Into::into).collect();
+        } else {
+            self.record_invalid_property(crate::Property::MessageBoxButtons);
         }
         self
     }
@@ -1320,6 +1372,8 @@ impl<M> Node<M> {
     pub fn today(mut self, date: CalendarDate) -> Self {
         if let WidgetKind::Calendar { today, .. } = &mut self.kind {
             *today = Some(date);
+        } else {
+            self.record_invalid_property(crate::Property::Today);
         }
         self
     }
@@ -1329,6 +1383,8 @@ impl<M> Node<M> {
     pub fn highlighted(mut self, dates: impl IntoIterator<Item = CalendarDate>) -> Self {
         if let WidgetKind::Calendar { highlighted, .. } = &mut self.kind {
             *highlighted = dates.into_iter().collect();
+        } else {
+            self.record_invalid_property(crate::Property::Highlighted);
         }
         self
     }
@@ -1338,6 +1394,8 @@ impl<M> Node<M> {
     pub fn pressed_image(mut self, source: ImageSource) -> Self {
         if let WidgetKind::ImageButton { pressed, .. } = &mut self.kind {
             *pressed = Some(source);
+        } else {
+            self.record_invalid_property(crate::Property::PressedImage);
         }
         self
     }
@@ -1347,6 +1405,8 @@ impl<M> Node<M> {
     pub fn repeat(mut self, count: u32) -> Self {
         if let WidgetKind::AnimImage { repeat, .. } = &mut self.kind {
             *repeat = count;
+        } else {
+            self.record_invalid_property(crate::Property::Repeat);
         }
         self
     }
@@ -1494,6 +1554,12 @@ impl<M> Node<M> {
             }),
         };
         Node {
+            #[cfg(any(feature = "diagnostics", feature = "strict-properties"))]
+            invalid_property: self.invalid_property,
+            static_text: self.static_text,
+            font_resource: self.font_resource,
+            #[cfg(feature = "widget-image")]
+            image_resource: self.image_resource,
             key: self.key,
             kind: self.kind,
             style: self.style,
@@ -1761,41 +1827,125 @@ impl<M> Node<M> {
     }
 }
 
-pub(crate) fn validate<M>(node: &Node<M>) -> Result<(), UiError> {
-    let mut keyboard_ids = Vec::new();
-    #[cfg(feature = "input-gridnav")]
-    validate_navigation(node, false)?;
-    validate_node(node, &mut keyboard_ids)
+pub(crate) fn validate<M>(
+    node: &Node<M>,
+    diagnostics: &crate::diagnostics::Diagnostics,
+) -> Result<(), UiError> {
+    validate_node(node, &mut Vec::new(), diagnostics, 0, false)
 }
 
-fn validate_node<M>(node: &Node<M>, keyboard_ids: &mut Vec<u64>) -> Result<(), UiError> {
-    if let Some(offset) = node.interaction.offset {
-        // Native coordinates reserve high bits for encoded size values.
-        // Bounding both operands also keeps native scroll arithmetic in i32.
-        let max = rs_lvgl_sys::LV_COORD_MAX as i32;
-        if !(-max..=max).contains(&offset.x) || !(-max..=max).contains(&offset.y) {
-            return Err(UiError::InvalidProperty);
+fn validate_node<M>(
+    node: &Node<M>,
+    keyboard_ids: &mut Vec<u64>,
+    diagnostics: &crate::diagnostics::Diagnostics,
+    child_index: usize,
+    inside_grid: bool,
+) -> Result<(), UiError> {
+    #[cfg(all(feature = "diagnostics", not(feature = "strict-properties")))]
+    use crate::diagnostics::DiagnosticEvent;
+    use crate::diagnostics::{DiagnosticStage, Property};
+    diagnostics.node(
+        node.key,
+        child_index,
+        crate::widgets::tag(&node.kind),
+        DiagnosticStage::Validation,
+        Property::Value,
+        || {
+            #[cfg(any(feature = "diagnostics", feature = "strict-properties"))]
+            if let Some(property) = node.invalid_property {
+                #[cfg(feature = "strict-properties")]
+                {
+                    diagnostics.report(
+                        UiError::InvalidProperty,
+                        property,
+                        DiagnosticStage::Validation,
+                    );
+                    return Err(UiError::InvalidProperty);
+                }
+                #[cfg(not(feature = "strict-properties"))]
+                diagnostics.emit(DiagnosticEvent::IgnoredProperty(property));
+            }
+            let local = (|| -> Result<(), (UiError, Property)> {
+                if let Some(offset) = node.interaction.offset {
+                    let max = rs_lvgl_sys::LV_COORD_MAX as i32;
+                    if !(-max..=max).contains(&offset.x) || !(-max..=max).contains(&offset.y) {
+                        return Err((UiError::InvalidProperty, Property::Value));
+                    }
+                }
+                #[cfg(feature = "input-gridnav")]
+                validate_navigation(node, inside_grid)
+                    .map_err(|e| (e, Property::GridNavigation))?;
+                crate::animation::validate(&node.animations)
+                    .map_err(|e| (e, Property::Animation))?;
+                validate_siblings(&node.children).map_err(|e| (e, Property::Children))?;
+                if node
+                    .static_text
+                    .is_some_and(|text| text.as_bytes().contains(&0))
+                {
+                    return Err((UiError::InvalidProperty, Property::Text));
+                }
+                if node.font_resource.is_some() {
+                    crate::resources::validate_support().map_err(|e| (e, Property::Font))?;
+                    if matches!(node.kind, WidgetKind::Custom(_)) {
+                        return Err((UiError::InvalidProperty, Property::Font));
+                    }
+                }
+                #[cfg(feature = "widget-image")]
+                if node.image_resource.is_some() {
+                    crate::resources::validate_support().map_err(|e| (e, Property::Source))?;
+                }
+                validate_kind(node).map_err(|e| (e, validation_property(node)))?;
+                validate_style(&node.style).map_err(|e| (e, Property::Style))?;
+                for (_, style) in &node.part_styles {
+                    validate_style(style).map_err(|e| (e, Property::Style))?;
+                }
+                if let Some(id) = node.keyboard_id {
+                    if keyboard_ids.contains(&id) {
+                        return Err((UiError::InvalidProperty, Property::KeyboardId));
+                    }
+                    keyboard_ids.push(id);
+                }
+                Ok(())
+            })();
+            if let Err((error, property)) = local {
+                diagnostics.report(error, property, DiagnosticStage::Validation);
+                return Err(error);
+            }
+            #[cfg(feature = "input-gridnav")]
+            let inside_grid = inside_grid || node.grid_navigation.is_some();
+            for (index, child) in node.children.iter().enumerate() {
+                validate_node(child, keyboard_ids, diagnostics, index, inside_grid)?;
+            }
+            Ok(())
+        },
+    )
+}
+
+fn validation_property<M>(node: &Node<M>) -> crate::Property {
+    use crate::Property;
+    if node.handlers.text_changed.is_some() && !is_textarea(&node.kind) {
+        return Property::Text;
+    }
+    if node.keyboard_id.is_some() && !is_textarea(&node.kind) {
+        return Property::KeyboardId;
+    }
+    if !node.children.is_empty() && !is_container(&node.kind) {
+        return Property::Children;
+    }
+    match &node.kind {
+        WidgetKind::Label { .. } | WidgetKind::Button { .. } => Property::Text,
+        #[cfg(feature = "widget-textarea")]
+        WidgetKind::Textarea { placeholder, .. } if placeholder.as_bytes().contains(&0) => {
+            Property::Placeholder
         }
+        #[cfg(feature = "widget-textarea")]
+        WidgetKind::Textarea { .. } => Property::Text,
+        #[cfg(feature = "widget-image")]
+        WidgetKind::Image { scale: 0, .. } => Property::Scale,
+        #[cfg(feature = "widget-image")]
+        WidgetKind::Image { .. } => Property::Source,
+        _ => Property::Value,
     }
-    crate::animation::validate(&node.animations)?;
-    validate_siblings(&node.children)?;
-    validate_kind(node)?;
-    validate_style(&node.style)?;
-    for (_, style) in &node.part_styles {
-        validate_style(style)?;
-    }
-    if let Some(id) = node.keyboard_id {
-        // Keyboard targets are resolved tree-wide, so ids must be unique
-        // across the whole tree rather than among siblings.
-        if keyboard_ids.contains(&id) {
-            return Err(UiError::InvalidProperty);
-        }
-        keyboard_ids.push(id);
-    }
-    for child in &node.children {
-        validate_node(child, keyboard_ids)?;
-    }
-    Ok(())
 }
 
 fn validate_siblings<M>(children: &[Node<M>]) -> Result<(), UiError> {
@@ -2257,9 +2407,6 @@ fn validate_navigation<M>(node: &Node<M>, inside_grid: bool) -> Result<(), UiErr
     #[cfg(feature = "widget-ime-pinyin")]
     if inside_grid && matches!(node.kind, WidgetKind::PinyinKeyboard { .. }) {
         return Err(UiError::InvalidProperty);
-    }
-    for child in &node.children {
-        validate_navigation(child, inside_grid || node.grid_navigation.is_some())?;
     }
     Ok(())
 }

@@ -88,7 +88,21 @@ pub use constructors::*;
 #[cfg(feature = "components")]
 pub mod components;
 mod custom;
+mod diagnostics;
 mod events;
+#[cfg(feature = "update-metrics")]
+mod metrics;
+mod resources;
+pub use diagnostics::Property;
+#[cfg(feature = "diagnostics")]
+pub use diagnostics::{DiagnosticEvent, DiagnosticSink, DiagnosticStage, DiagnosticTree};
+#[cfg(feature = "update-metrics")]
+pub use metrics::{update_metrics, UpdateMetrics};
+#[cfg(feature = "widget-image")]
+pub use resources::ImageResource;
+pub use resources::{resource_support, FontResource, ResourceError, ResourceSupport};
+#[cfg(feature = "diagnostics")]
+pub use widgets::KindTag as WidgetType;
 #[cfg(feature = "input-keypad")]
 mod focus;
 #[cfg(feature = "input-gridnav")]
@@ -113,9 +127,10 @@ pub mod symbol;
 mod theme;
 mod widgets;
 
-pub use app::{App, DrainStats, Ui, UiStats};
+pub use app::{App, DrainStats, RenderDecision, Ui, UiStats};
 pub use custom::{CustomObject, CustomWidget, CustomWidgetKind};
 pub use events::{Event, GestureDirection, InputEvent, PointerEvent, ScrollOffset};
+pub use events::{PostOutcome, QueueOverflow, QueuePolicy, QueueStats};
 pub use node::{
     table_cell, Align, CalendarDate, ChartSeries, ChartType, Color, EventHandler, FlexAlign, Font,
     GridAlign, GridCell, GridTrack, Handlers, ImageSource, Key, LabelLongMode, Node, Part,
