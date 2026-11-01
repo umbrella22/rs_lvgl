@@ -842,3 +842,9 @@ lists widget coverage and interactions.
 Run `cargo run -p rs_lvgl_ui --example studio --features showcase` for the complete
 component studio. [Coverage and rendering](https://github.com/umbrella22/rs_lvgl/blob/main/docs/component-studio.md) lists its
 nine categories and native acceptance checks.
+
+## Source organization
+
+The [source map](../docs/ui-source.md) describes the descriptor, runtime, native
+widget and event modules, their shared helpers and the paths used to add or
+maintain a widget. Public imports continue to come from the crate root or prelude.

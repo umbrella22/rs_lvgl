@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.3.1 — 2026-11-02
+
+### Changed
+
+- Organize `rs_lvgl_ui` descriptors, constructors, themes, runtime, reconciliation,
+  events and native widget adapters into functional modules. Share internal
+  message adapters, validation, checked-state writes and event suppression while
+  preserving the public API, feature gates and native behavior. Add a source map
+  for library maintenance.
+
 ## 0.3.0 — 2026-11-01
 
 ### Breaking changes

@@ -12,8 +12,9 @@ skill targets `rs_lvgl_ui` from `umbrella22/rs_lvgl`, layered over LVGL 9.6.
 The 0.3 API is not interchangeable with older registry `lvgl`,
 `lightvgl-sys` or C++ wrappers. Read the resolved manifests and relevant APIs
 before assuming a symbol or feature exists. In this source repository, the main
-entry points are `rs_lvgl_ui/src/{constructors,prelude,app,node,theme}.rs` and
-`rs_lvgl_ui/README.md`.
+entry points are `rs_lvgl_ui/src/{constructors,app,node,theme}/mod.rs`,
+`rs_lvgl_ui/src/prelude.rs` and `rs_lvgl_ui/README.md`. The functional module map
+is in `docs/ui-source.md`.
 
 Use ordinary functions, `View<M>` and `rs_lvgl_ui::prelude::*` for UI construction.
 The included counter demonstrates the same API. Resolve the application's actual

@@ -21,6 +21,7 @@ rs_lvgl/target/
 !/docs/component-studio.md
 !/docs/testing.md
 !/docs/ui-runtime.md
+!/docs/ui-source.md
 !/docs/images/
 /docs/images/*
 !/docs/images/*.png
