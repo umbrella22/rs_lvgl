@@ -117,6 +117,9 @@ features = [
 
 ## 文档
 
+需要远程检查 UI 时，可参考 [EmbedScope 接入示例](examples/embedscope/README.md)和[调试指南](https://umbrella22.github.io/rs_lvgl_website/guide/embedscope.html)。
+调试由应用显式启用；release 优化不会关闭已经选择的 feature。库的默认配置不会启动诊断接口。
+
 使用指南和 GitHub Pages 部署在独立仓库 [rs_lvgl_website](https://github.com/umbrella22/rs_lvgl_website) 中维护。
 
 - [使用指南（中文）](https://umbrella22.github.io/rs_lvgl_website/) · [English](https://umbrella22.github.io/rs_lvgl_website/en/)：安装、声明式界面、组件、输入、原生集成与开发检查。

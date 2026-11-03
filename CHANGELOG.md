@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Added
+
+- Add an independent, default-disabled EmbedScope example using the published
+  0.1.0 SDK and rs_lvgl 0.3.1. It exposes real native tree, display capture,
+  pointer input, logs and metrics over loopback TCP, with process
+  acceptance coverage and documented debug/release feature selection.
+
 ## 0.3.1 — 2026-11-02
 
 ### Changed

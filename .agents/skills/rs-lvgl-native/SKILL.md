@@ -49,6 +49,14 @@ static tables and callbacks; `Font::from_raw` cannot validate those obligations.
 Native allocations must be released by their matching allocator. Default CLIB
 monitor zeros do not establish leak freedom.
 
+## Optional EmbedScope adapter
+
+For host diagnostics, download the matching CLI ZIP or Inspector from [EmbedScope Releases](https://github.com/umbrella22/EmbedScope/releases/latest). Add the CLI directory to PATH. Cargo installation is an alternative when Rust is already installed.
+
+EmbedScope 0.1.0 `escope-lvgl/native` uses registry rs_lvgl 0.3.1. Keep its provider identical to the application's; matching version text does not unify path and registry sources. Alternatively use default escope-lvgl with an application TreeSource, which links no LVGL. The independent `examples/embedscope/` application demonstrates the registry path and ordered UI-thread teardown.
+
+Own the default-disabled `embedscope` feature in the application, gating optional dependencies, initialization, transport and buffers. `rs_lvgl_ui/diagnostics` supplies events only. `--release --features embedscope` retains diagnostics; production omits the application feature and verifies normal/build dependency graphs, final artifacts and installed device interfaces. Closing a Session is resource cleanup, not compile-time removal. See the [debugging guide](https://umbrella22.github.io/rs_lvgl_website/en/guide/embedscope.html).
+
 ## Validate the actual consumer
 
 In this repository:

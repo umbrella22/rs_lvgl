@@ -124,6 +124,11 @@ See [feature selection](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_
 
 ## Documentation
 
+For optional remote UI inspection, see the [EmbedScope application example](examples/embedscope/README.md)
+and [debugging guide](https://umbrella22.github.io/rs_lvgl_website/en/guide/embedscope.html).
+The application explicitly selects diagnostics; release optimization does not turn
+an enabled feature off. Library defaults do not start a diagnostic endpoint.
+
 The guides and GitHub Pages deployment are maintained in [rs_lvgl_website](https://github.com/umbrella22/rs_lvgl_website).
 
 - [Usage guide (Chinese)](https://umbrella22.github.io/rs_lvgl_website/) · [English](https://umbrella22.github.io/rs_lvgl_website/en/) — installation, declarative UI, components, input, native integration and development checks.

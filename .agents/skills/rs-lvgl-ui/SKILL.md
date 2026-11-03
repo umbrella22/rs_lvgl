@@ -83,6 +83,12 @@ Prefer typed views. A raw/custom escape requires local pointer and lifetime
 justification; do not turn a raw-pointer forwarding API into a safe API merely
 by moving its unsafe block.
 
+## Optional remote diagnostics
+
+Install host tools from [EmbedScope Releases](https://github.com/umbrella22/EmbedScope/releases/latest): use the platform CLI ZIP and add its directory to PATH, or open the portable Inspector. Cargo installation is optional for existing Rust environments.
+
+Use [the EmbedScope recipe](references/embedscope.md) for an application-owned, default-disabled remote Inspector connection. `diagnostics` only supplies UI events/sink; it starts no Agent or transport. Debug/release profiles do not enable or disable Cargo features. Ship without the application's diagnostic feature and verify its unified dependency graph and installed image.
+
 ## Verify the changed contract
 
 In this repository, use serial native tests and the examples matching the changed
