@@ -76,6 +76,89 @@ pub fn from_root() -> View<()> { rs_lvgl_ui::slider(0, 100, 20) }
 pub fn from_prelude() -> View<()> { slider(0, 100, 30).on_value_changed(|_| ()) }
 """
 
+TYPED_CORE = """#![no_std]
+use rs_lvgl_ui::prelude::*;
+pub fn composition(show: bool) -> View<()> {
+    typed::column([
+        typed::label("title").padding(4).into_view(),
+        typed::button("save").on_click(()).into_view(),
+    ])
+    .child(typed::button("single").on_click(()))
+    .child_if(show, || typed::label("conditional"))
+    .children((0..3).map(|id| typed::label("item").key(Key::Id(id)).into_view()))
+    .into_view()
+}
+"""
+
+TYPED_CONTROLS = """#![no_std]
+use rs_lvgl_ui::prelude::*;
+#[derive(Clone)] pub enum FieldAction { Enabled(bool), Speed(i32), Text }
+#[derive(Clone)] pub enum PageAction { Field(FieldAction) }
+pub fn component(show: bool) -> View<PageAction> {
+    let field: rs_lvgl_ui::Node<PageAction, typed::kind::Textarea> =
+        typed::textarea::<FieldAction>("name").padding(8)
+        .map(PageAction::Field).placeholder("Name").password(true);
+    let conditional = if show { typed::label("visible").into_view() }
+        else { typed::switch(false).on_toggle(FieldAction::Enabled).into_view() };
+    typed::column([
+        typed::slider(0, 100, 50).on_value_changed(FieldAction::Speed).into_view(),
+        conditional,
+    ]).child_if(show, || typed::textarea("hint").placeholder("Hint"))
+    .map(PageAction::Field).child(field).into_view()
+}
+"""
+
+BINDINGS = """#![no_std]
+extern crate alloc;
+use rs_lvgl_ui::prelude::*;
+use alloc::string::String;
+#[derive(Clone)] pub enum FormAction { Speed(i32), Enabled(bool), Name(String) }
+pub struct Form { pub speed: i32, pub enabled: bool, pub name: String }
+impl App for Form {
+    type Action = FormAction;
+    fn update(&mut self, action: FormAction) {
+        match action { FormAction::Speed(v) => self.speed = v,
+            FormAction::Enabled(v) => self.enabled = v, FormAction::Name(v) => self.name = v }
+    }
+    fn view(&self, _: &Theme) -> View<FormAction> {
+        typed::column([])
+            .child(typed::slider(0, 100, binding(self.speed, FormAction::Speed)))
+            .child(typed::switch(binding(self.enabled, FormAction::Enabled)))
+            .child(typed::checkbox("Enabled", binding(self.enabled, FormAction::Enabled)))
+            .child(typed::textarea(binding(self.name.as_str(), |v: &str| FormAction::Name(v.into())))
+                .placeholder("Name"))
+            .child(typed::textarea(binding(&self.name, |v: &str| FormAction::Name(v.into()))))
+            .child(typed::textarea(binding(self.name.clone(), |v: &str| FormAction::Name(v.into()))))
+            .into_view()
+    }
+}
+pub fn borrowed_plain(name: &String) -> View<()> {
+    typed::column([]).child(typed::textarea(name)).child(typed::textarea(name.as_str()))
+        .child(typed::textarea(name.clone())).into_view()
+}
+"""
+
+TYPED_OPTIONAL = """#![no_std]
+use rs_lvgl_ui::prelude::*;
+pub fn controls() -> View<()> {
+    typed::column([
+        typed::bar(0, 100, binding(50, |_: i32| ())).into_view(),
+        typed::arc(0, 100, binding(50, |_: i32| ())).into_view(),
+        typed::spinbox(0, 100, binding(50, |_: i32| ())).digits(3, 0).step(1).into_view(),
+        typed::roller(["a", "b"], 0).visible_rows(3).roller_mode(RollerMode::Normal)
+            .on_selection_changed(|_: Option<u32>| ()).into_view(),
+        typed::table([["a"]]).column_widths([80]).on_cell_selected(|_: Option<TableCell>| ()).into_view(),
+        typed::calendar(2026, 11).today(CalendarDate::new(2026, 11, 5))
+            .highlighted([CalendarDate::new(2026, 11, 6)])
+            .on_date_selected(|_: Option<CalendarDate>| ()).into_view(),
+        typed::msgbox("body").msgbox_title("Title").msgbox_buttons(["OK"])
+            .on_selection_changed(|_| ()).into_view(),
+        typed::spinner().spinner_anim(1000, 60).into_view(),
+        typed::led(Color::rgb(1, 2, 3)).brightness(100).into_view(),
+    ]).into_view()
+}
+"""
+
 FLAT_STYLES = """#![no_std]
 use rs_lvgl_ui::prelude::*;
 pub fn from_prelude(theme: &Theme) -> View<()> {
@@ -206,6 +289,8 @@ def main():
             'default-features=false,features=["alloc"]}\n'
             f'rs_lvgl_sys={{path={json.dumps(str(ROOT / "rs_lvgl_sys"))}}}\n'
             '[features]\nslider=["rs_lvgl_ui/widget-slider"]\n'
+            'controls=["rs_lvgl_ui/widget-slider","rs_lvgl_ui/widget-switch","rs_lvgl_ui/widget-checkbox","rs_lvgl_ui/widget-textarea"]\n'
+            'all-widgets=["rs_lvgl_ui/widgets-all"]\n'
             'image=["rs_lvgl_ui/widget-image"]\n'
             'diagnostics=["rs_lvgl_ui/diagnostics"]\n'
             'strict=["rs_lvgl_ui/strict-properties"]\n')
@@ -229,6 +314,31 @@ def main():
               errors=("E0200",), symbols=("NativeObject",))
         check("external-unsafe-impl", BORROWED_NATIVE_OBJECT)
         check("core-no-std", CORE)
+        check("typed-core-composition", TYPED_CORE)
+        check("typed-controls-composition", TYPED_CONTROLS, features=("controls",))
+        check("binding-no-std", BINDINGS, features=("controls",))
+        check("typed-optional-properties", TYPED_OPTIONAL, features=("all-widgets",))
+        for name, expression, error, symbols in (
+            ("numeric-value", 'typed::slider::<()>(0, 100, binding(false, |_: bool| ()))', "E0277", ("NumericInput",)),
+            ("toggle-mapper", 'typed::switch::<()>(binding(false, |_: i32| ()))', "E0631", ("ToggleInput", "bool")),
+            ("text-mapper", 'typed::textarea::<()>(binding("name", |_: i32| ()))', "E0631", ("TextInput", "str")),
+        ):
+            check(f"binding-reject-{name}", '#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn bad() { let _ = ' + expression + '; }',
+                  features=("controls",), errors=(error,), symbols=symbols)
+        check("typed-optional-disabled", '#![no_std]\nuse rs_lvgl_ui::typed::slider;\n',
+              errors=("E0432",), symbols=("slider",))
+        for name, expression, capability in (
+            ("switch-textarea-property", 'typed::switch::<()>(false).padding(4).placeholder("wrong")', "Text"),
+            ("slider-textarea-property", 'typed::slider::<()>(0, 100, 50).password(true)', "Text"),
+            ("textarea-roller-property", 'typed::textarea::<()>("text").visible_rows(3)', "Roller"),
+            ("label-children", 'typed::label::<()>("leaf").child(label("child"))', "Children"),
+            ("slider-toggle-handler", 'typed::slider::<()>(0, 100, 50).on_toggle(|_| ())', "Toggle"),
+            ("switch-numeric-handler", 'typed::switch::<()>(false).on_value_changed(|_| ())', "Numeric"),
+        ):
+            check(f"typed-reject-{name}", '#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn bad() { let _ = ' + expression + '; }',
+                  features=("all-widgets",), errors=("E0277",), symbols=("Supports", capability))
+        check("typed-mixed-array-needs-conversion", '#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn bad() { let _ = column([typed::label::<()>("label"), typed::switch(false)]); }',
+              features=("controls",), errors=("E0308",), symbols=("Label", "Switch"))
         check("app-action-associated-type", APP_ACTIONS)
         check("app-msg-associated-type-removed",
               APP_ACTIONS.replace("type Action = FanAction;", "type Msg = FanAction;"),

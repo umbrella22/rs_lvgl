@@ -293,6 +293,14 @@ fn main() {
     // Metadata comes from the target preprocessor, including expressions and
     // transitive headers, rather than a textual approximation of the config.
     println!(
+        "cargo:layouts={}",
+        ["flex", "grid"]
+            .into_iter()
+            .filter(|name| macro_values.enabled(&format!("LV_USE_{}", name.to_uppercase())))
+            .collect::<Vec<_>>()
+            .join(",")
+    );
+    println!(
         "cargo:widgets={}",
         OPTIONAL_WIDGETS
             .iter()

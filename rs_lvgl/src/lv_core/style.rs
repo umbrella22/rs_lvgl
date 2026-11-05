@@ -2,6 +2,7 @@ use crate::{font::Font, Align, Box, Color, TextAlign};
 use core::fmt;
 use core::fmt::Debug;
 use core::mem;
+#[cfg(any(lv_use_flex, lv_use_grid))]
 use cty::c_uint;
 use paste::paste;
 
@@ -58,6 +59,7 @@ impl From<Opacity> for u8 {
     }
 }
 
+#[cfg(lv_use_grid)]
 bitflags! {
     pub struct GridAlign: c_uint {
         const START = rs_lvgl_sys::lv_grid_align_t_LV_GRID_ALIGN_START;
@@ -70,12 +72,14 @@ bitflags! {
     }
 }
 
+#[cfg(lv_use_grid)]
 impl From<GridAlign> for c_uint {
     fn from(value: GridAlign) -> Self {
         value.bits() as c_uint
     }
 }
 
+#[cfg(lv_use_flex)]
 bitflags! {
     pub struct FlexAlign: c_uint {
         const START = rs_lvgl_sys::lv_flex_align_t_LV_FLEX_ALIGN_START;
@@ -87,12 +91,14 @@ bitflags! {
     }
 }
 
+#[cfg(lv_use_flex)]
 impl From<FlexAlign> for c_uint {
     fn from(value: FlexAlign) -> Self {
         value.bits() as c_uint
     }
 }
 
+#[cfg(lv_use_flex)]
 bitflags! {
     pub struct FlexFlow: c_uint {
         const COLUMN = rs_lvgl_sys::lv_flex_flow_t_LV_FLEX_FLOW_COLUMN;
@@ -106,6 +112,7 @@ bitflags! {
     }
 }
 
+#[cfg(lv_use_flex)]
 impl From<FlexFlow> for c_uint {
     fn from(value: FlexFlow) -> Self {
         value.bits() as c_uint
@@ -117,12 +124,14 @@ pub struct Layout {
 }
 
 impl Layout {
+    #[cfg(lv_use_flex)]
     pub fn flex() -> Self {
         Self {
             inner: rs_lvgl_sys::lv_layout_t_LV_LAYOUT_FLEX as u16,
         }
     }
 
+    #[cfg(lv_use_grid)]
     pub fn grid() -> Self {
         Self {
             inner: rs_lvgl_sys::lv_layout_t_LV_LAYOUT_GRID as u16,
@@ -136,6 +145,7 @@ impl From<Layout> for u16 {
     }
 }
 
+#[cfg(lv_use_grid)]
 #[derive(Clone)]
 #[repr(C)]
 pub struct CoordDesc<const N: usize> {
@@ -143,6 +153,7 @@ pub struct CoordDesc<const N: usize> {
     tail: i32,
 }
 
+#[cfg(lv_use_grid)]
 impl<const N: usize> CoordDesc<N> {
     pub unsafe fn from_values(values: [i32; N], is_grid: bool) -> Self {
         Self {
@@ -160,6 +171,7 @@ impl<const N: usize> CoordDesc<N> {
     }
 }
 
+#[cfg(lv_use_grid)]
 impl<const N: usize> From<&CoordDesc<N>> for *const i32 {
     fn from(value: &CoordDesc<N>) -> Self {
         value as *const _ as *const i32
@@ -196,6 +208,7 @@ macro_rules! gen_lv_style {
     };
 }
 
+#[cfg(lv_use_grid)]
 macro_rules! gen_lv_style_generic {
     ($func_name:ident,$vty:ty) => {
         paste! {
@@ -235,20 +248,35 @@ impl Style {
     gen_lv_style!(set_border_width, i32);
     gen_lv_style!(set_clip_corner, bool);
     gen_lv_style!(set_color_filter_opa, Opacity);
+    #[cfg(lv_use_flex)]
     gen_lv_style!(set_flex_flow, FlexFlow);
+    #[cfg(lv_use_flex)]
     gen_lv_style!(set_flex_grow, u8);
+    #[cfg(lv_use_flex)]
     gen_lv_style!(set_flex_main_place, FlexAlign);
+    #[cfg(lv_use_flex)]
     gen_lv_style!(set_flex_cross_place, FlexAlign);
+    #[cfg(lv_use_flex)]
     gen_lv_style!(set_flex_track_place, FlexAlign);
+    #[cfg(lv_use_grid)]
     gen_lv_style!(set_grid_cell_column_pos, i32);
+    #[cfg(lv_use_grid)]
     gen_lv_style!(set_grid_cell_column_span, i32);
+    #[cfg(lv_use_grid)]
     gen_lv_style!(set_grid_cell_row_pos, i32);
+    #[cfg(lv_use_grid)]
     gen_lv_style!(set_grid_cell_row_span, i32);
+    #[cfg(lv_use_grid)]
     gen_lv_style!(set_grid_cell_x_align, GridAlign);
+    #[cfg(lv_use_grid)]
     gen_lv_style!(set_grid_cell_y_align, GridAlign);
+    #[cfg(lv_use_grid)]
     gen_lv_style!(set_grid_column_align, GridAlign);
+    #[cfg(lv_use_grid)]
     gen_lv_style_generic!(set_grid_column_dsc_array, CoordDesc);
+    #[cfg(lv_use_grid)]
     gen_lv_style!(set_grid_row_align, GridAlign);
+    #[cfg(lv_use_grid)]
     gen_lv_style_generic!(set_grid_row_dsc_array, CoordDesc);
     gen_lv_style!(set_height, i32);
     gen_lv_style!(set_image_opa, Opacity);

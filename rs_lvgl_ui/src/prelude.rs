@@ -15,6 +15,7 @@
 #[cfg(feature = "components")]
 pub use crate::components;
 pub use crate::constructors::*;
+pub use crate::typed;
 #[cfg(feature = "widget-gif")]
 pub use crate::Gif;
 #[cfg(feature = "widget-image")]
@@ -24,6 +25,7 @@ pub use crate::Lottie;
 #[cfg(feature = "widget-qrcode")]
 pub use crate::QrCode;
 pub use crate::RenderDecision;
+pub use crate::{binding, Binding};
 pub use crate::{resource_support, FontResource, ResourceError, ResourceSupport};
 pub use crate::{
     symbol, table_cell, Align, Animation, AnimationProperty, App, BlendMode, CalendarDate,
@@ -31,8 +33,8 @@ pub use crate::{
     Easing, Event, FlexAlign, Font, GestureDirection, GradientDirection, GridAlign, GridCell,
     GridTrack, ImageSource, InputEvent, Key, LabelLongMode, NativeObject, Obj, Part, PointerEvent,
     RawImage, RollerMode, ScreenEffect, ScreenTransition, Screens, ScrollDir, ScrollOffset,
-    ScrollSnap, ScrollbarMode, Size, Snapshot, Span, State, Style, StyleTransition, TextAlign,
-    TextDecoration, Theme, Tile, TransitionProperty, Ui, UiError, UiStats, View,
+    ScrollSnap, ScrollbarMode, Size, Snapshot, Span, State, Style, StyleTransition, TableCell,
+    TextAlign, TextDecoration, Theme, Tile, TransitionProperty, Ui, UiError, UiStats, View,
     ANIM_IMAGE_MAX_FRAMES, ANIM_REPEAT_INFINITE, SPINBOX_MAX_DIGITS, TABLE_MAX_CELLS_PER_AXIS,
 };
 #[cfg(feature = "widget-barcode")]

@@ -3,14 +3,14 @@
 use super::Node;
 use alloc::rc::Rc;
 
-impl<M> Node<M> {
+impl<M, K> Node<M, K> {
     /// Convert every message this subtree produces with `map`.
     ///
     /// This is how a component with its own message type is embedded in an
     /// application: `menu::view(&state).map(ParentAction::Menu)`. Click messages are
     /// converted once, when `map` is called; value, text and event mappings
     /// are converted when the event fires. `map` must be a pure conversion.
-    pub fn map<N: 'static>(self, map: impl Fn(M) -> N + 'static) -> Node<N>
+    pub fn map<N: 'static>(self, map: impl Fn(M) -> N + 'static) -> Node<N, K>
     where
         M: 'static,
     {
@@ -18,12 +18,13 @@ impl<M> Node<M> {
         self.map_with(&map)
     }
 
-    fn map_with<N: 'static>(self, map: &Rc<dyn Fn(M) -> N>) -> Node<N>
+    fn map_with<N: 'static>(self, map: &Rc<dyn Fn(M) -> N>) -> Node<N, K>
     where
         M: 'static,
     {
         let handlers = self.handlers.map(map);
         Node {
+            marker: core::marker::PhantomData,
             #[cfg(any(feature = "diagnostics", feature = "strict-properties"))]
             invalid_property: self.invalid_property,
             static_text: self.static_text,

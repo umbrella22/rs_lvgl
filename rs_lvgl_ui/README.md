@@ -3,7 +3,10 @@
 The [browser studio](https://umbrella22.github.io/rs_lvgl_website/en/studio.html) runs all nine component categories in WebAssembly. It shares these Rust views with the desktop studio; see [build instructions](https://github.com/umbrella22/rs_lvgl_website).
 
 
-A declarative, typed Rust UI layer for LVGL 9.6, using the `rs_lvgl` 0.4.0 API.
+A declarative Rust UI layer for LVGL 9.6. Version 0.5.0 provides lazy composition,
+semantic events, typed construction and explicit form bindings. See the
+[composition guide](../docs/ui-composition.md) for conversion boundaries,
+controlled-input behavior and runnable examples.
 
 The
 [repository README](https://github.com/umbrella22/rs_lvgl/blob/main/README.md) covers native dependencies and simulator setup.
@@ -69,7 +72,7 @@ widgets are not compiled at all. The defaults keep the full set.
 ```toml
 [dependencies]
 [dependencies.rs_lvgl_ui]
-version = "0.4.0"
+version = "0.5.0"
 default-features = false
 features = [
     "alloc", "components", "widget-slider", "widget-switch", "font-montserrat-20",
@@ -108,6 +111,8 @@ Builds with only some widgets allow `dead_code` and related lints for helpers
 that are shared by several widgets; the full set keeps every lint.
 
 ## Quick start
+
+This example also works with the published 0.5.0 packages.
 
 Use ordinary function constructors, `App::Action` and flat style modifiers.
 The [style and action guide](../docs/ui-styles.md) defines initialization,
@@ -214,6 +219,11 @@ Child order and identity are separate. Stable `Key::Named` or `Key::Id` values
 identify dynamic children across inserts, removals and reorders. An array index
 used as a key follows the position, so it does not identify a reordered item.
 
+Development source also supports `.child_if(show, || view)` for lazy optional
+children. Use `typed::...` to retain widget-specific compile-time checks through
+styles and map; single children accept typed nodes and mixed arrays convert each
+item with `.into_view()`. See [composition and forms](../docs/ui-composition.md).
+
 ## Semantics
 
 - `Key::Auto` matches by position among `Auto` siblings. `Named` and `Id` match
@@ -260,9 +270,10 @@ used as a key follows the position, so it does not identify a reordered item.
 - Messages must implement `Clone`; a click handler stores its message and clones
   it for each click. `on_text_changed` receives a borrowed `&str`; copy it if the
   message must retain the text.
-- Handlers are independent: `on_click`, `on_value_changed`, `on_text_changed`
+- Handler families are independent: `on_click`, `on_value_changed`, `on_text_changed`
   and `on_event` can be combined on one node; repeating one builder replaces
-  only that handler. Native callbacks are registered lazily and only for the
+  only that handler. Development semantic value handlers share and replace the
+  numeric value-handler slot; text/click/generic handlers remain separate. Native callbacks are registered lazily and only for the
   event codes in use (`LV_EVENT_ALL` with `on_event` or input payload handlers);
   a node without handlers has no callbacks. Direct handlers see the node's own
   events. `on_bubbled_event` explicitly observes descendant events.
@@ -392,6 +403,13 @@ application calls `Toasts::advance`, for example from a tick message the
 platform posts while toasts are visible. Combine several overlays with
 `components::layers`. A component with its own message type embeds with
 `View::map`.
+
+Development slots accept typed nodes directly: ListItem `leading`, `content`
+and `trailing` retain their keys, explicit styles and actions. Panel
+`header_action`/`header_actions` append header widgets; its existing `action`
+spelling remains. Panel/Dialog `content` replaces the body and later
+`child`/`children` append. Footer dialog actions are separate. See the
+[slot contracts](../docs/ui-composition.md#component-inputs-and-slots).
 
 See `examples/components.rs` for a settings app that uses all of them.
 

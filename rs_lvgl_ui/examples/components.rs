@@ -95,7 +95,7 @@ impl Demo {
                 list::section(theme, "Network").key(Key::Named("net")),
                 ListItem::new("Wi-Fi")
                     .icon(symbol::WIFI)
-                    .trailing(switch(self.wifi).on_value_changed(|_| ComponentsAction::ToggleWifi))
+                    .trailing(typed::switch(self.wifi).on_toggle(|_| ComponentsAction::ToggleWifi))
                     .view(theme)
                     .key(Key::Named("wifi")),
                 list::section(theme, "Device").key(Key::Named("device")),
@@ -146,7 +146,7 @@ impl Demo {
 
     fn logs_page(&self, theme: &Theme) -> View<ComponentsAction> {
         Panel::new("Events")
-            .action(panel::icon_button(
+            .header_action(panel::icon_button(
                 theme,
                 symbol::SAVE,
                 ComponentsAction::Save,

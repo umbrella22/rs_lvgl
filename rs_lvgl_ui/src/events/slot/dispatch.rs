@@ -34,7 +34,7 @@ impl<M: Clone + 'static> HandlerSlot<M> {
                 }
                 if code == rs_lvgl_sys::lv_event_code_t_LV_EVENT_VALUE_CHANGED {
                     if let Some(map) = &mut handlers.value_changed {
-                        messages[1] = Some(map(read_value(target, self.value_source, param)));
+                        messages[1] = read_value(target, self.value_source, param).and_then(map);
                     }
                     #[cfg(feature = "widget-textarea")]
                     if let Some(map) = &mut handlers.text_changed {

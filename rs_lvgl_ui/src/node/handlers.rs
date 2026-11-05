@@ -5,6 +5,8 @@ use alloc::{boxed::Box, rc::Rc};
 /// Boxed value-changed mapping registered with [`crate::Node::on_value_changed`].
 pub type ValueChangedHandler<M> = Box<dyn FnMut(i32) -> M>;
 
+pub(crate) type ControlHandler<M> = Box<dyn FnMut(crate::events::ControlValue) -> Option<M>>;
+
 /// Boxed event mapping registered with [`crate::Node::on_event`].
 pub type EventHandler<M> = Box<dyn FnMut(&crate::Event) -> Option<M>>;
 
@@ -31,7 +33,7 @@ pub enum Handlers<M> {
 /// Handlers retained by one mounted node. Every handler is independent.
 pub(crate) struct HandlerSet<M> {
     pub(crate) click: Option<M>,
-    pub(crate) value_changed: Option<ValueChangedHandler<M>>,
+    pub(crate) value_changed: Option<ControlHandler<M>>,
     pub(crate) text_changed: Option<TextChangedHandler<M>>,
     pub(crate) event: Option<EventHandler<M>>,
     pub(crate) key: Option<Box<dyn FnMut(u32) -> M>>,
@@ -109,7 +111,10 @@ impl<M: 'static> HandlerSet<M> {
                     as BubbledHandler<N>
             }),
             click: click.map(|msg| map(msg)),
-            value_changed: map_value_handler(value_changed, map),
+            value_changed: value_changed.map(|mut handler| {
+                let map = map.clone();
+                Box::new(move |value| handler(value).map(|action| map(action))) as ControlHandler<N>
+            }),
             text_changed: text_changed.map(|mut handler| {
                 let map = map.clone();
                 Box::new(move |text: &str| map(handler(text))) as TextChangedHandler<N>

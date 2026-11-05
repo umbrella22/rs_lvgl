@@ -2,8 +2,8 @@
 
 `rs_lvgl_ui` separates pure view descriptions from native LVGL state. The public
 API is exported by [lib.rs](../rs_lvgl_ui/src/lib.rs) and
-[prelude.rs](../rs_lvgl_ui/src/prelude.rs); implementation directories remain
-private. Shared implementation functions use internal visibility.
+[prelude.rs](../rs_lvgl_ui/src/prelude.rs); the `typed` and `binding` modules also expose construction interfaces.
+Other implementation directories remain private. Shared implementation functions use internal visibility.
 
 ```mermaid
 flowchart LR
@@ -29,8 +29,10 @@ lifetime rules in detail.
 | Directory | Responsibility and entry points |
 | --- | --- |
 | [constructors/](../rs_lvgl_ui/src/constructors/mod.rs) | Ordinary functions grouped into layout, controls, data, media and custom views. They construct descriptors without calling LVGL. |
+| [typed/](../rs_lvgl_ui/src/typed/mod.rs) | Sealed widget capability markers and adapters forwarding to ordinary constructors. Common modifiers retain markers until `into_view`. |
+| [binding.rs](../rs_lvgl_ui/src/binding.rs) | Current model value and action mapper consumed by a typed form constructor; installs the existing event handler directly. |
 | [node/](../rs_lvgl_ui/src/node/mod.rs) | `Node` fields, identity and construction defaults. `kind.rs` defines feature-gated widget descriptions; `types/` defines fonts, images, layout, style selectors and control values. |
-| [node/builders/](../rs_lvgl_ui/src/node/builders/mod.rs) | `style.rs` forwards flat main-style modifiers to the embedded `Style`; `tree.rs` merges reusable patches and selects parts/states. Widget-specific properties, interaction/scroll settings and events remain separate. Wrong-kind modifiers retain the existing diagnostic/strict-property behavior. |
+| [node/builders/](../rs_lvgl_ui/src/node/builders/mod.rs) | `style.rs` forwards flat main-style modifiers to the embedded `Style`; `tree.rs` merges reusable patches and selects parts/states. Widget-specific properties, interaction/scroll settings and events remain separate. Typed capability bounds reject wrong widget-specific calls before erasure; erased modifiers retain diagnostic/strict-property behavior. |
 | [node/validation/](../rs_lvgl_ui/src/node/validation/mod.rs) | Diagnostic traversal, sibling/keyboard identity and style/navigation checks. `kinds.rs` checks each widget's native representation and shares range/option validation. |
 | [theme/](../rs_lvgl_ui/src/theme/mod.rs) | `Style` data/defaults and `Theme` tokens. Builders, field merging and themed presets have separate files. Native style application belongs to `widgets/style.rs`. |
 | [app/](../rs_lvgl_ui/src/app/mod.rs) | `App`, `Ui` and statistics. `controller.rs` handles public operations and message batches; `render.rs` validates and reconciles both trees; `input.rs`, `lifecycle.rs` and `guard.rs` handle focus, teardown and reentrancy. |
@@ -47,7 +49,9 @@ graphics, diagnostics, screens, style extensions, symbols and metrics.
 
 ## State and shared operations
 
-`Node<M>` is a temporary description. `node/mapping.rs` changes its message type;
+`Node<M, K>` is a temporary description. The default `K = typed::Erased` is
+`View<M>`; typed construction carries only a zero-sized marker. Conversion
+moves the same fields, and child storage remains a vector of erased views. `node/mapping.rs` changes its message type;
 `HandlerSet::map` adapts independent handlers and shares owned-payload conversion.
 Neither operation mounts objects or changes queue delivery order.
 
@@ -71,7 +75,8 @@ slot's existing feedback suppression, including writes that return a result.
 
 `EventQueue<M>` handles congestion independently from handler registration.
 `HandlerSlot<M>` has a stable address until its native deletion callback runs.
-Native callbacks copy payloads, invoke the installed mappings and enqueue
+Numeric/semantic value mappings share one handler slot; text mappings use a
+separate slot. Native callbacks copy payloads, invoke the installed mappings and enqueue
 messages; application updates and reconciliation run later through `Ui::drain`.
 Callbacks, observers and mergers retain their non-unwinding/UI-thread contracts.
 
@@ -87,7 +92,9 @@ A widget addition crosses the descriptor/native boundary in explicit places:
 3. `widgets/create.rs` creates the native object. A property-family handler
    applies updates through the exhaustive dispatcher. Buffers referenced by C
    belong in `widgets/retained.rs` and must survive native failure cleanup.
-4. `events/value.rs` decodes a new native value source when needed. Existing
+4. `typed::kind` capabilities and typed constructor adapters expose the new widget
+   through the same feature gate. `events/value.rs` decodes a new native value
+   source into its semantic payload when needed. Existing
    root/prelude capability gates and public safety contracts apply throughout.
 
 A reconciliation change belongs to the phase that makes the decision: sibling

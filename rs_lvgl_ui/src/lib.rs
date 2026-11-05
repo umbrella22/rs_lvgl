@@ -91,6 +91,8 @@
 extern crate alloc;
 
 mod app;
+pub mod binding;
+pub use binding::{binding, Binding};
 mod constructors;
 pub use constructors::*;
 #[cfg(feature = "components")]
@@ -101,6 +103,7 @@ mod events;
 #[cfg(feature = "update-metrics")]
 mod metrics;
 mod resources;
+pub mod typed;
 pub use diagnostics::Property;
 #[cfg(feature = "diagnostics")]
 pub use diagnostics::{DiagnosticEvent, DiagnosticSink, DiagnosticStage, DiagnosticTree};
@@ -142,8 +145,8 @@ pub use events::{PostOutcome, QueueOverflow, QueuePolicy, QueueStats};
 pub use node::{
     table_cell, Align, CalendarDate, ChartSeries, ChartType, Color, EventHandler, FlexAlign, Font,
     GridAlign, GridCell, GridTrack, Handlers, ImageSource, Key, LabelLongMode, Node, Part,
-    RawImage, RollerMode, ScrollDir, Size, Span, State, TextAlign, TextChangedHandler, Tile,
-    ValueChangedHandler, WidgetKind, ANIM_IMAGE_MAX_FRAMES, ANIM_REPEAT_INFINITE,
+    RawImage, RollerMode, ScrollDir, Size, Span, State, TableCell, TextAlign, TextChangedHandler,
+    Tile, ValueChangedHandler, WidgetKind, ANIM_IMAGE_MAX_FRAMES, ANIM_REPEAT_INFINITE,
     SPINBOX_MAX_DIGITS, TABLE_MAX_CELLS_PER_AXIS,
 };
 pub use scroll::{ScrollSnap, ScrollbarMode};

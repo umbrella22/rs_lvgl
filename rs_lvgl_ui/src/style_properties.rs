@@ -66,7 +66,7 @@ macro_rules! properties {
                 self.extended.$field = Some(value); self
             }
         )* }
-        impl<M> crate::node::Node<M> { $(
+        impl<M, K> crate::node::Node<M, K> { $(
             $(#[$doc])*
             #[inline]
             pub fn $field(mut self, value: $ty) -> Self {

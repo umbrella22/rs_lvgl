@@ -117,6 +117,8 @@ jobs:
         run: cargo generate-lockfile
       - name: Verify configuration and recovery
         run: python3 scripts/check-native-inputs.py --locked --artifacts target/native-input-audit
+      - name: Verify independent layout capabilities
+        run: python3 scripts/check-layout-config.py --locked --artifacts target/layout-config-audit
       - name: Verify installed skills and downstream examples
         run: python3 scripts/check-skills.py --locked --artifacts target/skill-audit
       - name: Keep consumer diagnostics
@@ -127,6 +129,8 @@ jobs:
           path: |
             target/native-input-audit/*.log
             target/native-input-audit/*.json
+            target/layout-config-audit/*.log
+            target/layout-config-audit/*.json
             target/skill-audit/*.log
             target/skill-audit/*.json
           if-no-files-found: warn

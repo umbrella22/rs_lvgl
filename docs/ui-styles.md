@@ -1,6 +1,6 @@
 # View styling and application actions
 
-The `rs_lvgl_ui` 0.4.0 API uses flat style modifiers, reusable patches and
+The `rs_lvgl_ui` 0.5.0 API uses flat style modifiers, reusable patches and
 component-specific action types.
 
 ## Local properties and reusable patches

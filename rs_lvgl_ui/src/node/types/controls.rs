@@ -62,11 +62,16 @@ pub const TABLE_MAX_CELLS_PER_AXIS: usize = 0xFFFF;
 /// Tables report the selected cell packed as `(row << 16) | column`, or `-1`
 /// when no cell is selected. Returns `(row, column)`.
 pub fn table_cell(value: i32) -> Option<(u32, u32)> {
-    if value < 0 {
-        return None;
-    }
     let value = value as u32;
-    Some((value >> 16, value & 0xFFFF))
+    let (row, column) = (value >> 16, value & 0xFFFF);
+    (row != 0xFFFF && column != 0xFFFF).then_some((row, column))
+}
+
+/// A selected table cell. Native indices are copied without signed packing.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct TableCell {
+    pub row: u32,
+    pub column: u32,
 }
 
 /// A set of scroll directions, combined with `|`.

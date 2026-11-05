@@ -42,3 +42,13 @@ pub(crate) fn full_size() -> Style {
         .width(Size::Percent(100))
         .height(Size::Percent(100))
 }
+
+/// Component slots have stable identities without adding native containers.
+/// Explicit caller styles override the component's slot defaults.
+pub(crate) fn slot<M>(mut node: View<M>, key: &'static str, defaults: Style) -> View<M> {
+    if node.key == crate::Key::Auto {
+        node.key = crate::Key::Named(key);
+    }
+    node.style = defaults.merged(node.style);
+    node
+}

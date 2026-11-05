@@ -304,7 +304,7 @@ impl Animation {
         self
     }
 }
-impl<M> Node<M> {
+impl<M, K> Node<M, K> {
     pub fn animate(mut self, animation: Animation) -> Self {
         self.animations.push(animation);
         self

@@ -1,4 +1,4 @@
-//! Static settings screen built with the declarative layer.
+//! Settings screen using the rs_lvgl_ui 0.5.0 typed construction and binding APIs.
 //!
 //! Run with:
 //!
@@ -16,7 +16,7 @@ use rs_lvgl_ui::prelude::*;
 #[derive(Clone, Debug)]
 enum FanSettingsAction {
     SpeedChanged(i32),
-    ToggleMute,
+    MutedChanged(bool),
     Select(usize),
     Save,
 }
@@ -45,7 +45,7 @@ impl App for Settings {
     fn update(&mut self, action: FanSettingsAction) {
         match action {
             FanSettingsAction::SpeedChanged(value) => self.speed = value,
-            FanSettingsAction::ToggleMute => self.muted = !self.muted,
+            FanSettingsAction::MutedChanged(value) => self.muted = value,
             FanSettingsAction::Select(index) => self.selected = index,
             FanSettingsAction::Save => self.saves += 1,
         }
@@ -63,11 +63,11 @@ impl App for Settings {
                     .key(Key::Named("speed-label"))
                     .font(theme.body_font)
                     .text_color(theme.text),
-                slider(0, 100, self.speed)
+                typed::slider(0, 100, binding(self.speed, FanSettingsAction::SpeedChanged))
                     .key(Key::Named("speed"))
                     .height(px(16))
                     .grow(1)
-                    .on_value_changed(FanSettingsAction::SpeedChanged),
+                    .into_view(),
             ])
             .style(Style::surface(theme))
             .width(percent(100))
@@ -77,9 +77,9 @@ impl App for Settings {
                     .key(Key::Named("mute-label"))
                     .font(theme.body_font)
                     .text_color(theme.text),
-                switch(self.muted)
+                typed::switch(binding(self.muted, FanSettingsAction::MutedChanged))
                     .key(Key::Named("mute"))
-                    .on_value_changed(|_| FanSettingsAction::ToggleMute),
+                    .into_view(),
             ])
             .style(Style::surface(theme))
             .width(percent(100))
@@ -111,11 +111,16 @@ impl App for Settings {
                     .on_click(FanSettingsAction::Save),
             ])
             .width(percent(100))
+            // The native focus outline extends outside the button's layout box.
+            .padding(6)
             .gap(12),
         ])
         .style(Style::screen(theme))
         .gap(12)
         .padding(16)
+        .child_if(self.saves > 0, || {
+            label(format!("Saved {} times", self.saves)).key(Key::Named("saved"))
+        })
     }
 }
 
@@ -132,7 +137,8 @@ fn main() {
 
     ui.post(FanSettingsAction::SpeedChanged(85))
         .expect("post speed");
-    ui.post(FanSettingsAction::ToggleMute).expect("post mute");
+    ui.post(FanSettingsAction::MutedChanged(true))
+        .expect("post mute");
     ui.post(FanSettingsAction::Select(2)).expect("post select");
     ui.post(FanSettingsAction::Save).expect("post save");
     let drained = ui.drain(&mut app, 16).expect("drain");

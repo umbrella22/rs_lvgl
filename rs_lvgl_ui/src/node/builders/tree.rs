@@ -3,7 +3,7 @@
 use crate::node::{GridAlign, GridCell, Key, Node, Part, Selector, State};
 use crate::Style;
 
-impl<M> Node<M> {
+impl<M, K> Node<M, K> {
     /// Retain a loaded font for this node's main style and inherited children.
     /// This overrides a static main-style font; removing it restores that style.
     pub fn font_resource(mut self, font: crate::FontResource) -> Self {
@@ -68,12 +68,38 @@ impl<M> Node<M> {
         self
     }
 
-    pub fn child(mut self, child: Node<M>) -> Self {
-        self.children.push(child);
+    pub fn child(mut self, child: impl Into<crate::View<M>>) -> Self
+    where
+        K: crate::typed::Supports<crate::typed::capability::Children>,
+    {
+        self.children.push(child.into());
         self
     }
 
-    pub fn children(mut self, children: impl IntoIterator<Item = Node<M>>) -> Self {
+    /// Append a child only when `condition` is true.
+    ///
+    /// The closure is evaluated once in the true branch and may borrow local
+    /// state. It creates a descriptor, not a native widget. Stable sibling keys
+    /// preserve native identity when optional children enter or leave the tree.
+    pub fn child_if<C: Into<crate::View<M>>>(
+        self,
+        condition: bool,
+        child: impl FnOnce() -> C,
+    ) -> Self
+    where
+        K: crate::typed::Supports<crate::typed::capability::Children>,
+    {
+        if condition {
+            self.child(child())
+        } else {
+            self
+        }
+    }
+
+    pub fn children(mut self, children: impl IntoIterator<Item = Node<M>>) -> Self
+    where
+        K: crate::typed::Supports<crate::typed::capability::Children>,
+    {
         self.children.extend(children);
         self
     }

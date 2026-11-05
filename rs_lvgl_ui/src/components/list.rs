@@ -50,6 +50,8 @@ pub fn section<M>(theme: &Theme, title: impl Into<String>) -> View<M> {
 pub struct ListItem<M> {
     text: String,
     icon: Option<&'static str>,
+    leading: Option<Box<View<M>>>,
+    content: Option<Box<View<M>>>,
     trailing: Option<Box<View<M>>>,
     chevron: bool,
     selected: Option<bool>,
@@ -62,6 +64,8 @@ impl<M: Clone + 'static> ListItem<M> {
         Self {
             text: text.into(),
             icon: None,
+            leading: None,
+            content: None,
             trailing: None,
             chevron: false,
             selected: None,
@@ -73,6 +77,21 @@ impl<M: Clone + 'static> ListItem<M> {
     /// Leading glyph, usually a [`crate::symbol`] constant.
     pub fn icon(mut self, icon: &'static str) -> Self {
         self.icon = Some(icon);
+        self.leading = None;
+        self
+    }
+
+    /// Leading content, replacing the icon. The slot retains its handlers.
+    pub fn leading(mut self, node: impl Into<View<M>>) -> Self {
+        self.leading = Some(Box::new(node.into()));
+        self.icon = None;
+        self
+    }
+
+    /// Main content, replacing the default text label. Its explicit styles
+    /// override the default flex growth. An unkeyed root gets a stable slot key.
+    pub fn content(mut self, node: impl Into<View<M>>) -> Self {
+        self.content = Some(Box::new(node.into()));
         self
     }
 
@@ -85,8 +104,8 @@ impl<M: Clone + 'static> ListItem<M> {
     ///
     /// The node keeps its own handlers; a click on an interactive trailing
     /// widget does not also click the row.
-    pub fn trailing(mut self, node: View<M>) -> Self {
-        self.trailing = Some(Box::new(node));
+    pub fn trailing(mut self, node: impl Into<View<M>>) -> Self {
+        self.trailing = Some(Box::new(node.into()));
         self
     }
 
@@ -140,19 +159,19 @@ impl<M: Clone + 'static> ListItem<M> {
                     .text_align(TextAlign::Center),
             );
         }
-        row = row.child(
+        if let Some(leading) = self.leading {
+            row = row.child(super::slot(*leading, "leading", crate::style()));
+        }
+        let content = self.content.map(|node| *node).unwrap_or_else(|| {
             View::new(WidgetKind::Label {
                 text: self.text,
                 long_mode: LabelLongMode::Dots,
             })
-            .key(Key::Named("text"))
-            .grow(1),
-        );
+        });
+        row = row.child(super::slot(content, "text", crate::style().grow(1)));
         if let Some(trailing) = self.trailing {
-            let mut trailing = *trailing;
             // The trailing node's own style wins over the muted default.
-            trailing.style = Style::muted(theme).merged(trailing.style);
-            row = row.child(trailing);
+            row = row.child(super::slot(*trailing, "trailing", Style::muted(theme)));
         }
         if self.chevron {
             row = row.child(

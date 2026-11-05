@@ -5,7 +5,7 @@ use crate::StyleTransition;
 
 macro_rules! modifiers {
     ($($name:ident($($argument:ident: $ty:ty),+) => $documentation:literal;)*) => {
-        impl<M> Node<M> {
+        impl<M, K> Node<M, K> {
             $(
                 #[doc = $documentation]
                 #[inline]

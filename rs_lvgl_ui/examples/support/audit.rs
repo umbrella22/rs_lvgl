@@ -18,6 +18,8 @@ unsafe extern "C" {
     pub static lv_keyboard_class: rs_lvgl_sys::lv_obj_class_t;
     pub static lv_textarea_class: rs_lvgl_sys::lv_obj_class_t;
     pub static lv_checkbox_class: rs_lvgl_sys::lv_obj_class_t;
+    #[cfg(feature = "widget-slider")]
+    pub static lv_slider_class: rs_lvgl_sys::lv_obj_class_t;
 }
 
 pub fn init(width: u32, height: u32) -> Display {
@@ -162,6 +164,67 @@ pub fn outline_changed(before: &Snapshot, after: &Snapshot, obj: Obj) {
             a[..3].iter().zip(&b[..3]).any(|(a, b)| a.abs_diff(*b) > 20),
             "{side} focus outline clipped at ({x}, {y}): before={a:?}, after={b:?}"
         );
+    }
+}
+
+/// Compare native knob ink with an unclipped reference at the same coordinates.
+/// Only the test temporarily changes ancestor flags; production clipping stays on.
+#[cfg(feature = "widget-slider")]
+pub fn slider_knob_unclipped(slider: Obj, name: &str) {
+    let knob = rs_lvgl_sys::lv_part_t_LV_PART_KNOB;
+    // SAFETY: the example holds LOCK and supplies its mounted live slider.
+    // Every ancestor stays live through both snapshots, and all temporary
+    // flags, the native value and the knob color are restored before returning.
+    unsafe {
+        let old_color = rs_lvgl_sys::lv_obj_get_style_bg_color(slider, knob);
+        let old_value = rs_lvgl_sys::lv_slider_get_value(slider);
+        rs_lvgl_sys::lv_obj_set_style_bg_color(
+            slider,
+            rs_lvgl_sys::lv_color_t {
+                red: 255,
+                green: 0,
+                blue: 255,
+            },
+            knob,
+        );
+        for value in [0, 25, 50, 75, 100] {
+            rs_lvgl_sys::lv_slider_set_value(slider, value, false);
+            let normal = capture(screen(), &format!("{name}-{value}-normal"));
+            let mut changed = Vec::new();
+            let mut ancestor = parent(slider);
+            while !ancestor.is_null() {
+                if !rs_lvgl_sys::lv_obj_is_overflow_visible(ancestor) {
+                    rs_lvgl_sys::lv_obj_set_overflow_visible(ancestor, true);
+                    changed.push(ancestor);
+                }
+                ancestor = parent(ancestor);
+            }
+            let reference = capture(screen(), &format!("{name}-{value}-reference"));
+            for ancestor in changed {
+                rs_lvgl_sys::lv_obj_set_overflow_visible(ancestor, false);
+            }
+            let mask = |image: &Snapshot| {
+                image
+                    .pixels
+                    .chunks_exact(4)
+                    .map(|pixel| pixel[..3] == [255, 0, 255])
+                    .collect::<Vec<_>>()
+            };
+            let expected = mask(&reference);
+            assert!(
+                expected.iter().any(|set| *set),
+                "{name}: reference knob invisible"
+            );
+            let actual = mask(&normal);
+            assert!(
+                actual == expected,
+                "{name} value {value}: slider knob clipped; actual ink {}, reference {}",
+                actual.iter().filter(|set| **set).count(),
+                expected.iter().filter(|set| **set).count(),
+            );
+        }
+        rs_lvgl_sys::lv_slider_set_value(slider, old_value, false);
+        rs_lvgl_sys::lv_obj_set_style_bg_color(slider, old_color, knob);
     }
 }
 

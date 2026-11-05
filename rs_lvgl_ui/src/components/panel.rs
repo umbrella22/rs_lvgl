@@ -52,13 +52,31 @@ impl<M: Clone + 'static> Panel<M> {
 
     /// Add a header action, typically an [`icon_button`]. Actions appear
     /// after the title in insertion order.
-    pub fn action(mut self, action: View<M>) -> Self {
-        self.actions.push(action);
+    pub fn header_action(mut self, action: impl Into<View<M>>) -> Self {
+        self.actions.push(action.into());
         self
     }
 
-    pub fn child(mut self, child: View<M>) -> Self {
-        self.children.push(child);
+    /// Append header widgets in iterator order.
+    pub fn header_actions(mut self, actions: impl IntoIterator<Item = View<M>>) -> Self {
+        self.actions.extend(actions);
+        self
+    }
+
+    /// Compatibility spelling for [`Panel::header_action`].
+    pub fn action(self, action: impl Into<View<M>>) -> Self {
+        self.header_action(action)
+    }
+
+    /// Replace the body with one content view. Later child/children calls append.
+    pub fn content(mut self, content: impl Into<View<M>>) -> Self {
+        self.children.clear();
+        self.children.push(content.into());
+        self
+    }
+
+    pub fn child(mut self, child: impl Into<View<M>>) -> Self {
+        self.children.push(child.into());
         self
     }
 

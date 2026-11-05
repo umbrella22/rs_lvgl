@@ -2,7 +2,7 @@
 
 The [UI skill](../.agents/skills/rs-lvgl-ui/SKILL.md) and
 [native integration skill](../.agents/skills/rs-lvgl-native/SKILL.md) target
-`rs_lvgl` 0.4.0. Each folder is self-contained: its references resolve inside
+`rs_lvgl` 0.5.0. Each folder is self-contained: its references resolve inside
 the copied skill, while source navigation starts from the target application's
 actual dependency. The skills do not assume their installed location is the
 library checkout.
@@ -58,10 +58,12 @@ name action parameters `action`, and keep state in fields and behavior in
 reusable patches. The [style and action contracts](ui-styles.md) define units,
 override order and theme behavior.
 
-Install the 0.4.0 skills with the corresponding library sources. The included
+Install the 0.5.0 skills with the corresponding library sources. The included
 counter uses `type Action = CounterAction` and the same style API as the guide.
-Check the resolved dependency source and enabled features before adapting an
-example to an application.
+The runnable [form](../.agents/skills/rs-lvgl-ui/references/form.rs) uses 0.5.0
+with slider/switch/textarea features. It demonstrates typed construction, lazy
+children and explicit action bindings. Check the resolved dependency source and
+enabled features before adapting an example to an application.
 
 Co-location makes API changes, examples and skill guidance reviewable together.
 A separate repository is useful when skills need their own release cadence,
@@ -78,7 +80,7 @@ standard `SKILL.md` format and include no tool-server dependency.
 
 Validate `SKILL.md` frontmatter with the available skill-creator validator. Copy
 both folders into a temporary directory, validate their relative references, run
-the included [counter](../.agents/skills/rs-lvgl-ui/references/counter.rs) against
-the actual reduced UI dependencies, and verify a repeated install refuses to
+the included [counter](../.agents/skills/rs-lvgl-ui/references/counter.rs) and
+development form against their actual reduced UI dependencies, and verify a repeated install refuses to
 replace the first copy. These checks establish package and API usability;
 independent agent behavioral evaluation is a separate check.

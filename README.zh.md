@@ -48,8 +48,8 @@ cargo run -p rs_lvgl_ui --example studio --features showcase
 
 ```toml
 [dependencies]
-rs_lvgl = { version = "0.4.0", default-features = false, features = ["alloc"] }
-rs_lvgl_ui = "0.4.0"
+rs_lvgl = { version = "0.5.0", default-features = false, features = ["alloc"] }
+rs_lvgl_ui = "0.5.0"
 ```
 
 `rs_lvgl` 和 `rs_lvgl_ui` 支持 `no_std`。在嵌入式设备上使用 UI 层时，
@@ -62,7 +62,7 @@ rs_lvgl_ui = "0.4.0"
 
 `App` 保存应用状态，`view` 用普通函数构建 `View<CounterAction>`，输入通过消息交给 `update` 处理。
 
-下面的示例使用 0.4.0 API。`CounterAction` 是计数器自己的操作枚举，
+下面的示例使用 0.5.0 API。`CounterAction` 是计数器自己的操作枚举，
 `type Action = CounterAction` 将它关联到框架；状态保存在 `Counter`，操作逻辑写在 `update` 中。
 `Ui` 负责将变化应用到 LVGL 控件。
 
@@ -103,13 +103,19 @@ impl App for Counter {
 [完整的计数器示例](https://github.com/umbrella22/rs_lvgl/blob/main/.agents/skills/rs-lvgl-ui/references/counter.rs)包含显示初始化和事件循环；
 布局、样式和事件的用法见 [UI 指南](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_ui/README.md)。
 
+## 组合与表单
+
+0.5.0 提供惰性条件组合、语义事件、组件插槽、`typed::...` 构造和显式表单绑定。
+[组合与表单指南](docs/ui-composition.md)包含类型转换、受控输入和内容复用的写法。
+原有的根模块和 prelude 普通构造函数仍然可用。
+
 ## 选择控件与字体
 
 关闭默认 feature 后，可以按需选择控件和字体：
 
 ```toml
 [dependencies.rs_lvgl_ui]
-version = "0.4.0"
+version = "0.5.0"
 default-features = false
 features = [
     "alloc", "components", "widget-slider", "widget-switch", "font-montserrat-16"
@@ -135,7 +141,7 @@ features = [
 
 ## AI 编程助手
 
-仓库提供面向 0.4.0 的 `rs-lvgl-ui` 和 `rs-lvgl-native` 两个 skill，包含 API 示例和集成说明，供编程助手使用。
+仓库提供 `rs-lvgl-ui` 和 `rs-lvgl-native` 两个 skill，覆盖 0.5.0，包含可运行示例和集成说明。
 安装命令：
 
 ```sh

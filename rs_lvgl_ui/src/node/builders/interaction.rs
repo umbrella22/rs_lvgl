@@ -2,7 +2,7 @@
 
 use crate::node::{Node, ScrollDir};
 
-impl<M> Node<M> {
+impl<M, K> Node<M, K> {
     /// Control `LV_STATE_CHECKED`, which selects [`crate::State::CHECKED`] styles.
     ///
     /// The state is controlled: it is compared with the native object on

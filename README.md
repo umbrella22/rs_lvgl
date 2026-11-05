@@ -53,8 +53,8 @@ Add the crates.io dependencies to your project:
 
 ```toml
 [dependencies]
-rs_lvgl = { version = "0.4.0", default-features = false, features = ["alloc"] }
-rs_lvgl_ui = "0.4.0"
+rs_lvgl = { version = "0.5.0", default-features = false, features = ["alloc"] }
+rs_lvgl_ui = "0.5.0"
 ```
 
 `rs_lvgl` and `rs_lvgl_ui` support `no_std`. Embedded applications using the UI
@@ -69,7 +69,7 @@ An `App` holds your state. Its `view` builds a `View<CounterAction>` with ordina
 functions; input sends messages
 to `update`. `Ui` applies those changes to the LVGL widgets.
 
-The following screen uses the 0.4.0 API. `CounterAction` is the counter's own
+The following screen uses the 0.5.0 API. `CounterAction` is the counter's own
 action enum; `type Action = CounterAction` connects it to the framework.
 State stays in `Counter`, and `update` implements each action.
 
@@ -111,13 +111,20 @@ See the [complete counter example](https://github.com/umbrella22/rs_lvgl/blob/ma
 for display setup and the event loop, or the [UI guide](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_ui/README.md)
 for layouts, styling, and events.
 
+## Composition and forms
+
+Version 0.5.0 provides lazy children, semantic events, component slots,
+`typed::...` construction and explicit form bindings. The
+[composition guide](docs/ui-composition.md) covers typed conversion, controlled
+input and reusable content. Ordinary root/prelude constructors remain available.
+
 ## Choose widgets and fonts
 
 Disable the default feature set to select the widgets and fonts you need:
 
 ```toml
 [dependencies.rs_lvgl_ui]
-version = "0.4.0"
+version = "0.5.0"
 default-features = false
 features = [
     "alloc", "components", "widget-slider", "widget-switch", "font-montserrat-16"
@@ -145,8 +152,8 @@ The guides and GitHub Pages deployment are maintained in [rs_lvgl_website](https
 
 ## AI coding assistants
 
-The included `rs-lvgl-ui` and `rs-lvgl-native` skills target 0.4.0 with API examples
-and integration guidance for coding assistants. Install them with:
+The included `rs-lvgl-ui` and `rs-lvgl-native` skills cover 0.5.0, with runnable
+examples and integration guidance for coding assistants. Install them with:
 
 ```sh
 python3 scripts/install-skills.py --dest ~/.agents/skills

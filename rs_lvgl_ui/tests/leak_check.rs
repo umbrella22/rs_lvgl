@@ -336,6 +336,85 @@ fn resource_workload(ui: &mut Ui<String>) {
     ui.unmount();
 }
 
+struct CompositionPage {
+    show: bool,
+    reversed: bool,
+}
+impl App for CompositionPage {
+    type Action = String;
+    fn update(&mut self, _: String) {}
+    fn view(&self, theme: &Theme) -> View<String> {
+        let form = typed::column([])
+            .child(typed::slider(
+                0,
+                100,
+                binding(50, |value: i32| value.to_string()),
+            ))
+            .child(
+                typed::textarea(binding("model", |text: &str| text.to_owned())).placeholder("Name"),
+            )
+            .child_if(self.show, || {
+                let retained = vec![19u8; 73];
+                typed::switch(binding(false, move |value: bool| {
+                    std::hint::black_box(&retained);
+                    value.to_string()
+                }))
+                .key(Key::Named("optional"))
+            })
+            .children((0..4).map(|position| {
+                let id = if self.reversed {
+                    3 - position
+                } else {
+                    position
+                };
+                typed::button("item")
+                    .key(Key::Id(id))
+                    .on_click(id.to_string())
+                    .into_view()
+            }))
+            .map(|action| action)
+            .into_view();
+        let row = components::list::ListItem::new("")
+            .leading(typed::button("lead").on_click("lead".into()))
+            .content(typed::label("Custom content"))
+            .trailing(typed::switch(binding(false, |value: bool| {
+                value.to_string()
+            })))
+            .view(theme);
+        components::panel::Panel::new("Form")
+            .header_action(typed::button("Save").on_click("save".into()))
+            .content(form)
+            .child(row)
+            .view(theme)
+    }
+    fn overlay(&self, theme: &Theme) -> Option<View<String>> {
+        self.show.then(|| {
+            Dialog::new("Details")
+                .content(typed::label("Body"))
+                .children([label("Extra")])
+                .primary("OK", "close".into())
+                .view(theme)
+        })
+    }
+}
+
+fn composition_workload(ui: &mut Ui<String>) {
+    let mut page = CompositionPage {
+        show: true,
+        reversed: false,
+    };
+    ui.mount(&page).unwrap();
+    for _ in 0..4 {
+        page.show = !page.show;
+        page.reversed = !page.reversed;
+        ui.update(&page).unwrap();
+        ui.post("input".into()).unwrap();
+        assert_eq!(ui.drain(&mut page, 8).unwrap().processed, 1);
+        drop(ui.snapshot().unwrap());
+    }
+    ui.unmount();
+}
+
 fn workload(case: &str) {
     if case == "display" {
         display_cycle(|_| advance());
@@ -369,6 +448,7 @@ fn workload(case: &str) {
         let mut ui = Ui::new(display, Theme::dark()).unwrap();
         match case {
             "loaded-resources" => resource_workload(&mut ui),
+            "composition" => composition_workload(&mut ui),
             "callbacks" => {
                 #[cfg(feature = "diagnostics")]
                 let diagnostic_weak = {
@@ -558,6 +638,7 @@ fn both_heaps_balance_across_resource_lifecycles() {
         "screens",
         "rollback",
         "loaded-resources",
+        "composition",
     ] {
         child(case, None);
     }

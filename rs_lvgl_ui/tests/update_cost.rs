@@ -105,6 +105,62 @@ fn native_usage() -> rs_lvgl_sys::lv_mem_monitor_t {
     monitor
 }
 
+fn explicit_form(capture: i32) -> View<i32> {
+    column([])
+        .child(slider(0, 100, 50).on_value_changed(move |v| v + capture))
+        .child(switch(false).on_toggle(move |v| i32::from(v) + capture))
+        .child(textarea("model").on_text_changed(move |v| v.len() as i32 + capture))
+}
+
+fn typed_form(capture: i32) -> View<i32> {
+    typed::column([])
+        .child(typed::slider(0, 100, 50).on_value_changed(move |v| v + capture))
+        .child(typed::switch(false).on_toggle(move |v| i32::from(v) + capture))
+        .child(typed::textarea("model").on_text_changed(move |v| v.len() as i32 + capture))
+        .into_view()
+}
+
+fn bound_form(capture: i32) -> View<i32> {
+    typed::column([])
+        .child(typed::slider(0, 100, binding(50, move |v| v + capture)))
+        .child(typed::switch(binding(false, move |v| {
+            i32::from(v) + capture
+        })))
+        .child(typed::textarea(binding("model", move |v: &str| {
+            v.len() as i32 + capture
+        })))
+        .into_view()
+}
+
+#[test]
+fn form_construction_measurements() {
+    let mut reference = None;
+    for (scenario, build) in [
+        ("erased-explicit", explicit_form as fn(i32) -> View<i32>),
+        ("typed-explicit", typed_form),
+        ("typed-binding", bound_form),
+    ] {
+        let mut totals = (0, 0, 0, 0);
+        for index in 0..32 {
+            let before = begin();
+            let form = std::hint::black_box(build(std::hint::black_box(index)));
+            let sample = end(before);
+            totals.0 += sample.0;
+            totals.1 += sample.1;
+            totals.2 = totals.2.max(sample.2);
+            totals.3 += sample.3;
+            drop(form);
+            assert_eq!(LIVE.load(SeqCst), before, "FORM_CAPTURE_LEAK: {scenario}");
+        }
+        if let Some(expected) = reference {
+            assert_eq!(totals, expected, "FORM_ADAPTER_COST: {scenario}");
+        } else {
+            reference = Some(totals);
+        }
+        println!("FORM_COST_JSON:{{\"scenario\":\"{scenario}\",\"constructions\":32,\"rust_alloc_calls\":{},\"rust_requested_bytes\":{},\"rust_peak_extra_bytes\":{},\"rust_retained_bytes_sum\":{}}}", totals.0, totals.1, totals.2, totals.3);
+    }
+}
+
 #[test]
 fn measurements() {
     assert_eq!(

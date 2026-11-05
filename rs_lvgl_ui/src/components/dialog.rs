@@ -70,8 +70,21 @@ impl<M: Clone + 'static> Dialog<M> {
     }
 
     /// Add arbitrary body content, such as a textarea or a list.
-    pub fn child(mut self, child: View<M>) -> Self {
-        self.body.push(child);
+    pub fn child(mut self, child: impl Into<View<M>>) -> Self {
+        self.body.push(child.into());
+        self
+    }
+
+    /// Append body content in iterator order.
+    pub fn children(mut self, children: impl IntoIterator<Item = View<M>>) -> Self {
+        self.body.extend(children);
+        self
+    }
+
+    /// Replace the body with one content view. Later child/children calls append.
+    pub fn content(mut self, content: impl Into<View<M>>) -> Self {
+        self.body.clear();
+        self.body.push(content.into());
         self
     }
 

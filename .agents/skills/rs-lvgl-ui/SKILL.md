@@ -1,6 +1,6 @@
 ---
 name: rs-lvgl-ui
-description: Build or modify declarative Rust screens with rs_lvgl_ui 0.4.0, including App::Action, flat styles, features, events and resource lifetimes. Verify the resolved dependency before applying this skill to another LVGL Rust crate.
+description: Build or modify declarative Rust screens with rs_lvgl_ui, including App::Action, styles, composition, controlled forms and resource lifetimes. Verify the resolved release or development source before choosing APIs.
 ---
 
 # LVGL Rust UI
@@ -8,7 +8,7 @@ description: Build or modify declarative Rust screens with rs_lvgl_ui 0.4.0, inc
 ## Locate the API
 
 Identify the application's Cargo dependency and the actual source checkout. This
-skill targets `rs_lvgl_ui` 0.4.0 from `umbrella22/rs_lvgl`, layered over LVGL 9.6.
+skill targets `rs_lvgl_ui` 0.5.0 from `umbrella22/rs_lvgl`, layered over LVGL 9.6.
 Read the resolved manifests and relevant APIs before assuming a symbol or feature
 exists. Other LVGL wrappers have different APIs. In this source repository, the main
 entry points are `rs_lvgl_ui/src/{constructors,app,node,theme}/mod.rs`,
@@ -58,6 +58,42 @@ Use [the small lifecycle example](references/counter.rs) for a complete runnable
 memory-display application. Adapt its state and view to the requested product;
 a memory display does not provide a visible simulator or board driver.
 
+## Composition and forms
+
+Version 0.5.0 includes lazy children, semantic callbacks, component slots, typed
+construction and explicit bindings. Use [the runnable form](references/form.rs)
+with 0.5.0 and its declared widget features. Verify the resolved dependency when
+adapting an application that still uses an earlier release.
+
+- `child_if(condition, || view)` evaluates its FnOnce closure only for true.
+  Lists use iterators and stable business keys; functions accept props/state
+  and return views. Compose child actions with `.map(ParentAction::Child)`.
+- Prefer `on_toggle(bool)`, `on_selection_changed(Option<u32>)`,
+  `on_cell_selected(Option<TableCell>)` and `on_date_selected(Option<CalendarDate>)`
+  for the matching controls. Numbers use `on_value_changed(i32)`, text uses
+  `on_text_changed(&str)`. The semantic methods and numeric method replace
+  one shared value-handler slot; text/click/generic handlers are independent.
+  None is valid absence; invalid native representations emit no semantic action.
+- `typed::...` retains widget capabilities through common styles, keys and map.
+  Use `.into_view()` for mixed arrays, iterator items, different branch types
+  and View return boundaries. A single `.child(typed::switch(...))` or component
+  slot accepts the typed node directly. Wrong widget-specific methods fail
+  before erasure; erased views still use diagnostics/strict runtime checks.
+- `typed::slider(0, 100, binding(current, Action::SpeedChanged))`, typed
+  switch/checkbox bool bindings and textarea text bindings combine the current
+  value with one action mapper. No mutable model borrow or automatic setter
+  survives construction. Update accepts or rejects the input. Reconcile even
+  when rejection leaves the model unchanged; RenderDecision::Skip would skip
+  the necessary native correction. Programmatic correction suppresses feedback.
+- ListItem leading/content/trailing retain keys, explicit styles and actions.
+  Panel uses header_action/header_actions for header widgets. Panel/Dialog
+  content replaces the body; later child/children append. Slots add no native
+  container; explicit list slots temporarily box their descriptor.
+
+Typed erasure adds no allocation. Bindings consume the existing event slot.
+Owned text, capturing handlers, child vectors, map, slots and native storage
+still have costs; measure Rust and LVGL separately for memory claims.
+
 ## Styles and input
 
 View constructors initialize their own embedded style. Prefer direct modifiers:
@@ -79,6 +115,11 @@ Flat setters update the embedded style without per-property heap allocations;
 children, owned text and reconciliation can still allocate.
 Use `.state_style(State::PRESSED, style().opacity(200))`, `FOCUSED` and `FOCUS_KEY` for interaction
 feedback. Leave enough parent padding for an outer outline to avoid clipping.
+Each nested form container needs its own inner space: native slider knobs draw
+outside the track, including at both range endpoints. Outer padding or sibling
+gap does not protect pixels clipped by an inner zero-padding row/column. The
+form recipe reserves 12 px for the bundled defaults; verify custom knob/shadow/
+outline sizes and all four edges in actual native snapshots.
 
 `input-keypad` enables APIs without activating focus. Use `Ui::enable_focus` or
 bind a keypad/encoder explicitly. Modal overlays scope that UI's focus and restore

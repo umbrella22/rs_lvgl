@@ -3,6 +3,28 @@ use super::*;
 mod native;
 
 #[test]
+fn profile_slider_preserves_its_knob_while_scrolled_into_view() {
+    let _lock = native::LOCK.lock().unwrap();
+    for dark in [false, true] {
+        let display = native::init(WIDTH as u32, HEIGHT as u32);
+        let mut app = Demo::new();
+        app.dark = dark;
+        let mut ui = Ui::new(&display, Theme::dark()).unwrap();
+        apply_theme(&mut ui, &app);
+        ui.mount(&app).unwrap();
+        let slider = native::class(native::screen(), &raw const native::lv_slider_class);
+        // SAFETY: this slider and its scrollable ancestors are mounted.
+        unsafe { rs_lvgl_sys::lv_obj_scroll_to_view_recursive(slider, false) };
+        native::settle(&mut ui);
+        native::slider_knob_unclipped(slider, "widgets-profile-slider");
+        ui.unmount();
+        drop(ui);
+        // SAFETY: the synchronous memory display has no remaining UI users.
+        unsafe { display.delete() };
+    }
+}
+
+#[test]
 fn light_theme_updates_native_tabs_and_retained_calendar() {
     let _lock = native::LOCK.lock().unwrap();
     let display = native::init(WIDTH as u32, HEIGHT as u32);

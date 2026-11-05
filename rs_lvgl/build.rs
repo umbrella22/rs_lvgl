@@ -34,6 +34,16 @@ fn main() {
         println!("cargo:rustc-cfg=lv_use_{name}");
     }
 
+    // Handwritten layout APIs follow the linked target configuration too.
+    println!("cargo:rerun-if-env-changed=DEP_LVGL_LAYOUTS");
+    let layouts = env::var("DEP_LVGL_LAYOUTS").expect("rs_lvgl_sys layout metadata");
+    for name in ["flex", "grid"] {
+        println!("cargo:rustc-check-cfg=cfg(lv_use_{name})");
+        if layouts.split(',').any(|enabled| enabled == name) {
+            println!("cargo:rustc-cfg=lv_use_{name}");
+        }
+    }
+
     let codegen = CodeGen::from(&widgets_impl).unwrap();
     let widgets_impl: Vec<TokenStream> = codegen
         .get_widgets()

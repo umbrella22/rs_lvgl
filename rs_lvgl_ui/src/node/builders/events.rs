@@ -3,7 +3,7 @@
 use crate::node::Node;
 use alloc::boxed::Box;
 
-impl<M> Node<M> {
+impl<M, K> Node<M, K> {
     ///
     /// Messages are cloned for every click, so `M` must implement `Clone`.
     /// Handlers are independent: this can be combined with the other `on_*`
@@ -26,11 +26,66 @@ impl<M> Node<M> {
     /// calendars packed by [`CalendarDate::to_value`](crate::CalendarDate::to_value) (`-1` when none); the
     /// clicked footer button index of message boxes. Other kinds pass the
     /// value documented on their [`WidgetKind`](crate::WidgetKind) variant, or `0`.
-    pub fn on_value_changed<F>(mut self, map: F) -> Self
+    pub fn on_value_changed<F>(mut self, mut map: F) -> Self
     where
+        K: crate::typed::Supports<crate::typed::capability::Numeric>,
         F: FnMut(i32) -> M + 'static,
     {
-        self.handlers.value_changed = Some(Box::new(map));
+        self.handlers.value_changed = Some(Box::new(move |value| value.legacy().map(&mut map)));
+        self
+    }
+
+    /// Map the checked state of a switch or checkbox. Replaces the value handler.
+    pub fn on_toggle<F>(mut self, mut map: F) -> Self
+    where
+        K: crate::typed::Supports<crate::typed::capability::Toggle>,
+        F: FnMut(bool) -> M + 'static,
+    {
+        self.handlers.value_changed = Some(Box::new(move |value| match value {
+            crate::events::ControlValue::Toggle(checked) => Some(map(checked)),
+            _ => None,
+        }));
+        self
+    }
+
+    /// Map a selector's index, or its valid absence. Invalid native indices
+    /// are skipped. Supports dropdown, roller, tabs, tiles, button matrix and
+    /// message-box footer buttons. Replaces the value handler.
+    pub fn on_selection_changed<F>(mut self, mut map: F) -> Self
+    where
+        K: crate::typed::Supports<crate::typed::capability::Selection>,
+        F: FnMut(Option<u32>) -> M + 'static,
+    {
+        self.handlers.value_changed = Some(Box::new(move |value| match value {
+            crate::events::ControlValue::Selection(index) => Some(map(index)),
+            _ => None,
+        }));
+        self
+    }
+
+    /// Map a calendar's pressed date, or None for a non-date cell.
+    pub fn on_date_selected<F>(mut self, mut map: F) -> Self
+    where
+        K: crate::typed::Supports<crate::typed::capability::Date>,
+        F: FnMut(Option<crate::CalendarDate>) -> M + 'static,
+    {
+        self.handlers.value_changed = Some(Box::new(move |value| match value {
+            crate::events::ControlValue::Date(date) => Some(map(date)),
+            _ => None,
+        }));
+        self
+    }
+
+    /// Map a table's selected cell without packing row/column into an i32.
+    pub fn on_cell_selected<F>(mut self, mut map: F) -> Self
+    where
+        K: crate::typed::Supports<crate::typed::capability::Cell>,
+        F: FnMut(Option<crate::TableCell>) -> M + 'static,
+    {
+        self.handlers.value_changed = Some(Box::new(move |value| match value {
+            crate::events::ControlValue::Cell(cell) => Some(map(cell)),
+            _ => None,
+        }));
         self
     }
 
@@ -40,6 +95,7 @@ impl<M> Node<M> {
     /// if the message must retain it. Non-UTF-8 native text is skipped.
     pub fn on_text_changed<F>(mut self, map: F) -> Self
     where
+        K: crate::typed::Supports<crate::typed::capability::Text>,
         F: FnMut(&str) -> M + 'static,
     {
         self.handlers.text_changed = Some(Box::new(map));

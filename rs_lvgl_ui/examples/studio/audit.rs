@@ -269,3 +269,24 @@ fn action_focus_outlines_render_on_all_four_sides() {
         display.delete();
     }
 }
+
+#[test]
+fn slider_knobs_remain_complete_at_both_endpoints_in_both_palettes() {
+    let _lock = fixture::LOCK.lock().unwrap();
+    let (display, mut app, mut ui) = mount();
+    for dark in [false, true] {
+        app.dark = dark;
+        apply_theme(&mut ui, &app);
+        for index in [0, 1] {
+            app.page = index;
+            ui.update(&app).unwrap();
+            fixture::settle(&mut ui);
+            let slider = fixture::class(fixture::screen(), &raw const fixture::lv_slider_class);
+            fixture::slider_knob_unclipped(slider, &format!("studio-slider-{index}"));
+        }
+    }
+    ui.unmount();
+    drop(ui);
+    // SAFETY: this synchronous memory display has no live UI/input users.
+    unsafe { display.delete() };
+}

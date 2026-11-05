@@ -49,7 +49,9 @@ typed API, and verifies that old associated constructors and safe calls to
 `raw` fail for their intended Rust diagnostics.
 It also checks safe `NativeObject` implementation rejection, an external adapter
 delegating to a borrowed `Obj`, loaded-font unsafe transfer, loaded-image feature
-gates, static/short-borrowed text compatibility and the new `no_std` APIs.
+gates, static/short-borrowed text compatibility, typed capability preservation
+through styles/map, explicit heterogeneous conversion, binding input/mapper types
+and the new `no_std` APIs.
 
 On macOS, the native linker may need the SDL2 library search path explicitly:
 
@@ -62,9 +64,16 @@ LIBRARY_PATH="$(pkg-config --variable=libdir sdl2)" cargo test -- --test-threads
 ```sh
 cargo test -p rs_lvgl_sys --test build_script -- --test-threads=1
 python3 scripts/check-native-inputs.py --artifacts target/native-input-audit
+python3 scripts/check-layout-config.py --artifacts target/layout-config-audit
 ```
 
-The runner builds a raw-only application and checks C/Rust configuration agreement,
+The layout runner compiles and runs real wrapper consumers with neither layout,
+Flex only, Grid only and both layouts, using C integer expressions in headers.
+Disabled APIs must fail for their intended missing symbol. It disables native
+widgets that themselves require Flex; this does not make the declarative UI a
+layout-free runtime. Version 0.5.0 includes the target layout projection fix.
+
+The native-input runner builds a raw-only application and checks C/Rust configuration agreement,
 custom functions and a custom font descriptor. It changes a transitive configuration
 header, a private C header and font source in place. Negative fixtures require the
 intended capability/path/header failure. It also verifies unchanged-input cache reuse,
@@ -102,6 +111,8 @@ cover:
 - Display buffers and capturing flush callbacks.
 - Keyed reconciliation, queued click messages and reorder/update/drain.
 - Retained styles, native state transitions and explicit animations.
+- Lazy conditional removal, typed/bound controls, mapped capturing handlers and
+  ListItem/Panel/Dialog slots with body replacement and keyed reorders.
 - Keypad registration, focus groups and modal restoration.
 - Canvas resizing and snapshots that survive UI unmount.
 - QR, barcode, GIF, Lottie and Pinyin individually, plus sequential replacement.
@@ -164,6 +175,13 @@ unchanged descriptor sizes and no allocation/live-storage metric increases.
 The baseline must exist and come from the pre-change equivalent workload;
 recording the post-change source twice is not a valid before/after comparison.
 See [style semantics](ui-styles.md) for the public contract.
+
+A form-construction workload compares equivalent erased explicit handlers,
+typed explicit handlers and typed bindings over 32 constructions each. It uses
+the same child append shape, text and nonzero captures, requires equal Rust
+allocation/requested/peak/retained metrics, and checks release after each form.
+`FORM_COST_JSON` records these measurements separately from native update costs.
+Typed descriptor size/alignment is checked against the erased form.
 
 The Rust meter reports cumulative allocation calls/requested bytes, live-byte
 delta and maximum extra live bytes above the per-update baseline. Native metrics

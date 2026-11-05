@@ -10,6 +10,8 @@ fn pointer_actions_preserve_keyed_rows_and_theme_updates() {
     let mut app = Gallery::new();
     ui.mount(&app).unwrap();
     native::settle(&mut ui);
+    let slider = native::class(native::screen(), &raw const native::lv_slider_class);
+    native::slider_knob_unclipped(slider, "gallery-slider");
     native::capture(native::screen(), "gallery-dark");
     let mut pointer = native::Pointer::new();
     let plus = native::parent(native::label(native::screen(), "+"));

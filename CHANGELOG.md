@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.5.0 — 2026-11-06
+
+### Added
+
+- Add lazy `child_if`, semantic bool/optional-index/cell/date callbacks and
+  ListItem leading/content slots, Panel header actions, and Panel/Dialog body
+  replacement/append composition.
+- Add optional `typed::...` constructors with compile-time widget capabilities,
+  explicit `.into_view()` boundaries, and `binding(current, action_mapper)` for
+  numeric, toggle and text controls. Existing erased constructors remain.
+- Add external no_std API controls, native rejected-input correction coverage,
+  conditional/slot lifecycle workloads and comparable form-construction costs.
+  Update examples, composition guidance and source-aware skills together.
+
+### Fixed
+
+- Derive handwritten Flex/Grid API availability from the effective linked target
+  configuration, including headers that disable either or both layouts.
+- Decode legacy packed table cells with unsigned axes, preserving valid rows
+  above 32767 while retaining reserved-axis absence sentinels.
+- Reserve native knob and focus-outline drawing space in nested form examples
+  and the settings footer; check complete native ink at slider endpoints.
+
+
 ## 0.4.0 — 2026-11-05
 
 ### Breaking changes

@@ -57,15 +57,17 @@ def main():
         result = subprocess.run(cmd, cwd=ROOT, env=env, stdout=stream, stderr=subprocess.STDOUT, timeout=600)
     content = log.read_text()
     rows = [json.loads(line.split("COST_JSON:", 1)[1]) for line in content.splitlines()
-            if "COST_JSON:" in line and "STYLE_COST_JSON:" not in line]
+            if "COST_JSON:" in line and not any(marker in line for marker in ("STYLE_COST_JSON:", "FORM_COST_JSON:"))]
     style_rows = [json.loads(line.split("STYLE_COST_JSON:", 1)[1]) for line in content.splitlines()
                   if "STYLE_COST_JSON:" in line]
+    form_rows = [json.loads(line.split("FORM_COST_JSON:", 1)[1]) for line in content.splitlines()
+                 if "FORM_COST_JSON:" in line]
     style_sizes = [json.loads(line.split("STYLE_SIZE_JSON:", 1)[1]) for line in content.splitlines()
                    if "STYLE_SIZE_JSON:" in line]
     after = source_identity()
     passed = (result.returncode == 0 and "COST_CONTROL:PASS" in content
               and "STYLE_CONTROL:PASS" in content and len(rows) == 3
-              and len(style_rows) == 5 and len(style_sizes) == 1 and before == after)
+              and len(style_rows) == 5 and len(style_sizes) == 1 and len(form_rows) == 3 and before == after)
     identity = {"command": cmd, "exit": result.returncode, "passed": passed, "start_unix": start,
                 "seconds": time.time()-start, "rustc": subprocess.check_output(["rustc", "--version"], text=True).strip(),
                 "target": subprocess.check_output(["rustc", "-vV"], text=True).split("host: ")[1].splitlines()[0],
@@ -74,7 +76,7 @@ def main():
                 "fixture_sha256": hashlib.sha256((ROOT/"rs_lvgl_ui/tests/update_cost.rs").read_bytes()).hexdigest(),
                 "log_sha256": hashlib.sha256(log.read_bytes()).hexdigest(), "measurements": rows,
                 "source_before": before, "source_after": after,
-                "style_measurements": style_rows, "style_sizes": style_sizes[0] if style_sizes else None,
+                "form_measurements": form_rows, "style_measurements": style_rows, "style_sizes": style_sizes[0] if style_sizes else None,
                 "limits": {"native_high_water": "since initialization, not per-update peak", "native_allocation_calls": "not instrumented", "native_setter_calls": "label text only", "timing": "host test profile only"}}
     if args.compare and passed:
         baseline = json.loads(args.compare.read_text())
@@ -99,7 +101,7 @@ def main():
     if not passed:
         raise RuntimeError(content[-5000:])
     print(json.dumps({"passed": passed, "measurements": rows,
-                      "style_measurements": style_rows, "style_sizes": identity["style_sizes"],
+                      "form_measurements": form_rows, "style_measurements": style_rows, "style_sizes": identity["style_sizes"],
                       "comparison": identity.get("comparison")}, indent=2))
 
 

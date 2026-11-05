@@ -1,6 +1,6 @@
 # UI messages, loaded resources and diagnostics
 
-The 0.4.0 runtime provides explicit congestion outcomes, optional diagnostics,
+The 0.5.0 runtime provides explicit congestion outcomes, optional diagnostics,
 loaded resource retention and render feedback. The library requires `alloc`
 and one UI thread. External `NativeObject` implementations must satisfy the
 safety requirements below.
@@ -206,7 +206,10 @@ including after `Node::map`. For example, `label("x").password(true)` is rejecte
 with `InvalidProperty` when `widget-textarea` and strict checking are enabled.
 Default behavior continues to ignore the modifier; diagnostics alone emits
 `IgnoredProperty`. Shared layout/style APIs and unified `View<M>` composition
-remain available. Widget-specific builders are outside this change.
+remain available. Development `typed::...` constructors reject wrong dedicated
+properties at compile time until `.into_view()` erases the marker. Runtime range,
+identity, resource and allocation checks still apply. See
+[composition and controlled forms](ui-composition.md).
 
 Allocation accounting, compile-fail consumers, effective-configuration rejection,
 resource lifecycle workloads and native display checks are described in
