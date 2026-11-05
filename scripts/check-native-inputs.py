@@ -206,7 +206,7 @@ os.execv({compiler!r}, [{compiler!r}, *sys.argv[1:]])
 use std::rc::Rc;
 struct Page(FontResource);
 impl App for Page {
-    type Msg=();
+    type Action=();
     fn update(&mut self,_:()) {}
     fn view(&self,_:&Theme)->View<()> {label_static("font").font_resource(self.0.clone())}
 }

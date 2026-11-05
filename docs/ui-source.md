@@ -30,7 +30,7 @@ lifetime rules in detail.
 | --- | --- |
 | [constructors/](../rs_lvgl_ui/src/constructors/mod.rs) | Ordinary functions grouped into layout, controls, data, media and custom views. They construct descriptors without calling LVGL. |
 | [node/](../rs_lvgl_ui/src/node/mod.rs) | `Node` fields, identity and construction defaults. `kind.rs` defines feature-gated widget descriptions; `types/` defines fonts, images, layout, style selectors and control values. |
-| [node/builders/](../rs_lvgl_ui/src/node/builders/mod.rs) | Tree/style/grid modifiers, widget-specific properties, interaction/scroll settings and event builders. Wrong-kind modifiers retain the existing diagnostic/strict-property behavior. |
+| [node/builders/](../rs_lvgl_ui/src/node/builders/mod.rs) | `style.rs` forwards flat main-style modifiers to the embedded `Style`; `tree.rs` merges reusable patches and selects parts/states. Widget-specific properties, interaction/scroll settings and events remain separate. Wrong-kind modifiers retain the existing diagnostic/strict-property behavior. |
 | [node/validation/](../rs_lvgl_ui/src/node/validation/mod.rs) | Diagnostic traversal, sibling/keyboard identity and style/navigation checks. `kinds.rs` checks each widget's native representation and shares range/option validation. |
 | [theme/](../rs_lvgl_ui/src/theme/mod.rs) | `Style` data/defaults and `Theme` tokens. Builders, field merging and themed presets have separate files. Native style application belongs to `widgets/style.rs`. |
 | [app/](../rs_lvgl_ui/src/app/mod.rs) | `App`, `Ui` and statistics. `controller.rs` handles public operations and message batches; `render.rs` validates and reconciles both trees; `input.rs`, `lifecycle.rs` and `guard.rs` handle focus, teardown and reentrancy. |
@@ -50,6 +50,11 @@ graphics, diagnostics, screens, style extensions, symbols and metrics.
 `Node<M>` is a temporary description. `node/mapping.rs` changes its message type;
 `HandlerSet::map` adapts independent handlers and shares owned-payload conversion.
 Neither operation mounts objects or changes queue delivery order.
+
+Flat style calls and reusable patches share the same explicit-field merge
+contract; additional scalar properties generate both `Style` and `Node` methods
+from `style_properties.rs`. Size helpers in `constructors/layout.rs` return the
+existing `Size` variants. See [style and action contracts](ui-styles.md).
 
 `MountedNode<M>` retains the native object, previous props/styles, resource
 references, children and custom-widget state. Destruction runs custom delete

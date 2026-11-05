@@ -67,7 +67,7 @@ enum Tab {
 }
 
 #[derive(Clone, Debug)]
-enum Msg {
+enum WidgetDemoAction {
     Tab(Tab),
     ToggleTheme,
     Accent(usize),
@@ -140,75 +140,95 @@ impl Demo {
         theme
     }
 
-    fn profile_page(&self, theme: &Theme) -> Vec<View<Msg>> {
+    fn profile_page(&self, theme: &Theme) -> Vec<View<WidgetDemoAction>> {
         let mut page = Vec::new();
 
         page.push(
             row([
                 obj()
                     .key(Key::Named("avatar"))
-                    .style(
-                        Style::default()
-                            .bg(theme.accent)
-                            .width(Size::Px(72))
-                            .height(Size::Px(72))
-                            .radius(36),
-                    )
+                    .background(theme.accent)
+                    .width(px(72))
+                    .height(px(72))
+                    .radius(36)
                     .child(
-                        label("ES").style(
-                            Style::body(theme)
-                                .fg(theme.background)
-                                .font(theme.title_font)
-                                .align(Align::Center),
-                        ),
+                        label("ES")
+                            .font(theme.body_font)
+                            .text_color(theme.text)
+                            .text_color(theme.background)
+                            .font(theme.title_font)
+                            .align(Align::Center),
                     ),
                 column([
-                    label("Elena Smith").style(Style::title(theme)),
+                    label("Elena Smith")
+                        .font(theme.title_font)
+                        .text_color(theme.text),
                     label("This is a short description of me. Take a look at my profile!")
-                        .style(Style::muted(theme).width(Size::Percent(100))),
-                    label("Email: elena@smith.com").style(Style::body(theme)),
-                    label("Phone: +79 246 123 4567").style(Style::body(theme)),
+                        .font(theme.body_font)
+                        .text_color(theme.muted)
+                        .width(percent(100)),
+                    label("Email: elena@smith.com")
+                        .font(theme.body_font)
+                        .text_color(theme.text),
+                    label("Phone: +79 246 123 4567")
+                        .font(theme.body_font)
+                        .text_color(theme.text),
                 ])
-                .style(Style::default().flex_grow(1).gap(4)),
+                .grow(1)
+                .gap(4),
             ])
             .key(Key::Named("profile-header"))
-            .style(Style::surface(theme).width(Size::Percent(100)).gap(12)),
+            .style(Style::surface(theme))
+            .width(percent(100))
+            .gap(12),
         );
 
         page.push(
             row([
                 button("Log out")
                     .key(Key::Named("logout"))
-                    .style(Style::accent(theme).flex_grow(1))
-                    .on_click(Msg::LogOut),
-                button("Invite").key(Key::Named("invite")).style(
-                    Style::accent(theme)
-                        .flex_grow(1)
-                        .disabled(true)
-                        .opacity(140),
-                ),
+                    .style(Style::accent(theme))
+                    .grow(1)
+                    .on_click(WidgetDemoAction::LogOut),
+                button("Invite")
+                    .key(Key::Named("invite"))
+                    .style(Style::accent(theme))
+                    .grow(1)
+                    .disabled(true)
+                    .opacity(140),
             ])
             .key(Key::Named("profile-actions"))
-            .style(Style::default().width(Size::Percent(100)).gap(8)),
+            .width(percent(100))
+            .gap(8),
         );
 
         let mut form = card(theme, "profile-form", "Your profile");
         form = form
-            .child(label("User name").style(Style::muted(theme)))
+            .child(
+                label("User name")
+                    .font(theme.body_font)
+                    .text_color(theme.muted),
+            )
             .child(
                 textarea(self.username.as_str())
                     .placeholder("Your name")
                     .keyboard_id(1)
                     .key(Key::Named("username"))
                     .style(input_style(theme))
-                    .on_text_changed(|text| Msg::Username(text.into()))
+                    .on_text_changed(|text| WidgetDemoAction::Username(text.into()))
                     .on_event(|event| match event {
-                        Event::Focused => Some(Msg::Focus(Some(1))),
-                        Event::Defocused | Event::Ready | Event::Cancel => Some(Msg::Focus(None)),
+                        Event::Focused => Some(WidgetDemoAction::Focus(Some(1))),
+                        Event::Defocused | Event::Ready | Event::Cancel => {
+                            Some(WidgetDemoAction::Focus(None))
+                        }
                         _ => None,
                     }),
             )
-            .child(label("Password").style(Style::muted(theme)))
+            .child(
+                label("Password")
+                    .font(theme.body_font)
+                    .text_color(theme.muted),
+            )
             .child(
                 textarea(self.password.as_str())
                     .placeholder("Min. 8 chars.")
@@ -216,10 +236,12 @@ impl Demo {
                     .keyboard_id(2)
                     .key(Key::Named("password"))
                     .style(input_style(theme))
-                    .on_text_changed(|text| Msg::Password(text.into()))
+                    .on_text_changed(|text| WidgetDemoAction::Password(text.into()))
                     .on_event(|event| match event {
-                        Event::Focused => Some(Msg::Focus(Some(2))),
-                        Event::Defocused | Event::Ready | Event::Cancel => Some(Msg::Focus(None)),
+                        Event::Focused => Some(WidgetDemoAction::Focus(Some(2))),
+                        Event::Defocused | Event::Ready | Event::Cancel => {
+                            Some(WidgetDemoAction::Focus(None))
+                        }
                         _ => None,
                     }),
             )
@@ -229,77 +251,96 @@ impl Demo {
                     [GridTrack::Content],
                     [
                         column([
-                            label("Gender").style(Style::muted(theme)),
+                            label("Gender")
+                                .font(theme.body_font)
+                                .text_color(theme.muted),
                             dropdown(["Male", "Female", "Other"], self.gender)
                                 .key(Key::Named("gender"))
                                 .style(input_style(theme))
-                                .on_value_changed(|value| Msg::Gender(value.max(0) as u32)),
+                                .on_value_changed(|value| {
+                                    WidgetDemoAction::Gender(value.max(0) as u32)
+                                }),
                         ])
                         .grid_cell(0, 0, 1, 1)
-                        .style(Style::default().gap(4)),
+                        .gap(4),
                         column([
-                            label("Birthday").style(Style::muted(theme)),
+                            label("Birthday")
+                                .font(theme.body_font)
+                                .text_color(theme.muted),
                             textarea(self.birthday.as_str())
                                 .placeholder("01.01.1990")
                                 .key(Key::Named("birthday"))
                                 .style(input_style(theme))
-                                .on_text_changed(|text| Msg::Birthday(text.into())),
+                                .on_text_changed(|text| WidgetDemoAction::Birthday(text.into())),
                         ])
                         .grid_cell(1, 0, 1, 1)
-                        .style(Style::default().gap(4)),
+                        .gap(4),
                     ],
                 )
                 .key(Key::Named("profile-grid"))
-                .style(Style::default().width(Size::Percent(100)).gap(12)),
+                .width(percent(100))
+                .gap(12),
             )
-            .child(label("Calendar").style(Style::muted(theme)))
+            .child(
+                label("Calendar")
+                    .font(theme.body_font)
+                    .text_color(theme.muted),
+            )
             .child(raw_calendar(Key::Named("calendar")));
         page.push(form);
 
         page.push(
             card(theme, "profile-skills", "Your skills")
-                .child(label("Experience").style(Style::muted(theme)))
+                .child(
+                    label("Experience")
+                        .font(theme.body_font)
+                        .text_color(theme.muted),
+                )
                 .child(
                     slider(0, 100, self.speed)
                         .key(Key::Named("experience"))
-                        .style(
-                            Style::default()
-                                .width(Size::Percent(100))
-                                .height(Size::Px(16))
-                                .anim_duration(120),
-                        )
-                        .part_style(Part::Indicator, Style::default().bg(theme.accent))
-                        .on_value_changed(Msg::Speed),
+                        .width(percent(100))
+                        .height(px(16))
+                        .anim_duration(120)
+                        .part_style(Part::Indicator, style().background(theme.accent))
+                        .on_value_changed(WidgetDemoAction::Speed),
                 )
                 .child(
                     label(format!("Experience: {}%", self.speed))
                         .key(Key::Named("experience-label"))
-                        .style(Style::body(theme)),
+                        .font(theme.body_font)
+                        .text_color(theme.text),
                 )
                 .child(
                     row([
-                        label("Team player").style(Style::body(theme).flex_grow(1)),
+                        label("Team player")
+                            .font(theme.body_font)
+                            .text_color(theme.text)
+                            .grow(1),
                         switch(self.team_player)
                             .key(Key::Named("team-player"))
-                            .on_value_changed(|value| Msg::TeamPlayer(value != 0)),
+                            .on_value_changed(|value| WidgetDemoAction::TeamPlayer(value != 0)),
                     ])
-                    .style(Style::default().width(Size::Percent(100))),
+                    .width(percent(100)),
                 )
                 .child(
                     row([
-                        label("Hard-working").style(Style::body(theme).flex_grow(1)),
+                        label("Hard-working")
+                            .font(theme.body_font)
+                            .text_color(theme.text)
+                            .grow(1),
                         switch(self.hard_working)
                             .key(Key::Named("hard-working"))
-                            .on_value_changed(|value| Msg::HardWorking(value != 0)),
+                            .on_value_changed(|value| WidgetDemoAction::HardWorking(value != 0)),
                     ])
-                    .style(Style::default().width(Size::Percent(100))),
+                    .width(percent(100)),
                 ),
         );
 
         page
     }
 
-    fn analytics_page(&self, theme: &Theme) -> Vec<View<Msg>> {
+    fn analytics_page(&self, theme: &Theme) -> Vec<View<WidgetDemoAction>> {
         let mut page = Vec::new();
 
         page.push(
@@ -315,11 +356,8 @@ impl Demo {
                         )],
                     )
                     .key(Key::Named("chart-visitors-plot"))
-                    .style(
-                        Style::default()
-                            .width(Size::Percent(100))
-                            .height(Size::Px(150)),
-                    ),
+                    .width(percent(100))
+                    .height(px(150)),
                 ),
                 card_flex(theme, "chart-revenue", "Monthly revenue").child(
                     chart(
@@ -338,15 +376,13 @@ impl Demo {
                         ],
                     )
                     .key(Key::Named("chart-revenue-plot"))
-                    .style(
-                        Style::default()
-                            .width(Size::Percent(100))
-                            .height(Size::Px(150)),
-                    ),
+                    .width(percent(100))
+                    .height(px(150)),
                 ),
             ])
             .key(Key::Named("analytics-charts"))
-            .style(Style::default().width(Size::Percent(100)).gap(12)),
+            .width(percent(100))
+            .gap(12),
         );
 
         page.push(
@@ -356,17 +392,17 @@ impl Demo {
                 gauge_card(theme, "gauge-speed", "Network speed", 82, theme.muted),
             ])
             .key(Key::Named("analytics-gauges"))
-            .style(Style::default().width(Size::Percent(100)).gap(12)),
+            .width(percent(100))
+            .gap(12),
         );
 
         page.push(
             card(theme, "analytics-scale", "Linear scale").child(
-                scale(0, 100, 11, 5).key(Key::Named("scale")).style(
-                    Style::default()
-                        .width(Size::Percent(100))
-                        .height(Size::Px(60))
-                        .fg(theme.text),
-                ),
+                scale(0, 100, 11, 5)
+                    .key(Key::Named("scale"))
+                    .width(percent(100))
+                    .height(px(60))
+                    .text_color(theme.text),
             ),
         );
 
@@ -385,8 +421,11 @@ impl Demo {
             notifications = notifications.child(
                 checkbox(*text, self.notifications[index])
                     .key(Key::Id(index as u64))
-                    .style(Style::default().fg(theme.text).disabled(*disabled))
-                    .on_value_changed(move |value| Msg::Notification(index, value != 0)),
+                    .text_color(theme.text)
+                    .disabled(*disabled)
+                    .on_value_changed(move |value| {
+                        WidgetDemoAction::Notification(index, value != 0)
+                    }),
             );
         }
         page.push(notifications);
@@ -394,16 +433,26 @@ impl Demo {
         page
     }
 
-    fn shop_page(&self, theme: &Theme) -> Vec<View<Msg>> {
+    fn shop_page(&self, theme: &Theme) -> Vec<View<WidgetDemoAction>> {
         let mut page = Vec::new();
 
         page.push(
             card(theme, "monthly-summary", "Monthly Summary")
-                .child(label("8-15 July, 2021").style(Style::muted(theme)))
-                .child(label("$27,123.25").style(Style::title(theme)))
+                .child(
+                    label("8-15 July, 2021")
+                        .font(theme.body_font)
+                        .text_color(theme.muted),
+                )
+                .child(
+                    label("$27,123.25")
+                        .font(theme.title_font)
+                        .text_color(theme.text),
+                )
                 .child(
                     label("17% growth this week")
-                        .style(Style::body(theme).fg(Color::rgb(0x2e, 0xa0, 0x6a))),
+                        .font(theme.body_font)
+                        .text_color(theme.text)
+                        .text_color(Color::rgb(0x2e, 0xa0, 0x6a)),
                 )
                 .child(
                     chart(
@@ -423,11 +472,8 @@ impl Demo {
                         ],
                     )
                     .key(Key::Named("summary-chart"))
-                    .style(
-                        Style::default()
-                            .width(Size::Percent(100))
-                            .height(Size::Px(150)),
-                    ),
+                    .width(percent(100))
+                    .height(px(150)),
                 ),
         );
 
@@ -446,25 +492,26 @@ impl Demo {
                 row([
                     image(ImageSource::rgb565(32, 32, &PRODUCT_IMAGE))
                         .key(Key::Named("thumb"))
-                        .style(
-                            Style::default()
-                                .width(Size::Px(32))
-                                .height(Size::Px(32))
-                                .radius(6),
-                        ),
+                        .width(px(32))
+                        .height(px(32))
+                        .radius(6),
                     column([
-                        label(*name).style(Style::body(theme)),
-                        label(*category).style(Style::muted(theme)),
+                        label(*name).font(theme.body_font).text_color(theme.text),
+                        label(*category)
+                            .font(theme.body_font)
+                            .text_color(theme.muted),
                     ])
-                    .style(Style::default().flex_grow(1)),
-                    label(*price).style(Style::body(theme)),
+                    .grow(1),
+                    label(*price).font(theme.body_font).text_color(theme.text),
                     button("Buy")
                         .key(Key::Named("buy"))
-                        .style(Style::accent(theme).pad(6))
-                        .on_click(Msg::Buy(index)),
+                        .style(Style::accent(theme))
+                        .padding(6)
+                        .on_click(WidgetDemoAction::Buy(index)),
                 ])
                 .key(Key::Id(index as u64))
-                .style(Style::default().width(Size::Percent(100)).gap(8)),
+                .width(percent(100))
+                .gap(8),
             );
         }
 
@@ -483,15 +530,19 @@ impl Demo {
             shop_notifications = shop_notifications.child(
                 checkbox(*text, self.notifications[index])
                     .key(Key::Id(index as u64))
-                    .style(Style::default().fg(theme.text).disabled(*disabled))
-                    .on_value_changed(move |value| Msg::Notification(index, value != 0)),
+                    .text_color(theme.text)
+                    .disabled(*disabled)
+                    .on_value_changed(move |value| {
+                        WidgetDemoAction::Notification(index, value != 0)
+                    }),
             );
         }
 
         page.push(
             column([products, shop_notifications])
                 .key(Key::Named("shop-lists"))
-                .style(Style::default().width(Size::Percent(100)).gap(12)),
+                .width(percent(100))
+                .gap(12),
         );
 
         page
@@ -499,76 +550,80 @@ impl Demo {
 }
 
 impl App for Demo {
-    type Msg = Msg;
+    type Action = WidgetDemoAction;
 
-    fn update(&mut self, msg: Msg) {
-        match msg {
-            Msg::Tab(tab) => self.tab = tab,
-            Msg::ToggleTheme => self.dark = !self.dark,
-            Msg::Accent(index) => self.accent = index,
-            Msg::Speed(value) => self.speed = value,
-            Msg::TeamPlayer(value) => self.team_player = value,
-            Msg::HardWorking(value) => self.hard_working = value,
-            Msg::Buy(index) => {
+    fn update(&mut self, action: WidgetDemoAction) {
+        match action {
+            WidgetDemoAction::Tab(tab) => self.tab = tab,
+            WidgetDemoAction::ToggleTheme => self.dark = !self.dark,
+            WidgetDemoAction::Accent(index) => self.accent = index,
+            WidgetDemoAction::Speed(value) => self.speed = value,
+            WidgetDemoAction::TeamPlayer(value) => self.team_player = value,
+            WidgetDemoAction::HardWorking(value) => self.hard_working = value,
+            WidgetDemoAction::Buy(index) => {
                 self.purchases += 1;
                 self.last_buy = Some(index);
             }
-            Msg::LogOut => self.logouts += 1,
-            Msg::Quit => self.quit = true,
-            Msg::Username(value) => self.username = value,
-            Msg::Password(value) => self.password = value,
-            Msg::Birthday(value) => self.birthday = value,
-            Msg::Gender(value) => self.gender = value,
-            Msg::Notification(index, checked) => {
+            WidgetDemoAction::LogOut => self.logouts += 1,
+            WidgetDemoAction::Quit => self.quit = true,
+            WidgetDemoAction::Username(value) => self.username = value,
+            WidgetDemoAction::Password(value) => self.password = value,
+            WidgetDemoAction::Birthday(value) => self.birthday = value,
+            WidgetDemoAction::Gender(value) => self.gender = value,
+            WidgetDemoAction::Notification(index, checked) => {
                 if let Some(slot) = self.notifications.get_mut(index) {
                     *slot = checked;
                 }
             }
-            Msg::Focus(target) => self.keyboard_for = target,
+            WidgetDemoAction::Focus(target) => self.keyboard_for = target,
         }
     }
 
-    fn view(&self, theme: &Theme) -> View<Msg> {
+    fn view(&self, theme: &Theme) -> View<WidgetDemoAction> {
         let theme = self.effective_theme(theme);
         let header = row([
             column([
-                label("LVGL widgets demo").style(Style::title(&theme)),
-                label("Recreated with rs_lvgl_ui").style(Style::muted(&theme)),
+                label("LVGL widgets demo")
+                    .font(theme.title_font)
+                    .text_color(theme.text),
+                label("Recreated with rs_lvgl_ui")
+                    .font(theme.body_font)
+                    .text_color(theme.muted),
             ])
-            .style(Style::default().flex_grow(1)),
+            .grow(1),
             button(if self.dark { "Light" } else { "Dark" })
                 .key(Key::Named("theme"))
                 .style(Style::accent(&theme))
-                .on_click(Msg::ToggleTheme),
+                .on_click(WidgetDemoAction::ToggleTheme),
             button("Quit")
                 .key(Key::Named("quit"))
                 .style(Style::accent(&theme))
-                .on_click(Msg::Quit),
+                .on_click(WidgetDemoAction::Quit),
         ])
         .key(Key::Named("header"))
-        .style(Style::default().width(Size::Percent(100)).gap(8));
+        .width(percent(100))
+        .gap(8);
 
         let palette = row(PALETTE.iter().enumerate().map(|(index, color)| {
             button(" ")
                 .key(Key::Id(index as u64))
-                .style(
-                    Style::default()
-                        .bg(*color)
-                        .width(Size::Px(28))
-                        .height(Size::Px(28))
-                        .shadow_width(0)
-                        .radius(14),
-                )
-                .on_click(Msg::Accent(index))
+                .background(*color)
+                .width(px(28))
+                .height(px(28))
+                .shadow_width(0)
+                .radius(14)
+                .on_click(WidgetDemoAction::Accent(index))
         }))
         .key(Key::Named("palette"))
-        .style(Style::default().width(Size::Percent(100)).gap(6));
+        .width(percent(100))
+        .gap(6);
 
         let tabs = tabview(["Profile", "Analytics", "Shop"], self.tab_index())
             .key(Key::Named("tabs"))
-            .style(Style::default().width(Size::Percent(100)).flex_grow(1))
+            .width(percent(100))
+            .grow(1)
             .on_value_changed(|index| {
-                Msg::Tab(match index {
+                WidgetDemoAction::Tab(match index {
                     0 => Tab::Profile,
                     1 => Tab::Analytics,
                     _ => Tab::Shop,
@@ -577,25 +632,25 @@ impl App for Demo {
             .children([
                 column(self.profile_page(&theme))
                     .key(Key::Named("profile-page"))
-                    .style(Style::default().width(Size::Percent(100)).gap(12)),
+                    .width(percent(100))
+                    .gap(12),
                 column(self.analytics_page(&theme))
                     .key(Key::Named("analytics-page"))
-                    .style(Style::default().width(Size::Percent(100)).gap(12)),
+                    .width(percent(100))
+                    .gap(12),
                 column(self.shop_page(&theme))
                     .key(Key::Named("shop-page"))
-                    .style(Style::default().width(Size::Percent(100)).gap(12)),
+                    .width(percent(100))
+                    .gap(12),
             ]);
 
         let keyboard = self.keyboard_for.map(|target| {
             keyboard(target)
                 .key(Key::Named("keyboard"))
-                .style(
-                    Style::default()
-                        .width(Size::Percent(100))
-                        .height(Size::Px(230)),
-                )
+                .width(percent(100))
+                .height(px(230))
                 .on_event(|event| match event {
-                    Event::Ready | Event::Cancel => Some(Msg::Focus(None)),
+                    Event::Ready | Event::Cancel => Some(WidgetDemoAction::Focus(None)),
                     _ => None,
                 })
         });
@@ -609,50 +664,56 @@ impl App for Demo {
                     .unwrap_or_else(|| "-".to_string())
             ))
             .key(Key::Named("status"))
-            .style(Style::muted(&theme)),
+            .font(theme.body_font)
+            .text_color(theme.muted),
             label(concat!(
                 "Typed: grid, tabs, text, inputs, keyboard, charts, gauges, ",
                 "images, part styles.  Raw: calendar."
             ))
             .key(Key::Named("legend"))
-            .style(Style::muted(&theme).width(Size::Percent(100))),
+            .font(theme.body_font)
+            .text_color(theme.muted)
+            .width(percent(100)),
         ])
         .key(Key::Named("footer"))
-        .style(
-            Style::default()
-                .width(Size::Percent(100))
-                .gap(2)
-                .bg(theme.background)
-                .pad(4),
-        );
+        .width(percent(100))
+        .gap(2)
+        .background(theme.background)
+        .padding(4);
 
         column([header, palette, tabs])
-            .style(Style::screen(&theme).gap(10).pad(12))
+            .style(Style::screen(&theme))
+            .gap(10)
+            .padding(12)
             .children(keyboard)
             .child(footer)
     }
 }
 
-fn card(theme: &Theme, key: &'static str, title: &'static str) -> View<Msg> {
-    column([label(title).style(Style::title(theme))])
+fn card(theme: &Theme, key: &'static str, title: &'static str) -> View<WidgetDemoAction> {
+    column([label(title).font(theme.title_font).text_color(theme.text)])
         .key(Key::Named(key))
-        .style(Style::surface(theme).width(Size::Percent(100)).gap(8))
+        .style(Style::surface(theme))
+        .width(percent(100))
+        .gap(8)
 }
 
-fn card_flex(theme: &Theme, key: &'static str, title: &'static str) -> View<Msg> {
-    column([label(title).style(Style::body(theme))])
+fn card_flex(theme: &Theme, key: &'static str, title: &'static str) -> View<WidgetDemoAction> {
+    column([label(title).font(theme.body_font).text_color(theme.text)])
         .key(Key::Named(key))
-        .style(Style::surface(theme).flex_grow(1).gap(8))
+        .style(Style::surface(theme))
+        .grow(1)
+        .gap(8)
 }
 
 fn input_style(theme: &Theme) -> Style {
-    Style::default()
-        .bg(theme.surface)
-        .fg(theme.text)
+    style()
+        .background(theme.surface)
+        .text_color(theme.text)
         .border(theme.muted, 1)
         .radius(6)
-        .pad(8)
-        .width(Size::Percent(100))
+        .padding(8)
+        .width(percent(100))
 }
 
 fn gauge_card(
@@ -661,19 +722,21 @@ fn gauge_card(
     title: &'static str,
     value: i32,
     color: Color,
-) -> View<Msg> {
+) -> View<WidgetDemoAction> {
     card_flex(theme, key, title).child(
         column([
-            arc(0, 100, value).key(Key::Named("gauge")).style(
-                Style::default()
-                    .width(Size::Px(104))
-                    .height(Size::Px(104))
-                    .arc_color(color)
-                    .arc_width(10),
-            ),
-            label(format!("{value}%")).style(Style::body(theme)),
+            arc(0, 100, value)
+                .key(Key::Named("gauge"))
+                .width(px(104))
+                .height(px(104))
+                .arc_color(color)
+                .arc_width(10),
+            label(format!("{value}%"))
+                .font(theme.body_font)
+                .text_color(theme.text),
         ])
-        .style(Style::default().width(Size::Percent(100)).gap(2)),
+        .width(percent(100))
+        .gap(2),
     )
 }
 
@@ -685,7 +748,7 @@ fn raw_color(color: Color) -> rs_lvgl_sys::lv_color_t {
     }
 }
 
-fn apply_theme(ui: &mut Ui<Msg>, app: &Demo) {
+fn apply_theme(ui: &mut Ui<WidgetDemoAction>, app: &Demo) {
     // Application tokens and LVGL's native widget styles are separate. Keep
     // tabs, calendar children, checkboxes and keyboard keys in the same mode.
     // SAFETY: the example owns the sole live display, all updates run on its
@@ -712,12 +775,12 @@ fn apply_theme(ui: &mut Ui<Msg>, app: &Demo) {
 fn raw_subtree(
     key: Key,
     create: impl Fn(NonNull<lv_obj_t>) -> Option<NonNull<lv_obj_t>> + 'static,
-) -> View<Msg> {
+) -> View<WidgetDemoAction> {
     // SAFETY: see the function contract above.
     unsafe { rs_lvgl_ui::raw(create) }.key(key)
 }
 
-fn raw_calendar(key: Key) -> View<Msg> {
+fn raw_calendar(key: Key) -> View<WidgetDemoAction> {
     raw_subtree(key, move |parent| unsafe {
         let calendar = rs_lvgl_sys::lv_calendar_create(parent.as_ptr());
         let calendar = NonNull::new(calendar)?;

@@ -64,7 +64,7 @@ impl<M: Clone + 'static> Ui<M> {
     /// Reconcile the application's first tree.
     ///
     /// Calling `mount` again reconciles against the existing mounted tree.
-    pub fn mount<A: App<Msg = M>>(&mut self, app: &A) -> Result<(), UiError> {
+    pub fn mount<A: App<Action = M>>(&mut self, app: &A) -> Result<(), UiError> {
         let _guard = enter(&self.busy)?;
         let tree = app.view(&self.theme);
         let overlay = app.overlay(&self.theme);
@@ -78,7 +78,7 @@ impl<M: Clone + 'static> Ui<M> {
     /// not rebuild and diff the whole tree. State that changes outside
     /// messages (clocks, sensors read in `view`) must call
     /// [`Ui::mark_dirty`] or [`Ui::update`].
-    pub fn drain<A: App<Msg = M>>(
+    pub fn drain<A: App<Action = M>>(
         &mut self,
         app: &mut A,
         max_messages: usize,
@@ -109,7 +109,7 @@ impl<M: Clone + 'static> Ui<M> {
     }
 
     /// Reconcile without processing queued messages.
-    pub fn update<A: App<Msg = M>>(&mut self, app: &A) -> Result<(), UiError> {
+    pub fn update<A: App<Action = M>>(&mut self, app: &A) -> Result<(), UiError> {
         let _guard = enter(&self.busy)?;
         let tree = app.view(&self.theme);
         let overlay = app.overlay(&self.theme);

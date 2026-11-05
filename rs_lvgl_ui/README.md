@@ -3,13 +3,12 @@
 The [browser studio](https://umbrella22.github.io/rs_lvgl_website/en/studio.html) runs all nine component categories in WebAssembly. It shares these Rust views with the desktop studio; see [build instructions](https://github.com/umbrella22/rs_lvgl_website).
 
 
-A declarative, typed Rust UI layer for LVGL 9.6, built on the `rs_lvgl` bindings in
-this workspace.
+A declarative, typed Rust UI layer for LVGL 9.6, using the `rs_lvgl` 0.4.0 API.
 
 The
 [repository README](https://github.com/umbrella22/rs_lvgl/blob/main/README.md) covers native dependencies and simulator setup.
 
-Application code describes a screen as a `View<Msg>` tree, updates one state
+Application code describes a screen as a `View<FanSettingsAction>` tree, updates one state
 value through messages, and lets the layer create, update, reorder and delete
 the native LVGL objects. LVGL remains the renderer, layout engine and animation
 engine.
@@ -30,10 +29,10 @@ platform event -> C callback -> EventQueue -> Ui::drain -> App::update
 
 ## Features
 
-Version 0.3 adds loaded resource handles, congestion policies, render feedback
-and static text constructors. See the
-[runtime and migration guide](https://github.com/umbrella22/rs_lvgl/blob/main/docs/ui-runtime.md)
-for the `NativeObject` unsafe-trait migration, resource contracts and effective
+The runtime provides loaded resource handles, congestion policies, render
+feedback and static text constructors. See the
+[runtime guide](https://github.com/umbrella22/rs_lvgl/blob/main/docs/ui-runtime.md)
+for `NativeObject` safety, resource contracts and effective
 native configuration limits.
 
 | Feature | Default | Meaning |
@@ -70,7 +69,7 @@ widgets are not compiled at all. The defaults keep the full set.
 ```toml
 [dependencies]
 [dependencies.rs_lvgl_ui]
-version = "0.3"
+version = "0.4.0"
 default-features = false
 features = [
     "alloc", "components", "widget-slider", "widget-switch", "font-montserrat-20",
@@ -110,11 +109,15 @@ that are shared by several widgets; the full set keeps every lint.
 
 ## Quick start
 
+Use ordinary function constructors, `App::Action` and flat style modifiers.
+The [style and action guide](../docs/ui-styles.md) defines initialization,
+units, override order and theme behavior.
+
 ```rust
 use rs_lvgl_ui::prelude::*;
 
 #[derive(Clone)]
-enum Msg {
+enum FanSettingsAction {
     SpeedChanged(i32),
 }
 
@@ -123,25 +126,31 @@ struct Settings {
 }
 
 impl App for Settings {
-    type Msg = Msg;
+    type Action = FanSettingsAction;
 
-    fn update(&mut self, msg: Msg) {
-        match msg {
-            Msg::SpeedChanged(value) => self.speed = value,
+    fn update(&mut self, action: FanSettingsAction) {
+        match action {
+            FanSettingsAction::SpeedChanged(value) => self.speed = value,
         }
     }
 
-    fn view(&self, theme: &Theme) -> View<Msg> {
+    fn view(&self, theme: &Theme) -> View<FanSettingsAction> {
         column([
-            label("Fan").style(Style::title(theme)),
+            label("Fan").font(theme.title_font).text_color(theme.text),
             slider(0, 100, self.speed)
                 .key(Key::Named("speed"))
-                .on_value_changed(Msg::SpeedChanged),
+                .on_value_changed(FanSettingsAction::SpeedChanged),
         ])
-        .style(Style::default().gap(12))
+        .gap(12)
     }
 }
 ```
+
+`FanSettingsAction` is this screen's action type. Its variants describe inputs,
+not component fields or methods. `type Action = FanSettingsAction` fills the
+framework's associated type; the enum may use any meaningful application name.
+`View<FanSettingsAction>` describes a tree whose handlers produce those actions.
+State lives in `Settings`, and `update` implements the changes.
 
 The platform creates the display, mounts the UI and pumps it:
 
@@ -185,13 +194,13 @@ structure or styling:
 use rs_lvgl_ui::prelude::*;
 
 fn page_title<M>(text: &str, theme: &Theme) -> View<M> {
-    label(text).style(Style::title(theme))
+    label(text).font(theme.title_font).text_color(theme.text)
 }
 
 fn settings_view(theme: &Theme) -> View<()> {
     let content = label("Notification preferences");
     let title = page_title("Settings", theme);
-    column([title, content]).style(Style::default().gap(12))
+    column([title, content]).gap(12)
 }
 ```
 
@@ -212,7 +221,14 @@ used as a key follows the position, so it does not identify a reordered item.
   reorders. Keys must be unique among siblings. A key change on a node that is
   updated in place (the root or a tab page) replaces its native subtree, like a
   kind change.
-- A whole `Style` value is compared. `Style::default()` sets nothing and
+- Constructors initialize each view's embedded style. Use `.gap(12)`,
+  `.padding(16)`, `.width(percent(100))`, `.height(content())`, `.grow(1)`,
+  `.font(theme.title_font)` and `.text_color(theme.text)` directly on the view.
+  Width/height and min/max constraints require `px(i16)`, `percent(u8)` or
+  `content()`; there is no implicit unit for `.width(100)`. Spacing, padding,
+  border widths and radii are pixel values. `gap` sets the main-axis spacing
+  of rows/columns and both grid axes.
+- A whole `Style` value is compared. `style()` sets nothing and
   inherits the LVGL widget class default, so sliders keep their track and
   buttons keep their surface. `Style::neutral()` explicitly clears every field
   and is the base for plain containers and labels, except for the inherited
@@ -220,17 +236,27 @@ used as a key follows the position, so it does not identify a reordered item.
   stay unset so a label inherits the text color and font of its container.
   Plain containers and the `Ui` root also drop LVGL's default-theme card style,
   so they start transparent and borderless. `.style(...)` merges the fields the
-  supplied value sets over the node's kind base.
-- `bg(color)` sets the color and an opaque fill; `bg_opacity(opa)` sets only
-  the opacity. `Style::surface(theme).merged(Style::default().bg_opacity(128))`
-  keeps the surface color. Call `bg_opacity` after `bg` on the same value.
+  supplied value sets over the current style. Flat modifiers and reusable
+  patches compose in call order: the last explicit write to each property
+  wins, including `0` and `false`. Unset fields keep earlier values or
+  inheritance. Rust's `Style::default()` remains available for generic value
+  construction; ordinary views do not need to call it.
+- `background(color)` sets the color and an opaque fill; `background_opacity(opa)` sets only
+  the opacity. `Style::surface(theme).merged(style().background_opacity(128))`
+  keeps the surface color. Call `background_opacity` after `background` on the same value.
 - `Theme` supplies application color/font tokens; it does not switch LVGL's
   native theme. `Style::accent(theme)` and the composite action buttons use
   flat surfaces with `shadow_width(0)` so a native light-theme shadow does not
   appear as a gray lower edge on dark backgrounds. Plain `button` and
-  `Style::default()` retain native defaults. For a custom flat button, set
+  an unset style patch retain native defaults. For a custom flat button, set
   `shadow_width(0)`; for elevation, set the shadow width, color, opacity and
   offset explicitly after the preset.
+- Theme properties are explicit values, not live bindings. For example,
+  `.font(theme.title_font).text_color(theme.text)` reads the current tokens.
+  `Style::title(theme)` is a reusable shorthand for those same values.
+  `Ui::set_theme(new_theme)` requests a new `view` call on the next
+  `mount`, `update` or `drain`; build theme-dependent values inside `view`.
+  It does not switch LVGL's native theme or refresh an old cached `Style`.
 - Messages must implement `Clone`; a click handler stores its message and clones
   it for each click. `on_text_changed` receives a borrowed `&str`; copy it if the
   message must retain the text.
@@ -265,7 +291,7 @@ used as a key follows the position, so it does not identify a reordered item.
   row or a tab-like button can show `State::CHECKED` styles for the selected
   item. Switches and checkboxes keep their own checked value and ignore it.
 - `View::map(f)` converts every message of a subtree. Components with their
-  own message type are embedded with `component::view(&state).map(Msg::Item)`.
+  own message type are embedded with `component::view(&state).map(FanSettingsAction::Item)`.
   Object identity, keys and handlers are kept; `f` should be a pure conversion.
 - `Style::floating(true)` takes a widget out of its parent's layout and
   scrolling; `Style::align` and `Style::offset(x, y)` then place it relative
@@ -483,15 +509,12 @@ They include `shadow_width/color/opacity/offset_x/offset_y/spread`,
 ```rust
 use rs_lvgl_ui::prelude::*;
 let button: View<()> = button("Focus me")
-    .style(
-        Style::default()
-            .outline_width(0)
-            .transition(StyleTransition::new(
-                &[TransitionProperty::OutlineWidth],
-                150,
-            )),
-    )
-    .state_style(State::FOCUSED, Style::default().outline_width(2));
+    .outline_width(0)
+    .transition(StyleTransition::new(
+        &[TransitionProperty::OutlineWidth],
+        150,
+    ))
+    .state_style(State::FOCUSED, style().outline_width(2));
 ```
 
 `StyleTransition` retains its native property list and descriptor until detach
@@ -698,15 +721,23 @@ The trait is not generic over the message type. `WidgetKind` is not generic, so
 crate. The explicit node handler provides the same message path without that
 refactor.
 
-## Migration notes
+## API contracts
+
+### Styles and actions
+
+Use `.padding(12).gap(8).width(percent(100))` directly on a view. Use `style()`
+for shared and part/state patches. Property getters use a `_value` suffix.
+Application implementations declare `type Action = FanSettingsAction`, handle
+an `action` in `update`, and return `View<FanSettingsAction>`. Style precedence,
+theme semantics and memory boundaries are defined in
+[the style and action guide](../docs/ui-styles.md).
 
 ### Function constructors
 
 Import `rs_lvgl_ui::prelude::*`, or import the functions and types explicitly
-from the crate root. Replace `Node::label(text)` with `label(text)`, and use
-`View<Msg>` in view signatures. `View<M>` is an alias of the existing `Node<M>`
+from the crate root. Construct views with functions such as `label(text)` and
+return `View<FanSettingsAction>`. `View<M>` is an alias of the `Node<M>`
 descriptor, so modifiers, `.map`, keys and ownership retain their behavior.
-Associated constructors on both `Node` and `View` are removed.
 
 Layouts accept their children directly: `row([first, second])`,
 `column(items.iter().map(item_view))`, and `grid(columns, rows, children)`.
@@ -716,46 +747,35 @@ available for incremental assembly. `obj()` remains a plain container, and
 builders for their pages. Optional functions keep their existing feature gates;
 `raw(factory)` still requires `unsafe` and its documented lifetime obligations.
 
-### Earlier changes
+### Native values and validation
 
-Changes since the first `rs_lvgl_ui` release that can affect existing code:
-
-- `CustomObject::new` is now `unsafe`. Wrap the call in `unsafe { .. }` and
+- `CustomObject::new` is `unsafe`. Wrap the call in `unsafe { .. }` and
   uphold its `# Safety` contract (return the handle from `create`; do not keep
   a second handle or the raw pointer past `delete`).
-- `ImageSource::Raw` now holds `RawImage` instead of a raw pointer. Build raw
+- `ImageSource::Raw` holds `RawImage`. Build raw
   sources with `ImageSource::from_raw`; read the pointer with
   `RawImage::as_ptr`.
-- `Ui::drain` no longer reconciles when no message was processed. Call
+- An idle `Ui::drain` does not reconcile unless the UI is dirty. Call
   `Ui::mark_dirty()` (or `Ui::update`) after changing state outside messages.
-- Combined handlers no longer replace each other. `Handlers` is kept for source
-  compatibility but is no longer used by `View`.
-- `obj()` with a handler is no longer forced clickable (LVGL objects are
-  clickable by default); use `View::clickable(false)` to opt out.
-- Plain containers and the root no longer carry the default theme's card style,
-  and labels now inherit text color and font. Views that relied on the theme
-  card look should style the container explicitly (for example
-  `Style::surface(theme)`).
-- `bg_opacity` no longer touches the background color, and `bg` sets an opaque
-  fill. Write `.bg(color).bg_opacity(opa)` for a translucent color.
+- Different event handlers coexist; setting the same handler replaces it.
+- LVGL objects are clickable by default; use `View::clickable(false)` to opt out.
+- Plain containers and the root have no implicit card style. Labels inherit
+  text color and font. Apply `Style::surface(theme)` for a themed surface.
+- `background_opacity` changes only the background opacity, and `background` sets an opaque
+  fill. Write `.background(color).background_opacity(opa)` for a translucent color.
 - Duplicate `keyboard_id` values anywhere in the tree and invalid part styles
-  are now rejected with `UiError::InvalidProperty`.
-- `WidgetKind` is now `#[non_exhaustive]`; exhaustive matches need a `_` arm.
+  are rejected with `UiError::InvalidProperty`.
+- `WidgetKind` is `#[non_exhaustive]`; matches need a `_` arm.
 - Controlled values follow the native widget: a user change the application
   does not accept is reverted on the next render instead of persisting.
-- New `WidgetKind` variants (`Roller`, `Spinbox`, `Spinner`, `Led`, `Line`,
-  `ButtonMatrix`, `Table`, `Tileview`, `Msgbox`, `Calendar`, `Spans`,
-  `ImageButton`, `AnimImage`, `ArcLabel`) only affect code that matches the
-  enum, which already needs a `_` arm.
-- `App` gained `overlay`, a provided method returning `None`; existing `App`
-  implementations compile unchanged. An implementation that already had an
-  inherent method named `overlay` keeps calling it through `self.overlay()`;
-  rename it if it should not shadow the trait method in generic code.
+- `App::overlay` defaults to `None`; return an overlay tree for dialogs and
+  toasts. An inherent method with the same name shadows ordinary method calls
+  to the trait method.
 - The `components` feature is on by default. Builds with
   `--no-default-features` must add it to keep `rs_lvgl_ui::components`.
-- `--no-default-features` now also removes the optional widgets and the
+- `--no-default-features` disables the optional widgets and the
   non-default fonts. Add `widgets-all` and `fonts-vendored` (or the individual
-  `widget-<name>`/`font-montserrat-<size>` features) to keep the previous
+  `widget-<name>`/`font-montserrat-<size>` features) to select the required
   set. Without `font-montserrat-28`, `Font::montserrat_28` does not exist and
   the built-in themes use Montserrat 14 for titles.
 - `Style::neutral()` does not set `offset` or `floating`. An unset `floating`

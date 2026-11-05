@@ -3,7 +3,7 @@
 //!
 //! ```ignore
 //! Panel::new("Logs")
-//!     .action(panel::icon_button(theme, symbol::REFRESH, Msg::Reload))
+//!     .action(panel::icon_button(theme, symbol::REFRESH, LogPanelAction::Reload))
 //!     .child(crate::label(log))
 //!     .view(theme)
 //! ```
@@ -16,25 +16,22 @@ use crate::node::{FlexAlign, Key, LabelLongMode, Size, State, WidgetKind};
 use crate::theme::{Style, Theme};
 
 /// A compact accent button showing one glyph, for header actions.
-pub fn icon_button<M: Clone + 'static>(theme: &Theme, icon: &'static str, msg: M) -> View<M> {
+pub fn icon_button<M: Clone + 'static>(theme: &Theme, icon: &'static str, action: M) -> View<M> {
     crate::button(icon)
-        .style(
-            Style::default()
-                .bg(theme.surface)
-                .fg(theme.text)
-                .pad(6)
-                .radius(6)
-                .shadow_width(0),
-        )
-        .state_style(State::PRESSED, Style::default().bg(theme.accent))
-        .on_click(msg)
+        .background(theme.surface)
+        .text_color(theme.text)
+        .padding(6)
+        .radius(6)
+        .shadow_width(0)
+        .state_style(State::PRESSED, crate::style().background(theme.accent))
+        .on_click(action)
 }
 
 /// A column with a header row (title and actions) and a scrollable content
 /// area that fills the remaining height.
 ///
 /// The panel fills its parent's width. Give it a height (for example
-/// `Size::Percent(100)` or `flex_grow`) through [`Panel::style`] to make the
+/// `Size::Percent(100)` or `grow`) through [`Panel::style`] to make the
 /// content area scroll instead of growing.
 pub struct Panel<M> {
     title: String,
@@ -78,7 +75,7 @@ impl<M: Clone + 'static> Panel<M> {
 
     pub fn view(self, theme: &Theme) -> View<M> {
         let base = Style::surface(theme)
-            .pad(0)
+            .padding(0)
             .gap(0)
             .width(Size::Percent(100));
         let base = match self.style {
@@ -90,29 +87,27 @@ impl<M: Clone + 'static> Panel<M> {
             long_mode: LabelLongMode::Dots,
         })
         .key(Key::Named("title"))
-        .style(Style::title(theme).flex_grow(1))])
+        .font(theme.title_font)
+        .text_color(theme.text)
+        .grow(1)])
         .key(Key::Named("header"))
-        .style(
-            Style::default()
-                .width(Size::Percent(100))
-                .pad(8)
-                .pad_left(12)
-                .gap(6)
-                .flex_align(FlexAlign::Start, FlexAlign::Center)
-                .bg(theme.background)
-                .bg_opacity(90),
-        )
+        .width(Size::Percent(100))
+        .padding(8)
+        .padding_left(12)
+        .gap(6)
+        .flex_align(FlexAlign::Start, FlexAlign::Center)
+        .background(theme.background)
+        .background_opacity(90)
         .scrollable(false)
         .children(self.actions);
         let content = crate::column(self.children)
             .key(Key::Named("content"))
-            .style(
-                Style::body(theme)
-                    .width(Size::Percent(100))
-                    .pad(12)
-                    .gap(8)
-                    .flex_grow(1),
-            );
+            .font(theme.body_font)
+            .text_color(theme.text)
+            .width(Size::Percent(100))
+            .padding(12)
+            .gap(8)
+            .grow(1);
         crate::column([header, content]).style(base)
     }
 }

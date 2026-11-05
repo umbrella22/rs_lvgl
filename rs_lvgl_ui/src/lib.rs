@@ -2,7 +2,7 @@
 //!
 //! `rs_lvgl_ui` adds a retained, declarative composition layer above the
 //! imperative [`rs_lvgl`] crate. An application describes a screen as a
-//! [`View<Msg>`] tree, changes one application state value through messages,
+//! [`View`] tree, changes one application state value through messages,
 //! and lets [`Ui`] create, update, reorder and delete the native LVGL objects.
 //!
 //! # Runtime rule
@@ -23,29 +23,37 @@
 //! use rs_lvgl_ui::prelude::*;
 //!
 //! #[derive(Clone)]
-//! enum Msg { Increment }
+//! enum CounterAction { Increment }
 //!
 //! struct Counter { value: u32 }
 //!
 //! impl App for Counter {
-//!     type Msg = Msg;
+//!     type Action = CounterAction;
 //!
-//!     fn update(&mut self, _: Msg) {
+//!     fn update(&mut self, _: CounterAction) {
 //!         self.value += 1;
 //!     }
 //!
-//!     fn view(&self, theme: &Theme) -> View<Msg> {
+//!     fn view(&self, theme: &Theme) -> View<CounterAction> {
 //!         column([
-//!             label(format!("Count: {}", self.value)),
+//!             label(format!("Count: {}", self.value))
+//!                 .font(theme.title_font)
+//!                 .text_color(theme.text),
 //!             button("Add one")
 //!                 .key(Key::Named("increment"))
 //!                 .style(Style::accent(theme))
-//!                 .on_click(Msg::Increment),
+//!                 .on_click(CounterAction::Increment),
 //!         ])
-//!         .style(Style::default().gap(12))
+//!         .gap(12)
 //!     }
 //! }
 //! ```
+//!
+//! `CounterAction` names this component's inputs. `App::Action` is the associated
+//! type connecting that enum to the runtime; state fields and `update` define
+//! the behavior. Views initialize their styles automatically. Flat modifiers
+//! and reusable `style()` patches write the same explicit fields in call order.
+//! Theme values are copied during `view`; `Ui::set_theme` requests a fresh view.
 //!
 //! # Feature and platform contract
 //!

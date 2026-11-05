@@ -16,10 +16,11 @@ impl<M> Node<M> {
         self
     }
 
-    /// Merge the fields set by `style` over the node's kind base.
+    /// Merge the explicitly set fields over the node's current style.
     ///
-    /// Unset fields keep the kind base (or the LVGL class default for
-    /// interactive widgets).
+    /// This composes with flat modifiers in call order: the last explicit
+    /// write to each field wins, including zero and false. Unset fields retain
+    /// earlier writes, the kind base or native inheritance.
     pub fn style(mut self, style: Style) -> Self {
         self.style = self.style.merged(style);
         self

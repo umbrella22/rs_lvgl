@@ -7,7 +7,7 @@
 //!         .icon(symbol::WIFI)
 //!         .detail("Home")
 //!         .chevron(true)
-//!         .on_click(Msg::OpenWifi)
+//!         .on_click(SettingsAction::OpenWifi)
 //!         .view(theme)
 //!         .key(Key::Named("wifi")),
 //! ])
@@ -23,17 +23,21 @@ use crate::theme::{Style, Theme};
 
 /// A scrollable column of rows on a surface.
 pub fn list<M>(theme: &Theme, items: impl IntoIterator<Item = View<M>>) -> View<M> {
-    crate::column(items).style(
-        Style::surface(theme)
-            .pad(4)
-            .gap(2)
-            .width(Size::Percent(100)),
-    )
+    crate::column(items)
+        .style(Style::surface(theme))
+        .padding(4)
+        .gap(2)
+        .width(Size::Percent(100))
 }
 
 /// A muted heading between groups of rows.
 pub fn section<M>(theme: &Theme, title: impl Into<String>) -> View<M> {
-    crate::label(title).style(Style::muted(theme).pad_left(8).pad_top(8).pad_bottom(2))
+    crate::label(title)
+        .font(theme.body_font)
+        .text_color(theme.muted)
+        .padding_left(8)
+        .padding_top(8)
+        .padding_bottom(2)
 }
 
 /// One list row: optional icon, text, optional trailing content and an
@@ -98,8 +102,8 @@ impl<M: Clone + 'static> ListItem<M> {
         self
     }
 
-    pub fn on_click(mut self, msg: M) -> Self {
-        self.click = Some(msg);
+    pub fn on_click(mut self, action: M) -> Self {
+        self.click = Some(action);
         self
     }
 
@@ -112,7 +116,7 @@ impl<M: Clone + 'static> ListItem<M> {
     pub fn view(self, theme: &Theme) -> View<M> {
         let base = Style::body(theme)
             .width(Size::Percent(100))
-            .pad(10)
+            .padding(10)
             .gap(10)
             .radius(6)
             .flex_align(FlexAlign::Start, FlexAlign::Center);
@@ -122,17 +126,18 @@ impl<M: Clone + 'static> ListItem<M> {
         };
         let mut row = crate::row([]).style(base).scrollable(false).state_style(
             State::CHECKED,
-            Style::default().bg(theme.accent).fg(theme.background),
+            crate::style()
+                .background(theme.accent)
+                .text_color(theme.background),
         );
         if let Some(icon) = self.icon {
             // A fixed slot keeps the text aligned across glyphs of different
             // widths.
             row = row.child(
-                crate::label(icon).key(Key::Named("icon")).style(
-                    Style::default()
-                        .width(Size::Px(20))
-                        .text_align(TextAlign::Center),
-                ),
+                crate::label(icon)
+                    .key(Key::Named("icon"))
+                    .width(Size::Px(20))
+                    .text_align(TextAlign::Center),
             );
         }
         row = row.child(
@@ -141,7 +146,7 @@ impl<M: Clone + 'static> ListItem<M> {
                 long_mode: LabelLongMode::Dots,
             })
             .key(Key::Named("text"))
-            .style(Style::default().flex_grow(1)),
+            .grow(1),
         );
         if let Some(trailing) = self.trailing {
             let mut trailing = *trailing;
@@ -153,14 +158,17 @@ impl<M: Clone + 'static> ListItem<M> {
             row = row.child(
                 crate::label(symbol::RIGHT)
                     .key(Key::Named("chevron"))
-                    .style(Style::muted(theme)),
+                    .font(theme.body_font)
+                    .text_color(theme.muted),
             );
         }
         match self.click {
             Some(msg) => {
                 row = row.on_click(msg).state_style(
                     State::PRESSED,
-                    Style::default().bg(theme.muted).bg_opacity(80),
+                    crate::style()
+                        .background(theme.muted)
+                        .background_opacity(80),
                 );
             }
             None => row = row.clickable(false),

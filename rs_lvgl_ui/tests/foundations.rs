@@ -45,10 +45,10 @@ impl TestApp {
 }
 
 impl App for TestApp {
-    type Msg = Msg;
+    type Action = Msg;
 
-    fn update(&mut self, msg: Msg) {
-        self.received.push(msg);
+    fn update(&mut self, action: Msg) {
+        self.received.push(action);
     }
 
     fn view(&self, _: &Theme) -> View<Msg> {
@@ -135,7 +135,7 @@ fn map_converts_click_value_and_event_messages() {
             .child(slider(0, 10, 3).on_value_changed(Inner::Value))
             .child(obj().on_event(|event| (*event == Event::Clicked).then_some(Inner::Event)));
         // Nested maps compose.
-        inner.map(Msg::Inner).map(|msg| match msg {
+        inner.map(Msg::Inner).map(|action| match action {
             Msg::Inner(inner) => Msg::Outer(inner),
             other => other,
         })
@@ -183,12 +183,15 @@ fn map_keeps_object_identity_across_renders() {
 fn state_styles_apply_and_clear() {
     let _guard = lock();
     let mut app = TestApp::new(|state| {
-        let node = button("b").style(Style::default().bg(Color::rgb(1, 2, 3)));
+        let node = button("b").style(Style::default().background(Color::rgb(1, 2, 3)));
         match state {
-            0 => node.state_style(State::PRESSED, Style::default().bg(Color::rgb(9, 8, 7))),
+            0 => node.state_style(
+                State::PRESSED,
+                Style::default().background(Color::rgb(9, 8, 7)),
+            ),
             1 => node.state_style(
                 State::PRESSED | State::CHECKED,
-                Style::default().bg(Color::rgb(4, 5, 6)),
+                Style::default().background(Color::rgb(4, 5, 6)),
             ),
             _ => node,
         }
@@ -216,7 +219,7 @@ fn part_state_style_targets_part_and_state() {
         slider(0, 10, 5).part_state_style(
             Part::Knob,
             State::PRESSED,
-            Style::default().bg(Color::rgb(10, 20, 30)),
+            Style::default().background(Color::rgb(10, 20, 30)),
         )
     });
     let (_ui, widget) = mount(&app);
@@ -367,7 +370,7 @@ fn flex_align_centers_children_after_layout() {
             .style(
                 Style::default()
                     .width(Size::Px(60))
-                    .pad(0)
+                    .padding(0)
                     .flex_align(FlexAlign::Start, FlexAlign::Center),
             )
             .child(obj().style(Style::neutral().width(Size::Px(20)).height(Size::Px(10))))

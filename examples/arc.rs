@@ -3,7 +3,7 @@ use rs_lvgl_ui::prelude::*;
 mod support;
 
 #[derive(Clone)]
-enum Msg {
+enum GaugeAction {
     Value(i32),
     Step,
 }
@@ -16,14 +16,14 @@ impl Default for Gauge {
     }
 }
 impl App for Gauge {
-    type Msg = Msg;
-    fn update(&mut self, msg: Msg) {
-        self.value = match msg {
-            Msg::Value(value) => value,
-            Msg::Step => (self.value + 10) % 101,
+    type Action = GaugeAction;
+    fn update(&mut self, action: GaugeAction) {
+        self.value = match action {
+            GaugeAction::Value(value) => value,
+            GaugeAction::Step => (self.value + 10) % 101,
         };
     }
-    fn view(&self, theme: &Theme) -> View<Msg> {
+    fn view(&self, theme: &Theme) -> View<GaugeAction> {
         support::frame(
             theme,
             "Arc control",
@@ -33,27 +33,24 @@ impl App for Gauge {
                     support::row()
                         .child(
                             arc(0, 100, self.value)
-                                .style(
-                                    Style::default()
-                                        .width(Size::Px(176))
-                                        .height(Size::Px(176))
-                                        .pad(12)
-                                        .arc_color(theme.accent),
-                                )
+                                .width(px(176))
+                                .height(px(176))
+                                .padding(12)
+                                .arc_color(theme.accent)
                                 .part_style(
                                     Part::Knob,
-                                    Style::default()
-                                        .bg(theme.accent)
-                                        .bg_opacity(255)
+                                    style()
+                                        .background(theme.accent)
+                                        .background_opacity(255)
                                         .radius(12)
-                                        .pad(6),
+                                        .padding(6),
                                 )
                                 .clickable(true)
-                                .on_value_changed(Msg::Value),
+                                .on_value_changed(GaugeAction::Value),
                         )
                         .child(support::value(theme, format!("{}% output", self.value))),
                 )
-                .child(support::action(theme, "Increase", Msg::Step)),
+                .child(support::action(theme, "Increase", GaugeAction::Step)),
         )
     }
 }

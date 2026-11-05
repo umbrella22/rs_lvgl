@@ -3,7 +3,7 @@ use rs_lvgl_ui::{App, Theme, View};
 mod support;
 
 #[derive(Clone)]
-enum Msg {
+enum CounterAction {
     Increment,
 }
 #[derive(Default)]
@@ -11,18 +11,18 @@ struct Counter {
     count: u32,
 }
 impl App for Counter {
-    type Msg = Msg;
-    fn update(&mut self, _: Msg) {
+    type Action = CounterAction;
+    fn update(&mut self, _: CounterAction) {
         self.count += 1;
     }
-    fn view(&self, theme: &Theme) -> View<Msg> {
+    fn view(&self, theme: &Theme) -> View<CounterAction> {
         support::frame(
             theme,
             "Button clicks",
             "A click sends a message and updates Rust state.",
             support::column()
                 .child(support::value(theme, format!("{} clicks", self.count)))
-                .child(support::action(theme, "Add one", Msg::Increment)),
+                .child(support::action(theme, "Add one", CounterAction::Increment)),
         )
     }
 }

@@ -1,9 +1,28 @@
 # Changelog
 
-## Unreleased
+## 0.4.0 — 2026-11-05
+
+### Breaking changes
+
+- Rename `rs_lvgl_ui::App::Msg` to `App::Action`, without a compatibility member.
+  Implement applications with `type Action = ComponentAction`, use
+  `Self::Action` in projections and `App<Action = ComponentAction>` in bounds.
+  Examples use component-specific action types and `action` parameters. See
+  [application action types](docs/ui-styles.md#application-action-type).
+- Rename `rs_lvgl_ui::Style` builders `bg`, `bg_opacity`, `fg`, `pad`,
+  `pad_left/right/top/bottom` and `flex_grow` to `background`,
+  `background_opacity`, `text_color`, `padding`, `padding_left/right/top/bottom`
+  and `grow`, without compatibility aliases. Conflicting getters use
+  `background_value`, `background_opacity_value`, `text_color_value`,
+  `padding_left/right/top/bottom_value` and `grow_value`. See
+  [style contracts](docs/ui-styles.md).
 
 ### Added
 
+- Add flat layout/appearance modifiers to views, `px`/`percent`/`content` size
+  helpers and `style()` for reusable unset patches. Constructors own style
+  initialization; modifiers preserve explicit-field precedence, inheritance
+  and existing part/state behavior without adding descriptor storage.
 - Add an independent, default-disabled EmbedScope example using the published
   0.1.0 SDK and rs_lvgl 0.3.1. It exposes real native tree, display capture,
   pointer input, logs and metrics over loopback TCP, with process

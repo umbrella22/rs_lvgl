@@ -33,10 +33,10 @@ impl TestApp {
 }
 
 impl App for TestApp {
-    type Msg = Msg;
+    type Action = Msg;
 
-    fn update(&mut self, msg: Msg) {
-        self.received.push(msg);
+    fn update(&mut self, action: Msg) {
+        self.received.push(action);
     }
 
     fn view(&self, _: &Theme) -> View<Msg> {

@@ -3,7 +3,7 @@ use rs_lvgl_ui::prelude::*;
 mod support;
 
 #[derive(Clone)]
-enum Msg {
+enum MotionAction {
     Toggle,
 }
 struct Motion {
@@ -15,20 +15,18 @@ impl Default for Motion {
     }
 }
 impl App for Motion {
-    type Msg = Msg;
-    fn update(&mut self, _: Msg) {
+    type Action = MotionAction;
+    fn update(&mut self, _: MotionAction) {
         self.running = !self.running;
     }
-    fn view(&self, theme: &Theme) -> View<Msg> {
-        let mut dot = obj().style(
-            Style::default()
-                .bg(theme.accent)
-                .radius(14)
-                .width(Size::Px(28))
-                .height(Size::Px(28))
-                .align(Align::LeftMid)
-                .floating(true),
-        );
+    fn view(&self, theme: &Theme) -> View<MotionAction> {
+        let mut dot = obj()
+            .background(theme.accent)
+            .radius(14)
+            .width(px(28))
+            .height(px(28))
+            .align(Align::LeftMid)
+            .floating(true);
         if self.running {
             dot = dot.animate(
                 Animation::new(AnimationProperty::X, 0, 400, 1200)
@@ -42,19 +40,11 @@ impl App for Motion {
             "Native animation",
             "LVGL animates a mounted node; messages control playback.",
             support::column()
-                .child(
-                    obj()
-                        .style(
-                            Style::default()
-                                .width(Size::Percent(100))
-                                .height(Size::Px(100)),
-                        )
-                        .child(dot),
-                )
+                .child(obj().width(percent(100)).height(px(100)).child(dot))
                 .child(support::action(
                     theme,
                     if self.running { "Pause" } else { "Resume" },
-                    Msg::Toggle,
+                    MotionAction::Toggle,
                 )),
         )
     }

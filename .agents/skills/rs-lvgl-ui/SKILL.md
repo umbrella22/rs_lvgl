@@ -1,6 +1,6 @@
 ---
 name: rs-lvgl-ui
-description: Build or modify declarative Rust screens using rs_lvgl_ui functions, View and App/Ui APIs, including features, events, styling and resource lifetimes. Verify the resolved API version before applying this skill to a published package or another LVGL Rust crate.
+description: Build or modify declarative Rust screens with rs_lvgl_ui 0.4.0, including App::Action, flat styles, features, events and resource lifetimes. Verify the resolved dependency before applying this skill to another LVGL Rust crate.
 ---
 
 # LVGL Rust UI
@@ -8,10 +8,9 @@ description: Build or modify declarative Rust screens using rs_lvgl_ui functions
 ## Locate the API
 
 Identify the application's Cargo dependency and the actual source checkout. This
-skill targets `rs_lvgl_ui` from `umbrella22/rs_lvgl`, layered over LVGL 9.6.
-The 0.3 API is not interchangeable with older registry `lvgl`,
-`lightvgl-sys` or C++ wrappers. Read the resolved manifests and relevant APIs
-before assuming a symbol or feature exists. In this source repository, the main
+skill targets `rs_lvgl_ui` 0.4.0 from `umbrella22/rs_lvgl`, layered over LVGL 9.6.
+Read the resolved manifests and relevant APIs before assuming a symbol or feature
+exists. Other LVGL wrappers have different APIs. In this source repository, the main
 entry points are `rs_lvgl_ui/src/{constructors,app,node,theme}/mod.rs`,
 `rs_lvgl_ui/src/prelude.rs` and `rs_lvgl_ui/README.md`. The functional module map
 is in `docs/ui-source.md`.
@@ -26,11 +25,15 @@ wrapper migration. Preserve other work in the checkout.
 
 ## Build the application behavior
 
-- Model changes as a `Clone` message enum and `App::update`; make `App::view`
-  return a pure `View<Msg>` description. C callbacks enqueue messages. Call
-  `Ui::drain` outside native callbacks to update and reconcile once per batch.
+- Model inputs as a component-specific `Clone` action enum such as
+  `CounterAction`; use `type Action = CounterAction` and return a pure
+  `View<CounterAction>` from `App::view`. State fields and `update` implement
+  the behavior; action variants are inputs, not method/variable declarations.
+  Name the update parameter `action`, or use a more specific name such as
+  `navigation_action`; unused parameters may use `_`. C callbacks enqueue messages.
+  Call `Ui::drain` outside native callbacks to update and reconcile once per batch.
 - Import `rs_lvgl_ui::prelude::*` or explicit root functions/types. Build with
-  `column([label("Title"), button("Save").on_click(Msg::Save)])`.
+  `column([label("Title"), button("Save").on_click(SettingsAction::Save)])`.
   `row(children)` and `column(children)` accept arrays or iterators;
   `grid(columns, rows, children)` also takes its children directly. `obj()` is
   the plain container; native tabview/tileview use `.child`/`.children` for their
@@ -57,11 +60,24 @@ a memory display does not provide a visible simulator or board driver.
 
 ## Styles and input
 
-`Style::default()` leaves properties unset and preserves native inheritance.
+View constructors initialize their own embedded style. Prefer direct modifiers:
+`.gap(12).padding(16).width(percent(100)).height(content()).grow(1)`.
+Dimensions use `px`, `percent` or `content`; spacing is in pixels.
+`.font(theme.title_font).text_color(theme.text)` makes theme inputs explicit.
+`style()` creates an unset reusable patch; `Style::default()` is only the Rust
+value-construction primitive. Both leave properties unset and preserve inheritance.
 `Style::neutral()` explicitly clears the container defaults. `Style::accent(theme)`
 provides a flat themed action button. Native defaults can include shadows; set
 shadow width/color/opacity/offset explicitly when the design needs elevation.
-Use `.state_style(State::PRESSED, ...)`, `FOCUSED` and `FOCUS_KEY` for interaction
+Flat modifiers and `.style(patch)` follow call order: the last explicit field
+wins, including zero/false. Unset fields keep prior values or inheritance.
+`background` sets color and opacity 255; call `background_opacity` afterwards
+for translucency. Style property getters use a `_value` suffix.
+Theme presets copy tokens; `Ui::set_theme` requests a new view on the next
+mount/update/drain. A cached old patch is not a live theme binding.
+Flat setters update the embedded style without per-property heap allocations;
+children, owned text and reconciliation can still allocate.
+Use `.state_style(State::PRESSED, style().opacity(200))`, `FOCUSED` and `FOCUS_KEY` for interaction
 feedback. Leave enough parent padding for an outer outline to avoid clipping.
 
 `input-keypad` enables APIs without activating focus. Use `Ui::enable_focus` or

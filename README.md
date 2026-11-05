@@ -53,27 +53,31 @@ Add the crates.io dependencies to your project:
 
 ```toml
 [dependencies]
-rs_lvgl = { version = "0.3", default-features = false, features = ["alloc"] }
-rs_lvgl_ui = "0.3"
+rs_lvgl = { version = "0.4.0", default-features = false, features = ["alloc"] }
+rs_lvgl_ui = "0.4.0"
 ```
 
 `rs_lvgl` and `rs_lvgl_ui` support `no_std`. Embedded applications using the UI
 layer need an allocator and platform-specific display and input drivers.
 
-Upgrading from 0.2? Review the [0.3 migration and runtime contracts](https://github.com/umbrella22/rs_lvgl/blob/main/docs/ui-runtime.md),
-including external `NativeObject` implementations and loaded-resource configuration.
+The [runtime contracts](https://github.com/umbrella22/rs_lvgl/blob/main/docs/ui-runtime.md)
+cover `NativeObject` safety, loaded resources, and native configuration.
 
 ## Define a screen
 
-An `App` holds your state. Its `view` builds a `View<Msg>` with ordinary
+An `App` holds your state. Its `view` builds a `View<CounterAction>` with ordinary
 functions; input sends messages
 to `update`. `Ui` applies those changes to the LVGL widgets.
+
+The following screen uses the 0.4.0 API. `CounterAction` is the counter's own
+action enum; `type Action = CounterAction` connects it to the framework.
+State stays in `Counter`, and `update` implements each action.
 
 ```rust
 use rs_lvgl_ui::prelude::*;
 
 #[derive(Clone)]
-enum Msg {
+enum CounterAction {
     Increment,
 }
 
@@ -82,21 +86,23 @@ struct Counter {
 }
 
 impl App for Counter {
-    type Msg = Msg;
+    type Action = CounterAction;
 
-    fn update(&mut self, _: Msg) {
+    fn update(&mut self, _: CounterAction) {
         self.value += 1;
     }
 
-    fn view(&self, theme: &Theme) -> View<Msg> {
+    fn view(&self, theme: &Theme) -> View<CounterAction> {
         column([
-            label(format!("Count: {}", self.value)),
+            label(format!("Count: {}", self.value))
+                .font(theme.title_font)
+                .text_color(theme.text),
             button("Add one")
                 .key(Key::Named("increment"))
                 .style(Style::accent(theme))
-                .on_click(Msg::Increment),
+                .on_click(CounterAction::Increment),
         ])
-        .style(Style::default().gap(12))
+        .gap(12)
     }
 }
 ```
@@ -111,7 +117,7 @@ Disable the default feature set to select the widgets and fonts you need:
 
 ```toml
 [dependencies.rs_lvgl_ui]
-version = "0.3"
+version = "0.4.0"
 default-features = false
 features = [
     "alloc", "components", "widget-slider", "widget-switch", "font-montserrat-16"
@@ -139,8 +145,8 @@ The guides and GitHub Pages deployment are maintained in [rs_lvgl_website](https
 
 ## AI coding assistants
 
-The included `rs-lvgl-ui` and `rs-lvgl-native` skills provide API examples and
-integration guidance for coding assistants. Install them with:
+The included `rs-lvgl-ui` and `rs-lvgl-native` skills target 0.4.0 with API examples
+and integration guidance for coding assistants. Install them with:
 
 ```sh
 python3 scripts/install-skills.py --dest ~/.agents/skills

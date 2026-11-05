@@ -30,7 +30,7 @@ fn loaded_images_share_replace_and_release_without_deleting_nodes() {
     drop(pixels);
     struct Page(Option<ImageResource>);
     impl App for Page {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             column((0..2).map(|index| {
@@ -114,7 +114,7 @@ fn loaded_font_is_retained_for_inheritance_and_replacement() {
     let dropped = Rc::new(Cell::new(0));
     struct Page(Option<FontResource>);
     impl App for Page {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             let root = column([label("Loaded glyphs"), label("Shared font")]);
@@ -180,7 +180,7 @@ fn partial_creation_and_update_failures_release_loaded_resources() {
         fail: bool,
     }
     impl App for Page {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             column([
@@ -229,7 +229,7 @@ fn rejected_native_image_source_reports_failure_and_allows_retry() {
     let display = init();
     struct Page(Option<rs_lvgl_ui::ImageResource>);
     impl App for Page {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             match &self.0 {

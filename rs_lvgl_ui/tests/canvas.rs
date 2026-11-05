@@ -4,7 +4,7 @@ const RED: Color = Color::rgb(255, 0, 0);
 const BLUE: Color = Color::rgb(0, 0, 255);
 struct Drawing(Canvas);
 impl App for Drawing {
-    type Msg = ();
+    type Action = ();
     fn update(&mut self, _: ()) {}
     fn view(&self, _: &Theme) -> View<()> {
         canvas(self.0.clone())

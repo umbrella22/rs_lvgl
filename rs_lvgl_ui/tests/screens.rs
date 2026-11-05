@@ -5,7 +5,7 @@ struct Page {
     overlay: bool,
 }
 impl App for Page {
-    type Msg = ();
+    type Action = ();
     fn update(&mut self, _: ()) {}
     fn view(&self, _: &Theme) -> View<()> {
         button("Page").style(Style::default().width(Size::Px(if self.invalid { -1 } else { 40 })))
@@ -155,7 +155,7 @@ fn switching_detaches_old_group_and_suspends_keypad_input_until_completion() {
     use std::{cell::Cell, rc::Rc};
     struct Clicks(usize);
     impl App for Clicks {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {
             self.0 += 1;
         }

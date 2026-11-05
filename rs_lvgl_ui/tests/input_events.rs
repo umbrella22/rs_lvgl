@@ -24,9 +24,9 @@ struct Events {
 }
 
 impl App for Events {
-    type Msg = Msg;
-    fn update(&mut self, msg: Msg) {
-        self.seen.push(msg);
+    type Action = Msg;
+    fn update(&mut self, action: Msg) {
+        self.seen.push(action);
     }
     fn view(&self, _: &Theme) -> View<Msg> {
         let generation = self.generation;
@@ -54,7 +54,7 @@ impl App for Events {
             .child(child)
             .on_value_changed(Msg::ParentValue)
             .on_bubbled_event(|event| Some(Msg::Bubble(*event)))
-            .map(|msg| msg)
+            .map(|action| action)
     }
 }
 
@@ -222,9 +222,9 @@ struct Scroller {
 }
 
 impl App for Scroller {
-    type Msg = ScrollOffset;
-    fn update(&mut self, msg: ScrollOffset) {
-        self.seen.push(msg);
+    type Action = ScrollOffset;
+    fn update(&mut self, action: ScrollOffset) {
+        self.seen.push(action);
     }
     fn view(&self, _: &Theme) -> View<ScrollOffset> {
         let mut node = column([])

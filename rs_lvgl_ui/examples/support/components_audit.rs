@@ -39,7 +39,7 @@ fn navigation_dialog_choices_and_toast_expiry() {
     assert_eq!(app.brightness, Brightness::Medium);
     assert!(!app.toasts.is_empty());
     native::capture(native::top(), "components-toast");
-    ui.post(Msg::Tick(2000)).unwrap();
+    ui.post(ComponentsAction::Tick(2000)).unwrap();
     ui.drain(&mut app, 32).unwrap();
     assert!(app.toasts.is_empty());
     assert_eq!(

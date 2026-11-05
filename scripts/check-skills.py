@@ -77,7 +77,7 @@ def main():
         translated = re.findall(r"```rust\n(.*?)```", (ROOT / "README.zh.md").read_text(), re.S)[0]
         assert snippet == translated, "Chinese and English README examples differ"
         (fixture / "src/bin/readme.rs").write_text(snippet +
-            '\nfn main() { let mut counter = Counter { value: 0 }; counter.update(Msg::Increment); '
+            '\nfn main() { let mut counter = Counter { value: 0 }; counter.update(CounterAction::Increment); '
             'let _ = counter.view(&Theme::dark()); assert_eq!(counter.value, 1); }\n')
         flags = ["--offline"] if args.offline else []
         run("resolve-consumer", ["cargo", "generate-lockfile", "--manifest-path", str(manifest), *flags])

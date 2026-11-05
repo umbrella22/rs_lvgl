@@ -7,7 +7,7 @@ use rs_lvgl_ui::prelude::*;
 use std::time::{Duration, Instant};
 
 #[derive(Clone)]
-enum Msg {
+enum InputDemoAction {
     Add,
     Reset,
     Key(u32),
@@ -20,65 +20,75 @@ struct InputDemo {
 }
 
 impl App for InputDemo {
-    type Msg = Msg;
-    fn update(&mut self, msg: Msg) {
-        match msg {
-            Msg::Add => {
+    type Action = InputDemoAction;
+    fn update(&mut self, action: InputDemoAction) {
+        match action {
+            InputDemoAction::Add => {
                 self.count += 1;
                 self.last = "Activated Add".into();
             }
-            Msg::Reset => {
+            InputDemoAction::Reset => {
                 self.count = 0;
                 self.last = "Activated Reset".into();
             }
-            Msg::Key(key) => self.last = format!("Key code: {key}"),
-            Msg::Scroll(offset) => self.last = format!("Scroll: {}, {} px", offset.x, offset.y),
+            InputDemoAction::Key(key) => self.last = format!("Key code: {key}"),
+            InputDemoAction::Scroll(offset) => {
+                self.last = format!("Scroll: {}, {} px", offset.x, offset.y)
+            }
         }
         println!("count={} {}", self.count, self.last);
     }
-    fn view(&self, theme: &Theme) -> View<Msg> {
-        let focus = Style::default()
+    fn view(&self, theme: &Theme) -> View<InputDemoAction> {
+        let focus = style()
             .outline_width(2)
             .outline_pad(3)
             .outline_color(theme.accent)
             .outline_opacity(255);
         column([
-            label("Touch + keys").style(Style::title(theme)),
+            label("Touch + keys")
+                .font(theme.title_font)
+                .text_color(theme.text),
             label("Click Add, or use Tab and Enter. Drag the list to scroll.")
-                .style(Style::body(theme)),
-            label(format!("Count: {}", self.count)).style(Style::title(theme)),
+                .font(theme.body_font)
+                .text_color(theme.text),
+            label(format!("Count: {}", self.count))
+                .font(theme.title_font)
+                .text_color(theme.text),
             row([])
                 // Reserve the outline width, gap and one antialiasing pixel.
-                .style(Style::default().pad(6).gap(12))
+                .padding(6)
+                .gap(12)
                 .child(
                     button("Add +1")
                         .key(Key::Named("add"))
-                        .style(Style::default().shadow_width(0).outline_width(0))
+                        .shadow_width(0)
+                        .outline_width(0)
                         .state_style(State::FOCUSED, focus)
                         .state_style(State::FOCUS_KEY, focus)
-                        .on_click(Msg::Add)
-                        .on_key(Msg::Key),
+                        .on_click(InputDemoAction::Add)
+                        .on_key(InputDemoAction::Key),
                 )
                 .child(
                     button("Reset")
                         .key(Key::Named("reset"))
-                        .style(Style::default().shadow_width(0).outline_width(0))
+                        .shadow_width(0)
+                        .outline_width(0)
                         .state_style(State::FOCUSED, focus)
                         .state_style(State::FOCUS_KEY, focus)
-                        .on_click(Msg::Reset)
-                        .on_key(Msg::Key),
+                        .on_click(InputDemoAction::Reset)
+                        .on_key(InputDemoAction::Key),
                 ),
-            column(
-                (1..=8).map(|n| label(format!("Scrollable item {n}")).style(Style::body(theme))),
-            )
-            .style(
-                Style::surface(theme)
-                    .width(Size::Percent(100))
-                    .height(Size::Px(80))
-                    .pad(8)
-                    .gap(8)
-                    .outline_width(0),
-            )
+            column((1..=8).map(|n| {
+                label(format!("Scrollable item {n}"))
+                    .font(theme.body_font)
+                    .text_color(theme.text)
+            }))
+            .style(Style::surface(theme))
+            .width(percent(100))
+            .height(px(80))
+            .padding(8)
+            .gap(8)
+            .outline_width(0)
             .state_style(State::FOCUSED, focus)
             .state_style(State::FOCUS_KEY, focus)
             .scroll_dir(ScrollDir::VER)
@@ -86,10 +96,14 @@ impl App for InputDemo {
             .scrollbar_mode(ScrollbarMode::Auto)
             .scroll_momentum(true)
             .scroll_elastic(true)
-            .on_scroll(Msg::Scroll),
-            label(&self.last).style(Style::body(theme)),
+            .on_scroll(InputDemoAction::Scroll),
+            label(&self.last)
+                .font(theme.body_font)
+                .text_color(theme.text),
         ])
-        .style(Style::screen(theme).pad(20).gap(12))
+        .style(Style::screen(theme))
+        .padding(20)
+        .gap(12)
     }
 }
 

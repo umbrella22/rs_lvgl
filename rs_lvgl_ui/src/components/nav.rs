@@ -7,16 +7,16 @@
 //!
 //! ```ignore
 //! enum Page { Root, Wifi }
-//! enum Msg { Nav(NavMsg<Page>), /* ... */ }
+//! enum NavigationAction { Nav(NavMsg<Page>), /* ... */ }
 //!
-//! fn view(&self, theme: &Theme) -> View<Msg> {
+//! fn view(&self, theme: &Theme) -> View<NavigationAction> {
 //!     let page = match self.nav.current() {
 //!         Page::Root => list::list(theme, [
-//!             nav::link(theme, "Wi-Fi", Msg::Nav(NavMsg::Push(Page::Wifi))),
+//!             nav::link(theme, "Wi-Fi", NavigationAction::Nav(NavMsg::Push(Page::Wifi))),
 //!         ]),
 //!         Page::Wifi => wifi_page(theme),
 //!     };
-//!     nav::view(&self.nav, theme, title(self.nav.current()), page, Msg::Nav(NavMsg::Back))
+//!     nav::view(&self.nav, theme, title(self.nav.current()), page, NavigationAction::Nav(NavMsg::Back))
 //! }
 //! ```
 
@@ -89,8 +89,8 @@ impl<P: Clone> NavState<P> {
         }
     }
 
-    pub fn update(&mut self, msg: NavMsg<P>) {
-        match msg {
+    pub fn update(&mut self, action: NavMsg<P>) {
+        match action {
             NavMsg::Push(page) => self.push(page),
             NavMsg::Back => {
                 self.back();
@@ -104,8 +104,11 @@ impl<P: Clone> NavState<P> {
 }
 
 /// A list row that navigates: text with a chevron.
-pub fn link<M: Clone + 'static>(theme: &Theme, text: impl Into<String>, msg: M) -> View<M> {
-    ListItem::new(text).chevron(true).on_click(msg).view(theme)
+pub fn link<M: Clone + 'static>(theme: &Theme, text: impl Into<String>, action: M) -> View<M> {
+    ListItem::new(text)
+        .chevron(true)
+        .on_click(action)
+        .view(theme)
 }
 
 /// A header with a back button (hidden on the root page) and `title`, above
@@ -122,13 +125,10 @@ pub fn view<M: Clone + 'static, P: Clone>(
 ) -> View<M> {
     let mut header = crate::row([])
         .key(Key::Named("nav-header"))
-        .style(
-            Style::default()
-                .width(Size::Percent(100))
-                .pad(8)
-                .gap(8)
-                .flex_align(FlexAlign::Start, FlexAlign::Center),
-        )
+        .width(Size::Percent(100))
+        .padding(8)
+        .gap(8)
+        .flex_align(FlexAlign::Start, FlexAlign::Center)
         .scrollable(false);
     if state.can_go_back() {
         header = header.child(icon_button(theme, symbol::LEFT, back).key(Key::Named("back")));
@@ -139,21 +139,19 @@ pub fn view<M: Clone + 'static, P: Clone>(
             long_mode: LabelLongMode::Dots,
         })
         .key(Key::Named("title"))
-        .style(Style::title(theme).flex_grow(1)),
+        .font(theme.title_font)
+        .text_color(theme.text)
+        .grow(1),
     );
     let body = crate::column([page])
         .key(Key::Id(state.depth() as u64))
-        .style(
-            Style::default()
-                .width(Size::Percent(100))
-                .pad(8)
-                .gap(8)
-                .flex_grow(1),
-        );
-    crate::column([header, body]).style(
-        Style::screen(theme)
-            .fg(theme.text)
-            .font(theme.body_font)
-            .gap(0),
-    )
+        .width(Size::Percent(100))
+        .padding(8)
+        .gap(8)
+        .grow(1);
+    crate::column([header, body])
+        .style(Style::screen(theme))
+        .text_color(theme.text)
+        .font(theme.body_font)
+        .gap(0)
 }

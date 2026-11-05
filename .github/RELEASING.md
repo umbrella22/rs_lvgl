@@ -25,8 +25,8 @@ can be configured on each crate after that release.
 4. Create the matching annotated tag and push it, for example:
 
    ```sh
-   git tag -a v0.2.0 -m "rs_lvgl 0.2.0"
-   git push origin v0.2.0
+   git tag -a v0.4.0 -m "rs_lvgl 0.4.0"
+   git push origin v0.4.0
    ```
 
 Tag verification requires a clean checkout at the exact tag commit, reachable
@@ -56,15 +56,15 @@ for build and Pages configuration.
 ## Resume
 
 Run the **Crates release** workflow manually with the existing `release_tag`,
-such as `v0.2.0`. It checks out that exact tag; it does not publish newer main
+such as `v0.4.0`. It checks out that exact tag; it does not publish newer main
 sources under an existing version. Matching published crates are verified and
 skipped. A yanked version, different source, registry HTTP failure or missing
 upload credential stops publication. A fully published release can be reconciled
 without an upload credential. Published versions and tags are never replaced.
 
 ```sh
-python3 scripts/release.py status v0.2.0
-python3 scripts/release.py consumer v0.2.0
+python3 scripts/release.py status v0.4.0
+python3 scripts/release.py consumer v0.4.0
 ```
 
 Artifacts contain archives, checksums, native consumer logs and command receipts.

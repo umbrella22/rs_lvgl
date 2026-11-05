@@ -6,7 +6,7 @@ struct Styled {
     state: Option<Style>,
 }
 impl App for Styled {
-    type Msg = ();
+    type Action = ();
     fn update(&mut self, _: ()) {}
     fn view(&self, _: &Theme) -> View<()> {
         let mut node = obj().style(self.style).child(label("Inherited"));

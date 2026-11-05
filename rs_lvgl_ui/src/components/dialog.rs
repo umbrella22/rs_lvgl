@@ -4,13 +4,13 @@
 //! message like any other:
 //!
 //! ```ignore
-//! fn overlay(&self, theme: &Theme) -> Option<View<Msg>> {
+//! fn overlay(&self, theme: &Theme) -> Option<View<FileDialogAction>> {
 //!     self.confirm.then(|| {
 //!         Dialog::new("Delete file?")
 //!             .text("This cannot be undone.")
-//!             .button("Cancel", Msg::CloseDialog)
-//!             .primary("Delete", Msg::Delete)
-//!             .on_dismiss(Msg::CloseDialog)
+//!             .button("Cancel", FileDialogAction::CloseDialog)
+//!             .primary("Delete", FileDialogAction::Delete)
+//!             .on_dismiss(FileDialogAction::CloseDialog)
 //!             .view(theme)
 //!     })
 //! }
@@ -61,8 +61,11 @@ impl<M: Clone + 'static> Dialog<M> {
 
     /// Add a paragraph of body text.
     pub fn text(mut self, text: impl Into<String>) -> Self {
-        self.body
-            .push(crate::label(text).style(Style::neutral().width(Size::Percent(100))));
+        self.body.push(
+            crate::label(text)
+                .style(Style::neutral())
+                .width(Size::Percent(100)),
+        );
         self
     }
 
@@ -73,28 +76,28 @@ impl<M: Clone + 'static> Dialog<M> {
     }
 
     /// Add a footer button. Buttons appear right-aligned in insertion order.
-    pub fn button(mut self, text: impl Into<String>, msg: M) -> Self {
+    pub fn button(mut self, text: impl Into<String>, action: M) -> Self {
         self.buttons.push(Button {
             text: text.into(),
-            msg,
+            msg: action,
             primary: false,
         });
         self
     }
 
     /// Add an accent footer button for the main action.
-    pub fn primary(mut self, text: impl Into<String>, msg: M) -> Self {
+    pub fn primary(mut self, text: impl Into<String>, action: M) -> Self {
         self.buttons.push(Button {
             text: text.into(),
-            msg,
+            msg: action,
             primary: true,
         });
         self
     }
 
     /// Message sent when the backdrop is clicked.
-    pub fn on_dismiss(mut self, msg: M) -> Self {
-        self.dismiss = Some(msg);
+    pub fn on_dismiss(mut self, action: M) -> Self {
+        self.dismiss = Some(action);
         self
     }
 
@@ -107,21 +110,21 @@ impl<M: Clone + 'static> Dialog<M> {
     pub fn view(self, theme: &Theme) -> View<M> {
         let mut card = crate::column([crate::label(self.title)
             .key(Key::Named("title"))
-            .style(Style::title(theme).width(Size::Percent(100)))])
+            .font(theme.title_font)
+            .text_color(theme.text)
+            .width(Size::Percent(100))])
         .key(Key::Named("card"))
-        .style(
-            Style::surface(theme)
-                .font(theme.body_font)
-                .width(self.width)
-                .max_width(Size::Px(360))
-                .max_height(Size::Percent(90))
-                .pad(16)
-                .gap(12)
-                .align(Align::Center),
-        )
+        .style(Style::surface(theme))
+        .font(theme.body_font)
+        .width(self.width)
+        .max_width(Size::Px(360))
+        .max_height(Size::Percent(90))
+        .padding(16)
+        .gap(12)
+        .align(Align::Center)
         .children(self.body);
         if !self.buttons.is_empty() {
-            let focus = Style::default()
+            let focus = crate::style()
                 .outline_color(theme.accent)
                 .outline_width(FOCUS_WIDTH)
                 .outline_opacity(255)
@@ -130,10 +133,10 @@ impl<M: Clone + 'static> Dialog<M> {
                 let style = if button.primary {
                     Style::accent(theme)
                 } else {
-                    Style::default()
-                        .bg(theme.background)
-                        .fg(theme.text)
-                        .pad(8)
+                    crate::style()
+                        .background(theme.background)
+                        .text_color(theme.text)
+                        .padding(8)
                         .radius(8)
                         .shadow_width(0)
                 };
@@ -142,25 +145,26 @@ impl<M: Clone + 'static> Dialog<M> {
                     .style(style.outline_width(0))
                     .state_style(State::FOCUSED, focus)
                     .state_style(State::FOCUS_KEY, focus)
-                    .state_style(State::PRESSED, Style::default().opacity(200))
+                    .state_style(State::PRESSED, crate::style().opacity(200))
                     .on_click(button.msg)
             });
             card = card.child(
                 crate::row(buttons)
                     .key(Key::Named("buttons"))
-                    .style(
-                        Style::default()
-                            .width(Size::Percent(100))
-                            .pad(FOCUS_SPACE)
-                            .gap(FOCUS_SPACE * 2)
-                            .flex_align(FlexAlign::End, FlexAlign::Center),
-                    )
+                    .width(Size::Percent(100))
+                    .padding(FOCUS_SPACE)
+                    .gap(FOCUS_SPACE * 2)
+                    .flex_align(FlexAlign::End, FlexAlign::Center)
                     .scrollable(false),
             );
         }
         let mut backdrop = crate::obj()
             .key(Key::Named("dialog"))
-            .style(full_size().bg(Color::rgb(0, 0, 0)).bg_opacity(128))
+            .style(
+                full_size()
+                    .background(Color::rgb(0, 0, 0))
+                    .background_opacity(128),
+            )
             .scrollable(false)
             .child(card);
         #[cfg(feature = "input-keypad")]

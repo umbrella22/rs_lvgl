@@ -142,6 +142,8 @@ of leak freedom for every application or native configuration.
 ```sh
 python3 scripts/check-ui-costs.py --artifacts target/update-costs/owned
 python3 scripts/check-ui-costs.py --static-text --artifacts target/update-costs/static
+# Record the same mode/configuration before and after a style API change:
+python3 scripts/check-ui-costs.py --artifacts target/update-costs/after --compare target/update-costs/before/results.json
 ```
 
 The test uses the same isolated BUILTIN configuration as heap accounting. A
@@ -150,6 +152,18 @@ update and one changed number. The static variant replaces 63 fixed owned label
 strings with `label_static`; the changing number remains dynamic. A deliberate
 257-byte Rust allocation verifies counter and peak sensitivity. Receipts include
 source identities before/after the command; drift makes the measurement fail.
+
+A second workload uses 24 keyed, styled label/button rows. After priming both
+orders and themes, it measures idle, unchanged, style changes, keyed reorders and
+theme changes, with 16 updates each. `STYLE_SIZE_JSON` records `Style`, `View<()>`
+and native `lv_style_t` sizes; `STYLE_COST_JSON` includes Rust allocation metrics
+and native live bytes/blocks. A separate control requires style/descriptor
+construction without children or owned text to allocate nothing. `--compare`
+requires matching target/profile/toolchain/configuration/lock identities,
+unchanged descriptor sizes and no allocation/live-storage metric increases.
+The baseline must exist and come from the pre-change equivalent workload;
+recording the post-change source twice is not a valid before/after comparison.
+See [style semantics](ui-styles.md) for the public contract.
 
 The Rust meter reports cumulative allocation calls/requested bytes, live-byte
 delta and maximum extra live bytes above the per-update baseline. Native metrics

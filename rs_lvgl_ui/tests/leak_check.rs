@@ -127,7 +127,7 @@ struct TestApp {
 }
 
 impl App for TestApp {
-    type Msg = String;
+    type Action = String;
     fn update(&mut self, _: String) {
         self.changed = !self.changed;
     }
@@ -267,7 +267,7 @@ struct ResourcePage {
     fail: bool,
 }
 impl App for ResourcePage {
-    type Msg = String;
+    type Action = String;
     fn update(&mut self, _: String) {}
     fn view(&self, _: &Theme) -> View<String> {
         let image = || match &self.image {

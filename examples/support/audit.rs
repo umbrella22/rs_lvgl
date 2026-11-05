@@ -7,7 +7,7 @@ unsafe extern "C" {
     static lv_button_class: rs_lvgl_sys::lv_obj_class_t;
 }
 
-pub fn click<A: App>(ui: &mut Ui<A::Msg>, app: &mut A, text: &str) {
+pub fn click<A: App>(ui: &mut Ui<A::Action>, app: &mut A, text: &str) {
     let mut pointer = native::Pointer::new();
     pointer.click(native::parent(native::label(native::screen(), text)));
     ui.drain(app, 64).unwrap();
@@ -38,7 +38,7 @@ fn layout(obj: native::Obj) {
 pub fn check<A: Example>(
     name: &str,
     make: impl Fn() -> A,
-    mut interact: impl FnMut(&mut Ui<A::Msg>, &mut A),
+    mut interact: impl FnMut(&mut Ui<A::Action>, &mut A),
 ) {
     let _lock = native::LOCK.lock().unwrap();
     for cycle in 0..3 {

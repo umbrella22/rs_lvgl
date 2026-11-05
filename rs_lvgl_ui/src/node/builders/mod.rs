@@ -2,5 +2,6 @@
 
 mod events;
 mod interaction;
+mod style;
 mod tree;
 mod widgets;

@@ -1,10 +1,10 @@
-//! Memory-display example for rs_lvgl 0.3.
-//! Dependencies: rs_lvgl 0.3 (alloc), rs_lvgl_ui 0.3 (alloc).
+//! Memory-display example for rs_lvgl and rs_lvgl_ui 0.4.0.
+//! Dependencies: rs_lvgl 0.4.0 (alloc), rs_lvgl_ui 0.4.0 (alloc).
 //! No SDL or optional widget is needed.
 use rs_lvgl_ui::prelude::*;
 
 #[derive(Clone)]
-enum Msg {
+enum CounterAction {
     Increment,
 }
 
@@ -13,21 +13,23 @@ struct Counter {
 }
 
 impl App for Counter {
-    type Msg = Msg;
+    type Action = CounterAction;
 
-    fn update(&mut self, _: Msg) {
+    fn update(&mut self, _: CounterAction) {
         self.value += 1;
     }
 
-    fn view(&self, theme: &Theme) -> View<Msg> {
+    fn view(&self, theme: &Theme) -> View<CounterAction> {
         column([
-            label(format!("Count: {}", self.value)),
+            label(format!("Count: {}", self.value))
+                .font(theme.title_font)
+                .text_color(theme.text),
             button("Add one")
                 .key(Key::Named("increment"))
                 .style(Style::accent(theme))
-                .on_click(Msg::Increment),
+                .on_click(CounterAction::Increment),
         ])
-        .style(Style::default().gap(12))
+        .gap(12)
     }
 }
 
@@ -39,7 +41,7 @@ fn main() {
     let mut ui = Ui::new(&display, Theme::dark()).expect("UI");
     ui.mount(&app).expect("mount");
     // Real inputs enqueue messages; an external state change requests a render.
-    app.update(Msg::Increment);
+    app.update(CounterAction::Increment);
     ui.update(&app).expect("render changed state");
     rs_lvgl::tick_inc(core::time::Duration::from_millis(20));
     ui.timer_handler();

@@ -148,7 +148,7 @@ impl<M: Clone + 'static> Screens<M> {
 
     /// Mount and display a new page. Validation/mount failure preserves the
     /// previous page. Timing is limited by LVGL's signed animation clock.
-    pub fn show<A: App<Msg = M>>(
+    pub fn show<A: App<Action = M>>(
         &mut self,
         app: &A,
         transition: ScreenTransition,

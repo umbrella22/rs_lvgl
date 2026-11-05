@@ -47,10 +47,10 @@ impl<M: Clone + 'static> FnApp<M> {
 }
 
 impl<M: Clone + 'static> App for FnApp<M> {
-    type Msg = M;
+    type Action = M;
 
-    fn update(&mut self, msg: M) {
-        self.received.push(msg);
+    fn update(&mut self, action: M) {
+        self.received.push(action);
     }
 
     fn view(&self, theme: &Theme) -> View<M> {
@@ -67,8 +67,12 @@ fn bg_opacity_merges_over_a_surface_color() {
     let mut app = FnApp::<()>::new(|state, theme| match state {
         0 => obj()
             .style(Style::surface(theme))
-            .style(Style::default().bg_opacity(128)),
-        _ => obj().style(Style::default().bg(Color::rgb(255, 0, 0)).bg_opacity(64)),
+            .style(Style::default().background_opacity(128)),
+        _ => obj().style(
+            Style::default()
+                .background(Color::rgb(255, 0, 0))
+                .background_opacity(64),
+        ),
     });
     ui.mount(&app).unwrap();
     let obj = app_root();
@@ -149,10 +153,10 @@ struct ClampApp {
 }
 
 impl App for ClampApp {
-    type Msg = ClampMsg;
+    type Action = ClampMsg;
 
-    fn update(&mut self, msg: ClampMsg) {
-        let ClampMsg::Set(value) = msg;
+    fn update(&mut self, action: ClampMsg) {
+        let ClampMsg::Set(value) = action;
         self.value = value.min(50);
     }
 
@@ -474,7 +478,7 @@ fn lifecycle_widget_must_return_a_direct_child() {
     let deleted = Rc::new(Cell::new(false));
     struct CustomApp(Rc<Cell<bool>>);
     impl App for CustomApp {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             column([]).child(custom(WrongParent {

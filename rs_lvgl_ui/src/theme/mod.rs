@@ -33,7 +33,7 @@ pub(crate) const STYLE_ARC_COLOR: u32 = 1 << 22;
 pub(crate) const STYLE_ARC_WIDTH: u32 = 1 << 23;
 pub(crate) const STYLE_ANIM_DURATION: u32 = 1 << 24;
 /// Background opacity, tracked separately from the color so that
-/// `surface.merged(bg_opacity(..))` keeps the surface color.
+/// `surface.merged(style().background_opacity(..))` keeps the surface color.
 pub(crate) const STYLE_BG_OPA: u32 = 1 << 25;
 /// Position offset from the aligned position.
 pub(crate) const STYLE_OFFSET: u32 = 1 << 26;
@@ -66,6 +66,9 @@ const STYLE_ALL_NEUTRAL: u32 = STYLE_ALL
 /// Styles are immutable values: builder methods return a new value. Assigning
 /// a style to a node merges the fields it sets over the node's kind base, so
 /// `Style::title(theme)` changes only the text color and font.
+/// Ordinary views initialize their embedded style automatically; prefer flat
+/// modifiers such as `label("Title").font(theme.title_font).text_color(theme.text)`.
+/// Use [`crate::style()`] for reusable patches and part/state overrides.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Style {
     pub(crate) bg: Color,

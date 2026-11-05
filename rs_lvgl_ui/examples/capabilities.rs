@@ -18,7 +18,7 @@ const FOCUS_PAD: i16 = 3;
 const FOCUS_SPACE: i16 = FOCUS_WIDTH + FOCUS_PAD + 1;
 const TABS: [&str; 4] = ["Styles & motion", "Canvas", "Media", "Text & files"];
 #[derive(Clone, Debug)]
-enum Msg {
+enum CapabilityGalleryAction {
     Page(usize),
     Dialog(bool),
     Snapshot,
@@ -36,39 +36,34 @@ struct Gallery {
     quit: bool,
 }
 impl App for Gallery {
-    type Msg = Msg;
-    fn update(&mut self, msg: Msg) {
-        println!("gallery event: {msg:?}");
-        match msg {
-            Msg::Page(page) => self.next_page = Some(page),
-            Msg::Dialog(open) => self.dialog = open,
-            Msg::Snapshot => self.snapshot = true,
-            Msg::Text(text) => self.text = text,
-            Msg::Select(id) => self.status = format!("Selected entry {id}"),
-            Msg::Quit => self.quit = true,
+    type Action = CapabilityGalleryAction;
+    fn update(&mut self, action: CapabilityGalleryAction) {
+        println!("gallery event: {action:?}");
+        match action {
+            CapabilityGalleryAction::Page(page) => self.next_page = Some(page),
+            CapabilityGalleryAction::Dialog(open) => self.dialog = open,
+            CapabilityGalleryAction::Snapshot => self.snapshot = true,
+            CapabilityGalleryAction::Text(text) => self.text = text,
+            CapabilityGalleryAction::Select(id) => self.status = format!("Selected entry {id}"),
+            CapabilityGalleryAction::Quit => self.quit = true,
         }
     }
-    fn view(&self, theme: &Theme) -> View<Msg> {
+    fn view(&self, theme: &Theme) -> View<CapabilityGalleryAction> {
         let tabs = row(TABS.iter().enumerate().map(|(i, title)| {
-            action_button(title, Msg::Page(i))
+            action_button(title, CapabilityGalleryAction::Page(i))
                 .key(Key::Named(TABS[i]))
-                .style(
-                    Style::default()
-                        .bg(if i == self.page { ACCENT } else { PANEL })
-                        .fg(if i == self.page {
-                            Color::rgb(10, 30, 30)
-                        } else {
-                            theme.text
-                        }),
-                )
+                .background(if i == self.page { ACCENT } else { PANEL })
+                .text_color(if i == self.page {
+                    Color::rgb(10, 30, 30)
+                } else {
+                    theme.text
+                })
         }))
         .key(Key::Named("tabs"))
-        .style(
-            Style::neutral()
-                .pad(FOCUS_SPACE)
-                .gap(12)
-                .height(Size::Px(52)),
-        )
+        .style(Style::neutral())
+        .padding(FOCUS_SPACE)
+        .gap(12)
+        .height(px(52))
         .grid_navigation(GridNavigation {
             axis: NavigationAxis::Horizontal,
             rollover: true,
@@ -82,145 +77,157 @@ impl App for Gallery {
         };
         column([
             label("LVGL / CAPABILITY LAB")
-                .style(Style::body(theme).fg(ACCENT).text_letter_space(3)),
-            label(TABS[self.page]).style(Style::title(theme)),
+                .font(theme.body_font)
+                .text_color(theme.text)
+                .text_color(ACCENT)
+                .text_letter_space(3),
+            label(TABS[self.page])
+                .font(theme.title_font)
+                .text_color(theme.text),
             tabs,
             content
                 .key(Key::Named("content"))
-                .style(Style::default().width(Size::Percent(100)).flex_grow(1)),
+                .width(percent(100))
+                .grow(1),
             row([
-                action_button("Open dialog", Msg::Dialog(true)).key(Key::Named("dialog-trigger")),
-                action_button("Snapshot", Msg::Snapshot),
-                label(&self.status).style(Style::body(theme).flex_grow(1)),
-                action_button("Quit", Msg::Quit),
+                action_button("Open dialog", CapabilityGalleryAction::Dialog(true))
+                    .key(Key::Named("dialog-trigger")),
+                action_button("Snapshot", CapabilityGalleryAction::Snapshot),
+                label(&self.status)
+                    .font(theme.body_font)
+                    .text_color(theme.text)
+                    .grow(1),
+                action_button("Quit", CapabilityGalleryAction::Quit),
             ])
-            .style(
-                Style::neutral()
-                    .width(Size::Percent(100))
-                    .pad(FOCUS_SPACE)
-                    .gap(12),
-            ),
+            .style(Style::neutral())
+            .width(percent(100))
+            .padding(FOCUS_SPACE)
+            .gap(12),
             label("Tab to move between groups / Arrow keys to select a tab / Enter to activate")
-                .style(Style::body(theme).fg(Color::rgb(155, 171, 190))),
+                .font(theme.body_font)
+                .text_color(theme.text)
+                .text_color(Color::rgb(155, 171, 190)),
         ])
-        .style(
-            Style::screen(theme)
-                .bg(Color::rgb(12, 20, 32))
-                .pad(24)
-                .gap(14),
-        )
+        .style(Style::screen(theme))
+        .background(Color::rgb(12, 20, 32))
+        .padding(24)
+        .gap(14)
     }
-    fn overlay(&self, theme: &Theme) -> Option<View<Msg>> {
+    fn overlay(&self, theme: &Theme) -> Option<View<CapabilityGalleryAction>> {
         self.dialog.then(|| {
             Dialog::new("Modal focus")
                 .text("Tab stays inside this dialog. Closing it restores the previous focus.")
-                .button("Cancel", Msg::Dialog(false))
-                .primary("Continue", Msg::Dialog(false))
-                .on_dismiss(Msg::Dialog(false))
+                .button("Cancel", CapabilityGalleryAction::Dialog(false))
+                .primary("Continue", CapabilityGalleryAction::Dialog(false))
+                .on_dismiss(CapabilityGalleryAction::Dialog(false))
                 .view(theme)
         })
     }
 }
-fn action_button(text: &str, msg: Msg) -> View<Msg> {
-    let focus = Style::default()
+fn action_button(text: &str, action: CapabilityGalleryAction) -> View<CapabilityGalleryAction> {
+    let focus = style()
         .outline_color(ACCENT)
         .outline_width(FOCUS_WIDTH)
         .outline_opacity(255)
         .outline_pad(FOCUS_PAD);
     rs_lvgl_ui::button(text)
-        .style(
-            Style::default()
-                .bg(PANEL)
-                .fg(Color::rgb(231, 238, 246))
-                .radius(9)
-                .pad(12)
-                .shadow_width(0)
-                .outline_color(ACCENT)
-                .outline_width(0)
-                .outline_pad(FOCUS_PAD)
-                .transition(StyleTransition::new(
-                    &[
-                        TransitionProperty::OutlineWidth,
-                        TransitionProperty::Opacity,
-                    ],
-                    140,
-                )),
-        )
+        .background(PANEL)
+        .text_color(Color::rgb(231, 238, 246))
+        .radius(9)
+        .padding(12)
+        .shadow_width(0)
+        .outline_color(ACCENT)
+        .outline_width(0)
+        .outline_pad(FOCUS_PAD)
+        .transition(StyleTransition::new(
+            &[
+                TransitionProperty::OutlineWidth,
+                TransitionProperty::Opacity,
+            ],
+            140,
+        ))
         .state_style(State::FOCUSED, focus)
         .state_style(State::FOCUS_KEY, focus)
-        .state_style(State::PRESSED, Style::default().opacity(150))
-        .on_click(msg)
+        .state_style(State::PRESSED, style().opacity(150))
+        .on_click(action)
 }
-fn card(theme: &Theme, title: &str) -> View<Msg> {
-    column([label(title).style(Style::body(theme).fg(ACCENT).text_letter_space(1))])
-        .style(Style::surface(theme).bg(PANEL).pad(20).gap(16).radius(14))
+fn card(theme: &Theme, title: &str) -> View<CapabilityGalleryAction> {
+    column([label(title)
+        .font(theme.body_font)
+        .text_color(theme.text)
+        .text_color(ACCENT)
+        .text_letter_space(1)])
+    .style(Style::surface(theme))
+    .background(PANEL)
+    .padding(20)
+    .gap(16)
+    .radius(14)
 }
-fn styles(theme: &Theme) -> View<Msg> {
+fn styles(theme: &Theme) -> View<CapabilityGalleryAction> {
     column([
         row([])
             // Preserve the cards' outer outline and the blurred shadow,
             // including its downward offset, inside this clipping row.
-            .style(Style::neutral().width(Size::Percent(100)).pad(20).gap(24))
+            .style(Style::neutral())
+            .width(percent(100))
+            .padding(20)
+            .gap(24)
             .child(
                 card(theme, "GRADIENT / SHADOW")
-                    .style(
-                        Style::default()
-                            .width(Size::Percent(48))
-                            .height(Size::Px(164))
-                            .bg(Color::rgb(25, 75, 105))
-                            .bg_grad_color(Color::rgb(31, 45, 72))
-                            .bg_grad_dir(GradientDirection::Horizontal)
-                            .shadow_width(20)
-                            .shadow_color(Color::rgb(0, 0, 0))
-                            .shadow_opacity(130)
-                            .shadow_offset_y(8),
+                    .width(percent(48))
+                    .height(px(164))
+                    .background(Color::rgb(25, 75, 105))
+                    .bg_grad_color(Color::rgb(31, 45, 72))
+                    .bg_grad_dir(GradientDirection::Horizontal)
+                    .shadow_width(20)
+                    .shadow_color(Color::rgb(0, 0, 0))
+                    .shadow_opacity(130)
+                    .shadow_offset_y(8)
+                    .child(
+                        label("Native styles, retained per state")
+                            .font(theme.body_font)
+                            .text_color(theme.text),
                     )
-                    .child(label("Native styles, retained per state").style(Style::body(theme)))
-                    .child(action_button("Press and focus", Msg::Select(1))),
+                    .child(action_button(
+                        "Press and focus",
+                        CapabilityGalleryAction::Select(1),
+                    )),
             )
             .child(
                 card(theme, "OUTLINE / TEXT")
-                    .style(
-                        Style::default()
-                            .width(Size::Percent(48))
-                            .height(Size::Px(164))
-                            .outline_width(1)
-                            .outline_color(ACCENT),
-                    )
+                    .width(percent(48))
+                    .height(px(164))
+                    .outline_width(1)
+                    .outline_color(ACCENT)
                     .child(
-                        label("Spacing + underline").style(
-                            Style::body(theme)
-                                .text_letter_space(2)
-                                .text_decoration(TextDecoration::UNDERLINE),
-                        ),
+                        label("Spacing + underline")
+                            .font(theme.body_font)
+                            .text_color(theme.text)
+                            .text_letter_space(2)
+                            .text_decoration(TextDecoration::UNDERLINE),
                     )
                     .child(
                         label("Soft state transitions")
-                            .style(Style::body(theme).text_line_space(5)),
+                            .font(theme.body_font)
+                            .text_color(theme.text)
+                            .text_line_space(5),
                     ),
             ),
         card(theme, "EXPLICIT ANIMATION")
-            .style(
-                Style::default()
-                    .width(Size::Percent(100))
-                    .height(Size::Px(120)),
-            )
+            .width(percent(100))
+            .height(px(120))
             .child(
                 obj()
-                    .style(
-                        Style::neutral()
-                            .width(Size::Percent(100))
-                            .height(Size::Px(28)),
-                    )
+                    .style(Style::neutral())
+                    .width(percent(100))
+                    .height(px(28))
                     .child(
                         obj()
-                            .style(
-                                Style::neutral()
-                                    .width(Size::Px(52))
-                                    .height(Size::Px(18))
-                                    .bg(ACCENT)
-                                    .radius(9),
-                            )
+                            .style(Style::neutral())
+                            .width(px(52))
+                            .height(px(18))
+                            .background(ACCENT)
+                            .radius(9)
                             .animate(
                                 Animation::new(AnimationProperty::X, 0, 600, 1500)
                                     .easing(Easing::EaseInOut)
@@ -230,9 +237,10 @@ fn styles(theme: &Theme) -> View<Msg> {
                     ),
             ),
     ])
-    .style(Style::neutral().gap(24))
+    .style(Style::neutral())
+    .gap(24)
 }
-fn canvas_page(theme: &Theme) -> View<Msg> {
+fn canvas_page(theme: &Theme) -> View<CapabilityGalleryAction> {
     let mut frame = Canvas::new(820, 260).background(Color::rgb(18, 30, 45), 255);
     for x in (20..820).step_by(40) {
         frame = frame.draw(DrawCommand::Line {
@@ -264,22 +272,29 @@ fn canvas_page(theme: &Theme) -> View<Msg> {
         opacity: 255,
     });
     card(theme, "DRAW COMMANDS")
-        .style(Style::default().width(Size::Percent(100)))
+        .width(percent(100))
         .child(rs_lvgl_ui::canvas(frame))
         .child(
             label("Snapshot copies the mounted view into an independent RGBA image.")
-                .style(Style::body(theme)),
+                .font(theme.body_font)
+                .text_color(theme.text),
         )
 }
-fn media(theme: &Theme) -> View<Msg> {
+fn media(theme: &Theme) -> View<CapabilityGalleryAction> {
     row([
         card(theme, "QR / CODE 128")
-            .style(Style::default().width(Size::Px(340)).height(Size::Px(340)))
+            .width(px(340))
+            .height(px(340))
             .child(qrcode(QrCode::new(b"LVGL Rust UI".to_vec(), 144)))
             .child(barcode(Barcode::new("LVGL 2026", 45)))
-            .child(label("Binary QR payload / preserved spaces").style(Style::body(theme))),
+            .child(
+                label("Binary QR payload / preserved spaces")
+                    .font(theme.body_font)
+                    .text_color(theme.text),
+            ),
         card(theme, "LOTTIE / GIF")
-            .style(Style::default().flex_grow(1).height(Size::Px(340)))
+            .grow(1)
+            .height(px(340))
             .child(
                 row([
                     lottie(Lottie::new(
@@ -288,55 +303,69 @@ fn media(theme: &Theme) -> View<Msg> {
                         160,
                     )),
                     obj()
-                        .style(Style::neutral().width(Size::Px(70)).height(Size::Px(70)))
+                        .style(Style::neutral())
+                        .width(px(70))
+                        .height(px(70))
                         .child(gif(Gif::new(Rc::<[u8]>::from(
                             include_bytes!("assets/status.gif").as_slice(),
                         )))),
                 ])
-                .style(Style::neutral().gap(40).height(Size::Px(170))),
+                .style(Style::neutral())
+                .gap(40)
+                .height(px(170)),
             )
-            .child(label("Vector motion + animated red/blue GIF").style(Style::body(theme))),
+            .child(
+                label("Vector motion + animated red/blue GIF")
+                    .font(theme.body_font)
+                    .text_color(theme.text),
+            ),
     ])
-    .style(Style::neutral().width(Size::Percent(100)).gap(20))
+    .style(Style::neutral())
+    .width(percent(100))
+    .gap(20)
 }
 impl Gallery {
-    fn text_and_files(&self, theme: &Theme) -> View<Msg> {
+    fn text_and_files(&self, theme: &Theme) -> View<CapabilityGalleryAction> {
         row([
             card(theme, "CJK / PINYIN")
-                .style(Style::default().width(Size::Px(520)).height(Size::Px(380)))
+                .width(px(520))
+                .height(px(380))
                 .child(
                     textarea(&self.text)
                         .key(Key::Named("text"))
                         .keyboard_id(1)
-                        .style(
-                            Style::default()
-                                .font(Font::cjk_16())
-                                .width(Size::Percent(100))
-                                .height(Size::Px(50)),
-                        )
-                        .on_text_changed(|text| Msg::Text(text.into())),
+                        .font(Font::cjk_16())
+                        .width(percent(100))
+                        .height(px(50))
+                        .on_text_changed(|text| CapabilityGalleryAction::Text(text.into())),
                 )
                 .child(pinyin_keyboard(1, Font::cjk_16()).key(Key::Named("ime")))
                 .child(
-                    label("Type ni, then select a Chinese candidate.").style(Style::body(theme)),
+                    label("Type ni, then select a Chinese candidate.")
+                        .font(theme.body_font)
+                        .text_color(theme.text),
                 ),
-            card(theme, "FILE EXPLORER")
-                .style(Style::default().flex_grow(1).height(Size::Px(380)))
-                .child(
-                    file_explorer::view(
-                        theme,
-                        "/samples",
-                        None,
-                        [
-                            FileEntry::directory(1, "Animations", Msg::Select(1)),
-                            FileEntry::file(2, "moving-square.json", Msg::Select(2)),
-                            FileEntry::file(3, "status.gif", Msg::Select(3)),
-                        ],
-                    )
-                    .style(Style::default().flex_grow(1)),
-                ),
+            card(theme, "FILE EXPLORER").grow(1).height(px(380)).child(
+                file_explorer::view(
+                    theme,
+                    "/samples",
+                    None,
+                    [
+                        FileEntry::directory(1, "Animations", CapabilityGalleryAction::Select(1)),
+                        FileEntry::file(
+                            2,
+                            "moving-square.json",
+                            CapabilityGalleryAction::Select(2),
+                        ),
+                        FileEntry::file(3, "status.gif", CapabilityGalleryAction::Select(3)),
+                    ],
+                )
+                .grow(1),
+            ),
         ])
-        .style(Style::neutral().width(Size::Percent(100)).gap(20))
+        .style(Style::neutral())
+        .width(percent(100))
+        .gap(20)
     }
 }
 fn main() {
@@ -393,17 +422,33 @@ fn main() {
                 80 => screens
                     .current_mut()
                     .unwrap()
-                    .post(Msg::Dialog(true))
+                    .post(CapabilityGalleryAction::Dialog(true))
                     .unwrap(),
                 150 => screens
                     .current_mut()
                     .unwrap()
-                    .post(Msg::Dialog(false))
+                    .post(CapabilityGalleryAction::Dialog(false))
                     .unwrap(),
-                220 => screens.current_mut().unwrap().post(Msg::Page(1)).unwrap(),
-                320 => screens.current_mut().unwrap().post(Msg::Snapshot).unwrap(),
-                400 => screens.current_mut().unwrap().post(Msg::Page(2)).unwrap(),
-                650 => screens.current_mut().unwrap().post(Msg::Page(3)).unwrap(),
+                220 => screens
+                    .current_mut()
+                    .unwrap()
+                    .post(CapabilityGalleryAction::Page(1))
+                    .unwrap(),
+                320 => screens
+                    .current_mut()
+                    .unwrap()
+                    .post(CapabilityGalleryAction::Snapshot)
+                    .unwrap(),
+                400 => screens
+                    .current_mut()
+                    .unwrap()
+                    .post(CapabilityGalleryAction::Page(2))
+                    .unwrap(),
+                650 => screens
+                    .current_mut()
+                    .unwrap()
+                    .post(CapabilityGalleryAction::Page(3))
+                    .unwrap(),
                 _ => {}
             }
         }

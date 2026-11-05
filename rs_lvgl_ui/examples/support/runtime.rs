@@ -2,7 +2,7 @@
 use rs_lvgl_ui::prelude::*;
 
 pub fn frame<A: App>(
-    ui: &mut Ui<A::Msg>,
+    ui: &mut Ui<A::Action>,
     app: &mut A,
     budget: usize,
 ) -> Result<Option<DrainStats>, UiError> {
@@ -28,7 +28,7 @@ mod tests {
         let display = rs_lvgl::Display::register::<_, 64>(8, 8, |_| {}).unwrap();
         struct AppState(usize);
         impl App for AppState {
-            type Msg = ();
+            type Action = ();
             fn update(&mut self, _: ()) {
                 self.0 += 1;
             }

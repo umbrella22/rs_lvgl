@@ -25,7 +25,7 @@ struct Input {
 
 struct BrowserStudio {
     app: Studio,
-    ui: Option<Ui<Msg>>,
+    ui: Option<Ui<StudioAction>>,
     display: Option<rs_lvgl::Display>,
     mouse: Option<NonNull<rs_lvgl_sys::lv_indev_t>>,
     keyboard: Option<NonNull<rs_lvgl_sys::lv_indev_t>>,
@@ -277,9 +277,9 @@ pub extern "C" fn studio_key(key: u32, pressed: u32) -> i32 {
 #[no_mangle]
 pub extern "C" fn studio_command(command: u32, value: u32) -> i32 {
     let message = match command {
-        0 if (value as usize) < PAGES.len() => Msg::Page(value as usize),
-        1 => Msg::Theme,
-        2 => Msg::Reset,
+        0 if (value as usize) < PAGES.len() => StudioAction::Page(value as usize),
+        1 => StudioAction::Theme,
+        2 => StudioAction::Reset,
         _ => return -1,
     };
     RUNTIME.with_borrow_mut(|slot| match slot {

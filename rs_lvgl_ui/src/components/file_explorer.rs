@@ -42,15 +42,20 @@ pub fn view<M: Clone + 'static>(
     parent: Option<M>,
     entries: impl IntoIterator<Item = FileEntry<M>>,
 ) -> View<M> {
-    let mut header = crate::row([]).style(Style::body(theme).gap(8).width(Size::Percent(100)));
+    let mut header = crate::row([])
+        .font(theme.body_font)
+        .text_color(theme.text)
+        .gap(8)
+        .width(Size::Percent(100));
     if let Some(parent) = parent {
-        header = header.child(
-            crate::button(symbol::UP)
-                .style(Style::default().shadow_width(0))
-                .on_click(parent),
-        );
+        header = header.child(crate::button(symbol::UP).shadow_width(0).on_click(parent));
     }
-    header = header.child(crate::label(location).style(Style::body(theme).flex_grow(1)));
+    header = header.child(
+        crate::label(location)
+            .font(theme.body_font)
+            .text_color(theme.text)
+            .grow(1),
+    );
     crate::column([
         header.key(Key::Named("location")),
         list::list(
@@ -69,19 +74,15 @@ pub fn view<M: Clone + 'static>(
                 #[cfg(feature = "input-keypad")]
                 let row = row.focusable(true).state_style(
                     crate::State::FOCUSED,
-                    Style::default()
-                        .outline_width(1)
-                        .outline_color(theme.accent),
+                    crate::style().outline_width(1).outline_color(theme.accent),
                 );
                 row
             }),
         )
-        .style(Style::default().flex_grow(1))
+        .grow(1)
         .key(Key::Named("entries")),
     ])
-    .style(
-        Style::neutral()
-            .width(Size::Percent(100))
-            .height(Size::Percent(100)),
-    )
+    .style(Style::neutral())
+    .width(Size::Percent(100))
+    .height(Size::Percent(100))
 }

@@ -1,6 +1,6 @@
 # Application inputs
 
-This recipe requires the `rs_lvgl_sys` implementation from `rs_lvgl` with
+This recipe targets `rs_lvgl_sys` 0.4.0 with
 `LVGL_CONFIG_PATH`, `LVGL_EXTRA_C_DIR` and `LVGL_EXTRA_HEADERS` readers. Locate that
 source through the application's manifest; paths below refer to the application,
 not to the installed skill directory.

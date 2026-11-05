@@ -8,11 +8,11 @@ impl<M> Node<M> {
     /// Messages are cloned for every click, so `M` must implement `Clone`.
     /// Handlers are independent: this can be combined with the other `on_*`
     /// builders; calling the same builder twice replaces that handler only.
-    pub fn on_click(mut self, msg: M) -> Self
+    pub fn on_click(mut self, action: M) -> Self
     where
         M: Clone,
     {
-        self.handlers.click = Some(msg);
+        self.handlers.click = Some(action);
         self
     }
 
@@ -92,8 +92,8 @@ impl<M> Node<M> {
     }
 
     /// Enqueue once on LV_EVENT_LONG_PRESSED (not its repeat event).
-    pub fn on_long_press(mut self, msg: M) -> Self {
-        self.handlers.long_press = Some(msg);
+    pub fn on_long_press(mut self, action: M) -> Self {
+        self.handlers.long_press = Some(action);
         self
     }
 

@@ -3,7 +3,7 @@ use rs_lvgl_ui::prelude::*;
 mod support;
 
 #[derive(Clone)]
-enum Msg {
+enum WatchAction {
     NextDay,
 }
 struct Watch {
@@ -19,12 +19,12 @@ impl Default for Watch {
     }
 }
 impl App for Watch {
-    type Msg = Msg;
-    fn update(&mut self, _: Msg) {
+    type Action = WatchAction;
+    fn update(&mut self, _: WatchAction) {
         self.day = self.day % 28 + 1;
         self.steps = (self.steps + 1700) % 10000;
     }
-    fn view(&self, theme: &Theme) -> View<Msg> {
+    fn view(&self, theme: &Theme) -> View<WatchAction> {
         support::frame(
             theme,
             "Trail watch",
@@ -34,13 +34,11 @@ impl App for Watch {
                 .child(label(format!("October {} / Morning walk", self.day)))
                 .child(label(format!("{} / 10,000 steps", self.steps)))
                 .child(
-                    bar(0, 10000, self.steps as i32).style(
-                        Style::default()
-                            .width(Size::Percent(100))
-                            .height(Size::Px(16)),
-                    ),
+                    bar(0, 10000, self.steps as i32)
+                        .width(percent(100))
+                        .height(px(16)),
                 )
-                .child(support::action(theme, "Next day", Msg::NextDay)),
+                .child(support::action(theme, "Next day", WatchAction::NextDay)),
         )
     }
 }

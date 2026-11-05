@@ -33,45 +33,46 @@ pub fn frame<M: Clone + 'static>(
     content: View<M>,
 ) -> View<M> {
     rs_lvgl_ui::column([
-        label("rs_lvgl / examples").style(Style::muted(theme)),
-        label(title).style(Style::title(theme)),
-        label(subtitle).style(Style::muted(theme)),
-        rs_lvgl_ui::column([content]).style(
-            Style::surface(theme)
-                .pad(24)
-                .gap(18)
-                .width(Size::Percent(100))
-                .flex_grow(1),
-        ),
+        label("rs_lvgl / examples")
+            .font(theme.body_font)
+            .text_color(theme.muted),
+        label(title).font(theme.title_font).text_color(theme.text),
+        label(subtitle)
+            .font(theme.body_font)
+            .text_color(theme.muted),
+        rs_lvgl_ui::column([content])
+            .style(Style::surface(theme))
+            .padding(24)
+            .gap(18)
+            .width(percent(100))
+            .grow(1),
     ])
-    .style(Style::screen(theme).pad(24).gap(12))
+    .style(Style::screen(theme))
+    .padding(24)
+    .gap(12)
 }
 
 pub fn column<M>() -> View<M> {
-    rs_lvgl_ui::column([]).style(Style::default().gap(16).width(Size::Percent(100)))
+    rs_lvgl_ui::column([]).gap(16).width(percent(100))
 }
 pub fn row<M>() -> View<M> {
-    rs_lvgl_ui::row([]).style(
-        Style::default()
-            .gap(12)
-            .width(Size::Percent(100))
-            .flex_align(FlexAlign::Start, FlexAlign::Center),
-    )
+    rs_lvgl_ui::row([])
+        .gap(12)
+        .width(percent(100))
+        .flex_align(FlexAlign::Start, FlexAlign::Center)
 }
 pub fn value<M>(theme: &Theme, text: impl Into<String>) -> View<M> {
-    label(text).style(Style::title(theme))
+    label(text).font(theme.title_font).text_color(theme.text)
 }
 pub fn action<M: Clone + 'static>(theme: &Theme, text: &str, message: M) -> View<M> {
     button(text)
-        .style(
-            Style::accent(theme)
-                .pad_left(16)
-                .pad_right(16)
-                .height(Size::Px(44)),
-        )
+        .style(Style::accent(theme))
+        .padding_left(16)
+        .padding_right(16)
+        .height(px(44))
         .state_style(
             State::PRESSED,
-            Style::default().bg(theme.text).fg(theme.surface),
+            style().background(theme.text).text_color(theme.surface),
         )
         .on_click(message)
 }

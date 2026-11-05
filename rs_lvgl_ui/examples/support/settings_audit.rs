@@ -10,9 +10,9 @@ fn memory_consumer_updates_and_keeps_save_reachable_by_scrolling() {
     let mut app = Settings::new();
     ui.mount(&app).unwrap();
     native::capture(native::screen(), "settings-initial");
-    ui.post(Msg::SpeedChanged(85)).unwrap();
-    ui.post(Msg::ToggleMute).unwrap();
-    ui.post(Msg::Select(2)).unwrap();
+    ui.post(FanSettingsAction::SpeedChanged(85)).unwrap();
+    ui.post(FanSettingsAction::ToggleMute).unwrap();
+    ui.post(FanSettingsAction::Select(2)).unwrap();
     ui.drain(&mut app, 16).unwrap();
     let mut pointer = native::Pointer::new();
     pointer.click(native::parent(native::label(native::screen(), "Save")));

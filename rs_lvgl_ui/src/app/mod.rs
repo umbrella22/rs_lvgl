@@ -31,12 +31,15 @@ pub enum RenderDecision {
 /// `update` changes application state only. `view` reads state and returns a
 /// descriptor tree. Neither method may call LVGL or block.
 ///
-/// `Msg` must be `Clone` because a click handler stores its message and clones
-/// it for every click.
+/// `Action` must be `Clone` because a click handler stores its action and clones
+/// it for every click. It is the associated type name, not a required business
+/// enum name: a fan screen can use `type Action = FanSettingsAction` and return
+/// `View<FanSettingsAction>`. The enum describes user actions; application
+/// fields hold state and `update` implements the resulting state changes.
 pub trait App {
-    type Msg: Clone + 'static;
+    type Action: Clone + 'static;
 
-    fn update(&mut self, msg: Self::Msg);
+    fn update(&mut self, action: Self::Action);
 
     /// Process a message with optional reconciliation feedback. Existing apps
     /// call update and reconcile by default. A batch reconciles if any message
@@ -44,11 +47,11 @@ pub trait App {
     ///
     /// A user may change a native slider from 50 to 80 while update clamps its
     /// model back to 50. That still requires Reconcile to restore the widget.
-    fn update_with_render(&mut self, msg: Self::Msg) -> RenderDecision {
-        self.update(msg);
+    fn update_with_render(&mut self, action: Self::Action) -> RenderDecision {
+        self.update(action);
         RenderDecision::Reconcile
     }
-    fn view(&self, theme: &Theme) -> View<Self::Msg>;
+    fn view(&self, theme: &Theme) -> View<Self::Action>;
 
     /// Optional tree mounted above the view, on the display's top layer.
     ///
@@ -61,7 +64,7 @@ pub trait App {
     /// The overlay is reconciled together with the view and shares its
     /// message queue. Keyboard ids are resolved across both trees, so they
     /// should be unique across the view and the overlay.
-    fn overlay(&self, theme: &Theme) -> Option<View<Self::Msg>> {
+    fn overlay(&self, theme: &Theme) -> Option<View<Self::Action>> {
         let _ = theme;
         None
     }

@@ -66,6 +66,13 @@ macro_rules! properties {
                 self.extended.$field = Some(value); self
             }
         )* }
+        impl<M> crate::node::Node<M> { $(
+            $(#[$doc])*
+            #[inline]
+            pub fn $field(mut self, value: $ty) -> Self {
+                self.style = self.style.$field(value); self
+            }
+        )* }
     };
 }
 
@@ -90,7 +97,7 @@ properties! {
     outline_opacity: u8 => lv_obj_set_style_outline_opa, _lv_style_id_t_LV_STYLE_OUTLINE_OPA, |v| v;
     /// Signed distance between the object and its outline, in pixels.
     outline_pad: i16 => lv_obj_set_style_outline_pad, _lv_style_id_t_LV_STYLE_OUTLINE_PAD, i32::from;
-    /// Color at the second gradient stop; the first uses `Style::bg`.
+    /// Color at the second gradient stop; the first uses `Style::background`.
     bg_grad_color: Color => lv_obj_set_style_bg_grad_color, _lv_style_id_t_LV_STYLE_BG_GRAD_COLOR, Color::to_raw;
     /// Native two-stop background gradient direction.
     bg_grad_dir: GradientDirection => lv_obj_set_style_bg_grad_dir, _lv_style_id_t_LV_STYLE_BG_GRAD_DIR, |v: GradientDirection| v as _;

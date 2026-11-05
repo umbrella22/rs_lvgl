@@ -2,7 +2,7 @@ mod common;
 use rs_lvgl_ui::prelude::*;
 struct TestApp(usize);
 impl App for TestApp {
-    type Msg = ();
+    type Action = ();
     fn update(&mut self, _: ()) {}
     fn view(&self, _: &Theme) -> View<()> {
         match self.0 {
@@ -200,7 +200,7 @@ fn vendored_cjk_fonts_resolve_chinese_glyphs_and_float_points_are_exact() {
     {
         struct Line;
         impl App for Line {
-            type Msg = ();
+            type Action = ();
             fn update(&mut self, _: ()) {}
             fn view(&self, _: &Theme) -> View<()> {
                 line([(16_777_217, 0), (0, 1)])
@@ -215,7 +215,7 @@ fn vendored_cjk_fonts_resolve_chinese_glyphs_and_float_points_are_exact() {
 fn failed_later_sibling_releases_retained_native_users_before_retry() {
     struct Siblings(bool);
     impl App for Siblings {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             column([])

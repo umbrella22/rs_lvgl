@@ -8,7 +8,7 @@ struct LifecycleApp {
 }
 
 impl App for LifecycleApp {
-    type Msg = ();
+    type Action = ();
 
     fn update(&mut self, _: ()) {}
 

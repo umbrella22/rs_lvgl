@@ -100,7 +100,7 @@ struct TestApp {
 }
 
 impl App for TestApp {
-    type Msg = ();
+    type Action = ();
 
     fn update(&mut self, (): ()) {}
 
@@ -223,7 +223,7 @@ fn kind_change_deletes_custom_widget_exactly_once() {
     }
 
     impl App for SwitchApp {
-        type Msg = ();
+        type Action = ();
 
         fn update(&mut self, (): ()) {}
 
@@ -401,7 +401,7 @@ fn custom_node_explicit_handler_posts_messages() {
     }
 
     impl App for ClickApp {
-        type Msg = u32;
+        type Action = u32;
 
         fn update(&mut self, clicks: u32) {
             self.clicks = clicks;
@@ -448,7 +448,7 @@ fn raw_subtree_is_not_a_lifecycle_widget() {
     }
 
     impl App for RawApp {
-        type Msg = ();
+        type Action = ();
 
         fn update(&mut self, (): ()) {}
 

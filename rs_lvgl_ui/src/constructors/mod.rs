@@ -5,6 +5,15 @@ mod custom;
 mod data;
 mod layout;
 mod media;
+
+/// Build a reusable style patch with all properties initially unset.
+///
+/// Ordinary views initialize their own embedded style. Use flat modifiers such
+/// as `column([]).gap(12)` for local properties and this constructor when sharing
+/// a style or targeting a part/state selector. No native object is created.
+pub fn style() -> crate::Style {
+    crate::Style::default()
+}
 #[cfg(feature = "widget-arc")]
 pub use controls::arc;
 #[cfg(feature = "widget-bar")]
@@ -63,6 +72,7 @@ pub use layout::row;
 pub use layout::tabview;
 #[cfg(feature = "widget-tileview")]
 pub use layout::tileview;
+pub use layout::{content, percent, px};
 #[cfg(feature = "widget-animimage")]
 pub use media::anim_image;
 #[cfg(feature = "widget-barcode")]

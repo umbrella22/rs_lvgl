@@ -22,6 +22,7 @@ rs_lvgl/target/
 !/docs/testing.md
 !/docs/ui-runtime.md
 !/docs/ui-source.md
+!/docs/ui-styles.md
 !/docs/images/
 /docs/images/*
 !/docs/images/*.png

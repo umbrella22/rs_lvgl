@@ -1,8 +1,8 @@
 # AI development skills
 
 The [UI skill](../.agents/skills/rs-lvgl-ui/SKILL.md) and
-[native integration skill](../.agents/skills/rs-lvgl-native/SKILL.md) are maintained
-with the Rust API. Each folder is self-contained: its references resolve inside
+[native integration skill](../.agents/skills/rs-lvgl-native/SKILL.md) target
+`rs_lvgl` 0.4.0. Each folder is self-contained: its references resolve inside
 the copied skill, while source navigation starts from the target application's
 actual dependency. The skills do not assume their installed location is the
 library checkout.
@@ -51,9 +51,17 @@ the matching API. Local uncommitted files are available only through local copyi
 
 ## Versioning and distribution
 
-The UI skill uses ordinary function constructors and `View<M>`. Install the skill
-from the ref matching the application's dependency so examples, features and
-resource-lifetime guidance stay aligned with the code.
+The UI skill uses ordinary function constructors, flat view modifiers and
+`View<ComponentAction>`. Applications declare `type Action = ComponentAction`,
+name action parameters `action`, and keep state in fields and behavior in
+`update`. View constructors initialize their embedded style; `style()` creates
+reusable patches. The [style and action contracts](ui-styles.md) define units,
+override order and theme behavior.
+
+Install the 0.4.0 skills with the corresponding library sources. The included
+counter uses `type Action = CounterAction` and the same style API as the guide.
+Check the resolved dependency source and enabled features before adapting an
+example to an application.
 
 Co-location makes API changes, examples and skill guidance reviewable together.
 A separate repository is useful when skills need their own release cadence,

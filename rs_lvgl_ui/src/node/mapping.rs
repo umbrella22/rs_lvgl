@@ -7,7 +7,7 @@ impl<M> Node<M> {
     /// Convert every message this subtree produces with `map`.
     ///
     /// This is how a component with its own message type is embedded in an
-    /// application: `menu::view(&state).map(Msg::Menu)`. Click messages are
+    /// application: `menu::view(&state).map(ParentAction::Menu)`. Click messages are
     /// converted once, when `map` is called; value, text and event mappings
     /// are converted when the event fires. `map` must be a pure conversion.
     pub fn map<N: 'static>(self, map: impl Fn(M) -> N + 'static) -> Node<N>

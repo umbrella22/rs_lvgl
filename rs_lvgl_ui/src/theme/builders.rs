@@ -14,8 +14,8 @@ impl Style {
     /// Set an opaque background color.
     ///
     /// This also sets the background opacity to 255. Call
-    /// [`Style::bg_opacity`] after this method for a translucent fill.
-    pub fn bg(mut self, color: Color) -> Self {
+    /// [`Style::background_opacity`] after this method for a translucent fill.
+    pub fn background(mut self, color: Color) -> Self {
         self.bg = color;
         self.bg_opa = 255;
         self.set |= STYLE_BG | STYLE_BG_OPA;
@@ -24,15 +24,15 @@ impl Style {
 
     /// Set the background opacity independently of the color.
     ///
-    /// Merging `Style::default().bg_opacity(128)` over [`Style::surface`]
+    /// Merging `style().background_opacity(128)` over [`Style::surface`]
     /// keeps the surface color and makes it translucent.
-    pub fn bg_opacity(mut self, opacity: u8) -> Self {
+    pub fn background_opacity(mut self, opacity: u8) -> Self {
         self.bg_opa = opacity;
         self.set |= STYLE_BG_OPA;
         self
     }
 
-    pub fn fg(mut self, color: Color) -> Self {
+    pub fn text_color(mut self, color: Color) -> Self {
         self.fg = color;
         self.set |= STYLE_FG;
         self
@@ -52,7 +52,7 @@ impl Style {
     }
 
     /// Set all four paddings.
-    pub fn pad(mut self, pad: i16) -> Self {
+    pub fn padding(mut self, pad: i16) -> Self {
         self.pad_left = pad;
         self.pad_right = pad;
         self.pad_top = pad;
@@ -61,25 +61,25 @@ impl Style {
         self
     }
 
-    pub fn pad_left(mut self, pad: i16) -> Self {
+    pub fn padding_left(mut self, pad: i16) -> Self {
         self.pad_left = pad;
         self.set |= STYLE_PAD_LEFT;
         self
     }
 
-    pub fn pad_right(mut self, pad: i16) -> Self {
+    pub fn padding_right(mut self, pad: i16) -> Self {
         self.pad_right = pad;
         self.set |= STYLE_PAD_RIGHT;
         self
     }
 
-    pub fn pad_top(mut self, pad: i16) -> Self {
+    pub fn padding_top(mut self, pad: i16) -> Self {
         self.pad_top = pad;
         self.set |= STYLE_PAD_TOP;
         self
     }
 
-    pub fn pad_bottom(mut self, pad: i16) -> Self {
+    pub fn padding_bottom(mut self, pad: i16) -> Self {
         self.pad_bottom = pad;
         self.set |= STYLE_PAD_BOTTOM;
         self
@@ -127,7 +127,7 @@ impl Style {
         self
     }
 
-    pub fn flex_grow(mut self, grow: u8) -> Self {
+    pub fn grow(mut self, grow: u8) -> Self {
         self.flex_grow = grow;
         self.set |= STYLE_GROW;
         self
@@ -229,15 +229,15 @@ impl Style {
         self
     }
 
-    pub fn background(&self) -> Color {
+    pub fn background_value(&self) -> Color {
         self.bg
     }
 
-    pub fn background_opacity(&self) -> u8 {
+    pub fn background_opacity_value(&self) -> u8 {
         self.bg_opa
     }
 
-    pub fn foreground(&self) -> Color {
+    pub fn text_color_value(&self) -> Color {
         self.fg
     }
 
@@ -253,19 +253,19 @@ impl Style {
         self.radius
     }
 
-    pub fn padding_left(&self) -> i16 {
+    pub fn padding_left_value(&self) -> i16 {
         self.pad_left
     }
 
-    pub fn padding_right(&self) -> i16 {
+    pub fn padding_right_value(&self) -> i16 {
         self.pad_right
     }
 
-    pub fn padding_top(&self) -> i16 {
+    pub fn padding_top_value(&self) -> i16 {
         self.pad_top
     }
 
-    pub fn padding_bottom(&self) -> i16 {
+    pub fn padding_bottom_value(&self) -> i16 {
         self.pad_bottom
     }
 
@@ -297,7 +297,7 @@ impl Style {
         self.min_height
     }
 
-    pub fn grow(&self) -> u8 {
+    pub fn grow_value(&self) -> u8 {
         self.flex_grow
     }
 

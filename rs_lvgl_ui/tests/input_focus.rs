@@ -14,9 +14,9 @@ struct Form {
 }
 
 impl App for Form {
-    type Msg = u64;
-    fn update(&mut self, msg: u64) {
-        self.clicks.push(msg);
+    type Action = u64;
+    fn update(&mut self, action: u64) {
+        self.clicks.push(action);
     }
     fn view(&self, _: &Theme) -> View<u64> {
         let mut node = column([])
@@ -172,7 +172,7 @@ fn focus_activation_is_explicit_and_unmount_releases_native_state() {
         focused: usize,
     }
     impl App for Screen {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {
             self.focused += 1;
         }
@@ -211,7 +211,7 @@ fn failed_subtree_reconcile_removes_group_members_and_can_retry() {
     let display = common::init();
     struct Fallible(bool);
     impl App for Fallible {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             let node = column([]).child(button("live").key(Key::Id(1)));

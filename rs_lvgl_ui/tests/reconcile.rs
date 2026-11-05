@@ -13,7 +13,7 @@ struct TreeApp {
 }
 
 impl App for TreeApp {
-    type Msg = ();
+    type Action = ();
 
     fn update(&mut self, _: ()) {}
 
@@ -71,7 +71,7 @@ fn list_app() -> ListApp {
 }
 
 impl App for ListApp {
-    type Msg = ();
+    type Action = ();
 
     fn update(&mut self, _: ()) {}
 
@@ -152,7 +152,7 @@ fn auto_and_keyed_siblings_mix() {
         suffix: &'static str,
     }
     impl App for MixedApp {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             column([])
@@ -183,10 +183,10 @@ struct SliderApp {
 }
 
 impl App for SliderApp {
-    type Msg = SpeedMsg;
+    type Action = SpeedMsg;
 
-    fn update(&mut self, msg: SpeedMsg) {
-        match msg {
+    fn update(&mut self, action: SpeedMsg) {
+        match action {
             SpeedMsg::Speed(value) => self.speed = value,
         }
     }
@@ -249,10 +249,10 @@ struct ClickApp {
 }
 
 impl App for ClickApp {
-    type Msg = ClickMsg;
+    type Action = ClickMsg;
 
-    fn update(&mut self, msg: ClickMsg) {
-        self.clicked = Some(msg);
+    fn update(&mut self, action: ClickMsg) {
+        self.clicked = Some(action);
     }
 
     fn view(&self, _: &Theme) -> View<ClickMsg> {
@@ -322,7 +322,7 @@ fn queue_overflow_and_drain_cap() {
     #[derive(Clone)]
     struct Inc;
     impl App for CounterApp {
-        type Msg = Inc;
+        type Action = Inc;
 
         fn update(&mut self, _: Inc) {
             self.count += 1;
@@ -359,7 +359,7 @@ fn validation_rejects_bad_views_before_mutation() {
 
     struct BadApp(u8);
     impl App for BadApp {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             match self.0 {
@@ -394,7 +394,7 @@ fn raw_subtree_is_opaque_and_deleted_with_its_parent() {
 
     struct RawApp;
     impl App for RawApp {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             let raw: View<()> = unsafe {
@@ -441,7 +441,7 @@ fn non_container_rejects_children() {
 
     struct ChildApp;
     impl App for ChildApp {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             column([]).child(button("b").child(label("x")))
@@ -460,7 +460,7 @@ fn styled_nodes_keep_class_defaults_when_unset() {
 
     struct StyledApp;
     impl App for StyledApp {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             column([]).child(slider(0, 100, 20).key(Key::Id(1)))
@@ -481,7 +481,7 @@ fn styled_nodes_keep_class_defaults_when_unset() {
 fn style_is_copyable_and_theme_helpers_resolve_tokens() {
     let theme = Theme::dark();
     let style = Style::title(&theme);
-    assert_eq!(style.foreground(), theme.text);
+    assert_eq!(style.text_color_value(), theme.text);
     assert_eq!(style.text_font(), theme.title_font);
 }
 
@@ -495,10 +495,10 @@ struct SwitchApp {
 }
 
 impl App for SwitchApp {
-    type Msg = SwitchMsg;
+    type Action = SwitchMsg;
 
-    fn update(&mut self, msg: SwitchMsg) {
-        match msg {
+    fn update(&mut self, action: SwitchMsg) {
+        match action {
             SwitchMsg::State(value) => self.checked = value != 0,
         }
     }
@@ -569,7 +569,7 @@ fn image_source_and_scale_update_in_place() {
         scale: u16,
     }
     impl App for ImageApp {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             column([]).child(image_scaled(self.source, self.scale).key(Key::Named("image")))
@@ -610,10 +610,10 @@ fn gallery_message_flow_updates_state_and_reconciles() {
     }
 
     impl App for Gallery {
-        type Msg = Msg;
+        type Action = Msg;
 
-        fn update(&mut self, msg: Msg) {
-            match msg {
+        fn update(&mut self, action: Msg) {
+            match action {
                 Msg::Inc => self.count += 1,
                 Msg::Speed(value) => self.speed = value,
                 Msg::ToggleMute => self.muted = !self.muted,
@@ -641,7 +641,7 @@ fn gallery_message_flow_updates_state_and_reconciles() {
                 .children(self.items.iter().map(|id| {
                     row([])
                         .key(Key::Id(*id))
-                        .child(label(format!("{id}")).style(Style::default().flex_grow(1)))
+                        .child(label(format!("{id}")).style(Style::default().grow(1)))
                         .child(button("down").on_click(Msg::MoveDown(*id)))
                 }))
         }
@@ -688,10 +688,10 @@ struct CheckApp {
 }
 
 impl App for CheckApp {
-    type Msg = CheckMsg;
+    type Action = CheckMsg;
 
-    fn update(&mut self, msg: CheckMsg) {
-        match msg {
+    fn update(&mut self, action: CheckMsg) {
+        match action {
             CheckMsg::Checked(value) => self.checked = value,
         }
     }
@@ -700,7 +700,7 @@ impl App for CheckApp {
         column([]).child(
             checkbox("Notify", self.checked)
                 .key(Key::Named("check"))
-                .style(Style::default().fg(theme.text))
+                .style(Style::default().text_color(theme.text))
                 .on_value_changed(|value| CheckMsg::Checked(value != 0)),
         )
     }
@@ -745,10 +745,10 @@ struct TextApp {
 }
 
 impl App for TextApp {
-    type Msg = TextMsg;
+    type Action = TextMsg;
 
-    fn update(&mut self, msg: TextMsg) {
-        match msg {
+    fn update(&mut self, action: TextMsg) {
+        match action {
             TextMsg::Text(text) => self.text = text,
         }
     }
@@ -801,10 +801,10 @@ struct DropApp {
 }
 
 impl App for DropApp {
-    type Msg = DropMsg;
+    type Action = DropMsg;
 
-    fn update(&mut self, msg: DropMsg) {
-        match msg {
+    fn update(&mut self, action: DropMsg) {
+        match action {
             DropMsg::Selected(value) => self.selected = value as u32,
         }
     }
@@ -858,10 +858,10 @@ struct ArcApp {
 }
 
 impl App for ArcApp {
-    type Msg = ArcMsg;
+    type Action = ArcMsg;
 
-    fn update(&mut self, msg: ArcMsg) {
-        match msg {
+    fn update(&mut self, action: ArcMsg) {
+        match action {
             ArcMsg::Value(value) => self.value = value,
         }
     }
@@ -936,7 +936,7 @@ fn scale_properties_update_in_place() {
         major: u32,
     }
     impl App for ScaleApp {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             column([]).child(
@@ -992,7 +992,7 @@ fn style_sides_alignment_bounds_and_states() {
         disabled: bool,
     }
     impl App for StyleApp {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             column([]).child(
@@ -1000,10 +1000,10 @@ fn style_sides_alignment_bounds_and_states() {
                     Style::default()
                         .width(Size::Px(50))
                         .height(Size::Px(50))
-                        .pad_left(4)
-                        .pad_right(8)
-                        .pad_top(2)
-                        .pad_bottom(6)
+                        .padding_left(4)
+                        .padding_right(8)
+                        .padding_top(2)
+                        .padding_bottom(6)
                         .text_align(TextAlign::Center)
                         .max_width(Size::Px(100))
                         .min_height(Size::Px(10))
@@ -1092,7 +1092,7 @@ fn invalid_new_widget_properties_are_rejected() {
 
     struct BadApp(u8);
     impl App for BadApp {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             match self.0 {
@@ -1140,7 +1140,7 @@ fn chart_type_values_and_series_update_in_place() {
         second_series: bool,
     }
     impl App for ChartApp {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, theme: &Theme) -> View<()> {
             let mut series = vec![ChartSeries::new(theme.accent, self.values.clone())];
@@ -1225,7 +1225,7 @@ fn grid_tracks_and_cells_place_children_and_update_in_place() {
         wide_first: bool,
     }
     impl App for GridApp {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             let columns = if self.wide_first {
@@ -1291,7 +1291,7 @@ fn grid_content_row_sizes_to_children() {
 
     struct App1;
     impl App for App1 {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             column([])
@@ -1331,7 +1331,7 @@ fn grid_with_column_children_content_height() {
 
     struct App2;
     impl App for App2 {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             column([])
@@ -1387,15 +1387,15 @@ fn grid_with_input_children_content_height() {
 
     struct App3;
     impl App for App3 {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             let input = Style::default()
-                .bg(rs_lvgl_ui::Color::rgb(20, 20, 20))
-                .fg(rs_lvgl_ui::Color::rgb(240, 240, 240))
+                .background(rs_lvgl_ui::Color::rgb(20, 20, 20))
+                .text_color(rs_lvgl_ui::Color::rgb(240, 240, 240))
                 .border(rs_lvgl_ui::Color::rgb(90, 90, 90), 1)
                 .radius(6)
-                .pad(8)
+                .padding(8)
                 .width(Size::Percent(100));
             column([])
                 .style(
@@ -1453,7 +1453,7 @@ fn rgb565_image_source_builds_descriptor_and_updates_in_place() {
         scale: u16,
     }
     impl App for ImageApp {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             let source = if self.second {
@@ -1509,7 +1509,7 @@ fn rgb565_image_rejects_wrong_data_length() {
     static SHORT: [u8; 2] = [0, 0];
     struct BadImage;
     impl App for BadImage {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             column([]).child(image(ImageSource::rgb565(2, 2, &SHORT)))
@@ -1532,7 +1532,7 @@ fn part_styles_override_and_restore_the_target_part() {
         styled: bool,
     }
     impl App for PartApp {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             let slider = slider(0, 100, 50).key(Key::Named("slider")).style(
@@ -1543,7 +1543,7 @@ fn part_styles_override_and_restore_the_target_part() {
             let slider = if self.styled {
                 slider.part_style(
                     Part::Indicator,
-                    Style::default().bg(rs_lvgl_ui::Color::rgb(200, 10, 20)),
+                    Style::default().background(rs_lvgl_ui::Color::rgb(200, 10, 20)),
                 )
             } else {
                 slider
@@ -1587,7 +1587,7 @@ fn animation_duration_style_applies() {
         duration: u32,
     }
     impl App for AnimApp {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             column([]).child(
@@ -1629,7 +1629,7 @@ fn tabview_switches_pages_updates_titles_and_rebuilds_on_tab_count_change() {
         value: i32,
     }
     impl App for TabApp {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             let mut tabview = tabview(self.tabs.iter().copied(), self.active)
@@ -1703,7 +1703,7 @@ fn tabview_validation_rejects_bad_tabs() {
 
     struct BadTabs(u8);
     impl App for BadTabs {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             match self.0 {
@@ -1741,9 +1741,9 @@ fn tabview_value_event_updates_app_state() {
         active: u32,
     }
     impl App for TabEventApp {
-        type Msg = Msg;
-        fn update(&mut self, msg: Msg) {
-            match msg {
+        type Action = Msg;
+        fn update(&mut self, action: Msg) {
+            match action {
                 Msg::Tab(index) => self.active = index.max(0) as u32,
             }
         }
@@ -1793,9 +1793,9 @@ fn keyboard_binds_to_keyboard_id_targets() {
         focused: bool,
     }
     impl App for KeyboardApp {
-        type Msg = KeyboardMsg;
-        fn update(&mut self, msg: KeyboardMsg) {
-            match msg {
+        type Action = KeyboardMsg;
+        fn update(&mut self, action: KeyboardMsg) {
+            match action {
                 KeyboardMsg::Focus(value) => self.focused = value,
             }
         }
@@ -1879,7 +1879,7 @@ fn keyboard_validation_rejects_wrong_targets() {
 
     struct BadKeyboard(u8);
     impl App for BadKeyboard {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             match self.0 {

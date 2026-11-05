@@ -7,7 +7,7 @@ use components::{
 };
 use std::rc::Rc;
 
-pub(super) fn view(app: &Studio, theme: &Theme) -> View<Msg> {
+pub(super) fn view(app: &Studio, theme: &Theme) -> View<StudioAction> {
     match app.page {
         0 => overview(app, theme),
         1 => controls(app, theme),
@@ -20,32 +20,23 @@ pub(super) fn view(app: &Studio, theme: &Theme) -> View<Msg> {
         _ => super::native::view(app, theme),
     }
 }
-fn half(node: View<Msg>, height: i16) -> View<Msg> {
-    node.style(
-        Style::default()
-            .width(Size::Percent(49))
-            .height(Size::Px(height)),
-    )
+fn half(node: View<StudioAction>, height: i16) -> View<StudioAction> {
+    node.width(percent(49)).height(px(height))
 }
-fn third(node: View<Msg>, height: i16) -> View<Msg> {
-    node.style(
-        Style::default()
-            .width(Size::Percent(32))
-            .height(Size::Px(height)),
-    )
+fn third(node: View<StudioAction>, height: i16) -> View<StudioAction> {
+    node.width(percent(32)).height(px(height))
 }
 fn full(height: i16) -> Style {
-    Style::default()
-        .width(Size::Percent(100))
-        .height(Size::Px(height))
+    style().width(percent(100)).height(px(height))
 }
-fn metric(value: &str, title: &str, color: Color, theme: &Theme) -> View<Msg> {
+fn metric(value: &str, title: &str, color: Color, theme: &Theme) -> View<StudioAction> {
     studio_column()
-        .style(Style::default().width(Size::Content).gap(6))
+        .width(content())
+        .gap(6)
         .child(styled_label(value, color, Font::montserrat_32()))
         .child(text(title, theme))
 }
-fn signal_chart(height: i16) -> View<Msg> {
+fn signal_chart(height: i16) -> View<StudioAction> {
     rs_lvgl_ui::chart(
         ChartType::Line,
         0,
@@ -55,34 +46,32 @@ fn signal_chart(height: i16) -> View<Msg> {
             ChartSeries::new(TEAL, vec![12, 18, 16, 26, 21, 40, 34, 48, 39, 55, 48, 64]),
         ],
     )
-    .style(full(height).bg_opacity(0).border(Color::rgb(0, 0, 0), 0))
+    .style(
+        full(height)
+            .background_opacity(0)
+            .border(Color::rgb(0, 0, 0), 0),
+    )
 }
 
-fn overview(app: &Studio, theme: &Theme) -> View<Msg> {
+fn overview(app: &Studio, theme: &Theme) -> View<StudioAction> {
     let plot = card(
         "A live workspace",
         "Synthetic signal / last 12 samples",
         theme,
     )
-    .style(
-        Style::default()
-            .width(Size::Percent(64))
-            .height(Size::Px(326)),
-    )
+    .width(percent(64))
+    .height(px(326))
     .child(studio_row().children([
         metric("84.2", "Signal strength", ORANGE, theme),
         metric("12", "Sample points", TEAL, theme),
     ]))
     .child(signal_chart(134));
     let control = card("Try the controls", "Changes carry between pages.", theme)
-        .style(
-            Style::default()
-                .width(Size::Percent(34))
-                .height(Size::Px(326)),
-        )
+        .width(percent(34))
+        .height(px(326))
         .child(
             studio_row()
-                .style(Style::default().flex_align(FlexAlign::SpaceBetween, FlexAlign::Center))
+                .flex_align(FlexAlign::SpaceBetween, FlexAlign::Center)
                 .child(metric(
                     &format!("{}%", app.value),
                     "Output level",
@@ -92,7 +81,7 @@ fn overview(app: &Studio, theme: &Theme) -> View<Msg> {
                 .child(
                     switch(app.enabled)
                         .focusable(true)
-                        .on_value_changed(|v| Msg::Enabled(v != 0)),
+                        .on_value_changed(|v| StudioAction::Enabled(v != 0)),
                 ),
         )
         .child(
@@ -100,9 +89,9 @@ fn overview(app: &Studio, theme: &Theme) -> View<Msg> {
                 .key(Key::Named("overview-slider"))
                 .style(full(12))
                 .focusable(true)
-                .on_value_changed(Msg::Value),
+                .on_value_changed(StudioAction::Value),
         )
-        .child(primary("Explore components", Msg::Page(1), theme).style(full(44)))
+        .child(primary("Explore components", StudioAction::Page(1), theme).style(full(44)))
         .child(text("Touch, click or use Tab + Enter.", theme));
     studio_column()
         .child(studio_row().children([plot, control]))
@@ -120,7 +109,11 @@ fn overview(app: &Studio, theme: &Theme) -> View<Msg> {
                     ])
                     .style(full(40).font(Font::montserrat_20())),
                 )
-                .child(action_button("Open composition", Msg::Page(7), theme)),
+                .child(action_button(
+                    "Open composition",
+                    StudioAction::Page(7),
+                    theme,
+                )),
                 third(
                     card("Create", "Pixels, motion and vector media.", theme),
                     242,
@@ -129,31 +122,31 @@ fn overview(app: &Studio, theme: &Theme) -> View<Msg> {
                     rs_lvgl_ui::image(sample_image(false)),
                     text("Made for your device.", theme),
                 ]))
-                .child(action_button("Open media", Msg::Page(5), theme)),
+                .child(action_button("Open media", StudioAction::Page(5), theme)),
                 third(
                     card("Connect", "A native engine, a Rust workflow.", theme),
                     242,
                 )
                 .child(
-                    studio_row()
-                        .style(Style::default().height(Size::Px(38)))
-                        .children([
-                            led(TEAL).style(
-                                Style::default()
-                                    .width(Size::Px(18))
-                                    .height(Size::Px(18))
-                                    .radius(9)
-                                    .shadow_width(0),
-                            ),
-                            text("LVGL 9.6 / native rendering", theme),
-                        ]),
+                    studio_row().height(px(38)).children([
+                        led(TEAL)
+                            .width(px(18))
+                            .height(px(18))
+                            .radius(9)
+                            .shadow_width(0),
+                        text("LVGL 9.6 / native rendering", theme),
+                    ]),
                 )
-                .child(action_button("Open a dialog", Msg::Dialog(true), theme)),
+                .child(action_button(
+                    "Open a dialog",
+                    StudioAction::Dialog(true),
+                    theme,
+                )),
             ]),
         )
 }
 
-fn controls(app: &Studio, t: &Theme) -> View<Msg> {
+fn controls(app: &Studio, t: &Theme) -> View<StudioAction> {
     studio_column()
         .child(
             studio_row().children([
@@ -169,7 +162,7 @@ fn controls(app: &Studio, t: &Theme) -> View<Msg> {
                             .key(Key::Named("controls-slider"))
                             .style(full(14))
                             .focusable(true)
-                            .on_value_changed(Msg::Value),
+                            .on_value_changed(StudioAction::Value),
                     )
                     .child(bar(0, 100, app.value).style(full(8))),
                 third(
@@ -178,33 +171,28 @@ fn controls(app: &Studio, t: &Theme) -> View<Msg> {
                 )
                 .child(
                     studio_row()
-                        .style(
-                            Style::default().flex_align(FlexAlign::SpaceBetween, FlexAlign::Center),
-                        )
+                        .flex_align(FlexAlign::SpaceBetween, FlexAlign::Center)
                         .children([
                             styled_label("Device enabled", t.text, t.body_font),
                             switch(app.enabled)
                                 .key(Key::Named("enabled"))
                                 .focusable(true)
-                                .on_value_changed(|v| Msg::Enabled(v != 0)),
+                                .on_value_changed(|v| StudioAction::Enabled(v != 0)),
                         ]),
                 )
                 .child(
                     checkbox("Send notifications", app.checked)
                         .focusable(true)
-                        .on_value_changed(|v| Msg::Checked(v != 0)),
+                        .on_value_changed(|v| StudioAction::Checked(v != 0)),
                 )
                 .child(
                     studio_row().children([
                         led(if app.enabled { TEAL } else { t.muted })
                             .brightness(if app.enabled { 255 } else { 50 })
-                            .style(
-                                Style::default()
-                                    .width(Size::Px(20))
-                                    .height(Size::Px(20))
-                                    .radius(10)
-                                    .shadow_width(0),
-                            ),
+                            .width(px(20))
+                            .height(px(20))
+                            .radius(10)
+                            .shadow_width(0),
                         text(
                             if app.enabled {
                                 "Device is online"
@@ -217,20 +205,17 @@ fn controls(app: &Studio, t: &Theme) -> View<Msg> {
                 ),
                 third(card("Read the room", "Arc / animated spinner", t), 280).child(
                     studio_row()
-                        .style(
-                            Style::default().flex_align(FlexAlign::SpaceAround, FlexAlign::Center),
-                        )
+                        .flex_align(FlexAlign::SpaceAround, FlexAlign::Center)
                         .children([
-                            arc(0, 100, app.value).style(
-                                Style::default()
-                                    .width(Size::Px(136))
-                                    .height(Size::Px(136))
-                                    .arc_color(ORANGE)
-                                    .arc_width(12),
-                            ),
+                            arc(0, 100, app.value)
+                                .width(px(136))
+                                .height(px(136))
+                                .arc_color(ORANGE)
+                                .arc_width(12),
                             spinner()
                                 .spinner_anim(1300, 70)
-                                .style(Style::default().width(Size::Px(46)).height(Size::Px(46))),
+                                .width(px(46))
+                                .height(px(46)),
                         ]),
                 ),
             ]),
@@ -242,14 +227,14 @@ fn controls(app: &Studio, t: &Theme) -> View<Msg> {
                         dropdown(["Quiet", "Balanced", "Performance"], app.selected)
                             .style(full(42))
                             .focusable(true)
-                            .on_value_changed(Msg::Select),
+                            .on_value_changed(StudioAction::Select),
                     )
                     .child(
                         roller(["Quiet", "Balanced", "Performance"], app.selected)
                             .visible_rows(2)
                             .style(full(90))
                             .focusable(true)
-                            .on_value_changed(Msg::Select),
+                            .on_value_changed(StudioAction::Select),
                     ),
                 third(card("Fine adjustments", "Spinbox / action buttons", t), 282)
                     .child(
@@ -258,15 +243,16 @@ fn controls(app: &Studio, t: &Theme) -> View<Msg> {
                             .digits(3, 0)
                             .style(full(48))
                             .focusable(true)
-                            .on_value_changed(Msg::Value),
+                            .on_value_changed(StudioAction::Value),
                     )
                     .child(studio_row().children([
-                        action_button("-", Msg::Step(-1), t),
-                        primary("+", Msg::Step(1), t),
+                        action_button("-", StudioAction::Step(-1), t),
+                        primary("+", StudioAction::Step(1), t),
                     ]))
                     .child(
-                        action_button("Unavailable", Msg::Click, t)
-                            .style(Style::default().disabled(true).opacity(110)),
+                        action_button("Unavailable", StudioAction::Click, t)
+                            .disabled(true)
+                            .opacity(110),
                     ),
                 third(
                     card("Quick actions", "Button matrix / event feedback", t),
@@ -276,14 +262,14 @@ fn controls(app: &Studio, t: &Theme) -> View<Msg> {
                     button_matrix([["1", "2", "3"], ["4", "5", "6"]])
                         .style(full(112))
                         .focusable(true)
-                        .on_value_changed(|_| Msg::Click),
+                        .on_value_changed(|_| StudioAction::Click),
                 )
                 .child(text(&format!("{} actions received", app.clicks), t)),
             ]),
         )
 }
 
-fn input(app: &Studio, t: &Theme) -> View<Msg> {
+fn input(app: &Studio, t: &Theme) -> View<StudioAction> {
     let editor = half(card("Say something", "Text area / native keyboard", t), 320)
         .child(
             textarea(&app.text)
@@ -292,7 +278,7 @@ fn input(app: &Studio, t: &Theme) -> View<Msg> {
                 .key(Key::Named("text-input"))
                 .style(full(44))
                 .focusable(true)
-                .on_text_changed(|s| Msg::Text(s.into())),
+                .on_text_changed(|s| StudioAction::Text(s.into())),
         )
         .child(keyboard(101).style(full(150)));
     let ime = half(card("Hello, world", "CJK type / Pinyin input", t), 320)
@@ -302,23 +288,23 @@ fn input(app: &Studio, t: &Theme) -> View<Msg> {
                 .key(Key::Named("chinese-input"))
                 .style(full(44).font(Font::cjk_16()))
                 .focusable(true)
-                .on_text_changed(|s| Msg::Chinese(s.into())),
+                .on_text_changed(|s| StudioAction::Chinese(s.into())),
         )
         .child(pinyin_keyboard(102, Font::cjk_16()).style(full(150)));
     studio_column().child(studio_row().children([editor, ime])).child(studio_row().children([
         half(card("Pick a date", &app.date, t), 264)
             .child(calendar(2026, 10).today(CalendarDate::new(2026, 10, 22))
                 .highlighted([CalendarDate::new(2026, 10, 8), CalendarDate::new(2026, 10, 22)])
-                .style(full(154)).on_value_changed(Msg::Date)),
+                .style(full(154)).on_value_changed(StudioAction::Date)),
         half(card("Type with personality", "Labels / spans / wrapping / fonts", t), 264)
             .child(spans([Span::new("One toolkit. ").color(t.text), Span::new("Many possibilities.").color(ORANGE)])
                 .style(full(64).font(Font::montserrat_28())))
             .child(styled_label("你好，世界", t.text, Font::cjk_16()))
-            .child(text("Enter text above. Use ni in the Pinyin field, then select a candidate. Every change updates application state.", t).style(Style::default().width(Size::Percent(100)))),
+            .child(text("Enter text above. Use ni in the Pinyin field, then select a candidate. Every change updates application state.", t).width(percent(100))),
     ]))
 }
 
-fn data(t: &Theme) -> View<Msg> {
+fn data(t: &Theme) -> View<StudioAction> {
     studio_column()
         .child(
             card(
@@ -348,7 +334,7 @@ fn data(t: &Theme) -> View<Msg> {
                     ])
                     .column_widths([160, 146, 120])
                     .style(full(166))
-                    .on_value_changed(|_| Msg::Click),
+                    .on_value_changed(|_| StudioAction::Click),
                 ),
                 half(card("Measure & trace", "Scale / polyline", t), 285)
                     .child(scale(0, 100, 21, 5).style(full(70)))
@@ -370,7 +356,7 @@ fn data(t: &Theme) -> View<Msg> {
         )
 }
 
-fn layout(app: &Studio, t: &Theme) -> View<Msg> {
+fn layout(app: &Studio, t: &Theme) -> View<StudioAction> {
     let tabs = tabview(["Design", "Build", "Ship"], app.tab)
         .style(full(180))
         .children(
@@ -382,11 +368,11 @@ fn layout(app: &Studio, t: &Theme) -> View<Msg> {
             .iter()
             .map(|s| {
                 studio_column()
-                    .style(Style::default().pad(20))
+                    .padding(20)
                     .child(styled_label(s, t.text, Font::montserrat_20()))
             }),
         )
-        .on_value_changed(Msg::Tab);
+        .on_value_changed(StudioAction::Tab);
     let tiles = tileview(
         [
             Tile::new(0, 0, ScrollDir::RIGHT),
@@ -397,22 +383,24 @@ fn layout(app: &Studio, t: &Theme) -> View<Msg> {
     .style(full(138))
     .children([
         studio_column()
-            .style(Style::default().bg(TEAL).pad(20))
+            .background(TEAL)
+            .padding(20)
             .child(styled_label("01 / Explore", WHITE, Font::montserrat_20())),
         studio_column()
-            .style(Style::default().bg(BLUE).pad(20))
+            .background(BLUE)
+            .padding(20)
             .child(styled_label("02 / Create", WHITE, Font::montserrat_20())),
     ])
-    .on_value_changed(Msg::Tile);
+    .on_value_changed(StudioAction::Tile);
     let grid = grid(
         [GridTrack::Fr(1), GridTrack::Fr(1)],
         [GridTrack::Fr(1), GridTrack::Fr(1)],
         (0..4).map(|i| {
-            action_button(&format!("Cell {}", i + 1), Msg::Click, t)
+            action_button(&format!("Cell {}", i + 1), StudioAction::Click, t)
                 .key(Key::Id(400 + i))
                 .grid_cell((i % 2) as u16, (i / 2) as u16, 1, 1)
                 .grid_align(GridAlign::Stretch, GridAlign::Stretch)
-                .style(Style::default().bg(if i == 0 { ORANGE } else { t.background }))
+                .background(if i == 0 { ORANGE } else { t.background })
         }),
     )
     .style(full(142).gap(12))
@@ -440,7 +428,7 @@ fn layout(app: &Studio, t: &Theme) -> View<Msg> {
                 .child(tiles)
                 .child(action_button(
                     "Next tile",
-                    Msg::Tile((1 - app.tile) as i32),
+                    StudioAction::Tile((1 - app.tile) as i32),
                     t,
                 )),
             ]),
@@ -463,22 +451,19 @@ fn layout(app: &Studio, t: &Theme) -> View<Msg> {
                 .child(
                     studio_row().children([
                         studio_column()
-                            .style(
-                                Style::default()
-                                    .width(Size::Percent(30))
-                                    .height(Size::Px(140))
-                                    .bg(TEAL)
-                                    .radius(10)
-                                    .pad(16),
-                            )
+                            .width(percent(30))
+                            .height(px(140))
+                            .background(TEAL)
+                            .radius(10)
+                            .padding(16)
                             .child(styled_label("Side", WHITE, t.body_font)),
-                        studio_column()
-                            .style(Style::default().flex_grow(1).gap(12))
-                            .children(["Header", "Content", "Footer"].iter().map(|name| {
-                                obj().style(full(38).bg(t.background).radius(8)).child(
-                                    text(name, t).style(Style::default().align(Align::Center)),
-                                )
-                            })),
+                        studio_column().grow(1).gap(12).children(
+                            ["Header", "Content", "Footer"].iter().map(|name| {
+                                obj()
+                                    .style(full(38).background(t.background).radius(8))
+                                    .child(text(name, t).align(Align::Center))
+                            }),
+                        ),
                     ]),
                 ),
             ]),
@@ -520,35 +505,28 @@ fn sample_image(alternate: bool) -> ImageSource {
     ImageSource::rgb565(72, 72, if alternate { &TILE_B } else { &TILE_A })
 }
 
-fn media(app: &Studio, t: &Theme) -> View<Msg> {
+fn media(app: &Studio, t: &Theme) -> View<StudioAction> {
     studio_column()
         .child(
             studio_row().children([
                 third(card("Still & interactive", "Image / image button", t), 264)
                     .child(
                         studio_row()
-                            .style(
-                                Style::default()
-                                    .flex_align(FlexAlign::SpaceAround, FlexAlign::Center),
-                            )
+                            .flex_align(FlexAlign::SpaceAround, FlexAlign::Center)
                             .children([
                                 rs_lvgl_ui::image(sample_image(false)),
                                 image_button(sample_image(false))
-                                    .style(
-                                        Style::default().width(Size::Px(72)).height(Size::Px(72)),
-                                    )
+                                    .width(px(72))
+                                    .height(px(72))
                                     .pressed_image(sample_image(true))
-                                    .on_click(Msg::Click),
+                                    .on_click(StudioAction::Click),
                             ]),
                     )
                     .child(text(&format!("{} image actions", app.clicks), t)),
                 third(card("Frame by frame", "Animated image / GIF", t), 264)
                     .child(
                         studio_row()
-                            .style(
-                                Style::default()
-                                    .flex_align(FlexAlign::SpaceAround, FlexAlign::Center),
-                            )
+                            .flex_align(FlexAlign::SpaceAround, FlexAlign::Center)
                             .children([
                                 anim_image([sample_image(false), sample_image(true)], 1400),
                                 gif(Gif::new(Rc::<[u8]>::from(
@@ -556,10 +534,7 @@ fn media(app: &Studio, t: &Theme) -> View<Msg> {
                                 ))),
                             ]),
                     )
-                    .child(
-                        text("Both animations run on native timers.", t)
-                            .style(Style::default().width(Size::Percent(100))),
-                    ),
+                    .child(text("Both animations run on native timers.", t).width(percent(100))),
                 third(card("Vector in motion", "Lottie / ThorVG", t), 264).child(lottie(
                     Lottie::new(
                         Rc::<str>::from(include_str!("../assets/studio-motion.json")),
@@ -582,16 +557,13 @@ fn media(app: &Studio, t: &Theme) -> View<Msg> {
                             166,
                         )),
                         studio_column()
-                            .style(Style::default().flex_grow(1))
+                            .grow(1)
                             .child(styled_label(
                                 "Open source.\nMade to build on.",
                                 t.text,
                                 Font::montserrat_20(),
                             ))
-                            .child(
-                                text("github.com/umbrella22/rs_lvgl", t)
-                                    .style(Style::default().width(Size::Percent(100))),
-                            ),
+                            .child(text("github.com/umbrella22/rs_lvgl", t).width(percent(100))),
                     ]),
                 ),
                 half(
@@ -605,7 +577,7 @@ fn media(app: &Studio, t: &Theme) -> View<Msg> {
         )
 }
 
-fn canvas_page(t: &Theme) -> View<Msg> {
+fn canvas_page(t: &Theme) -> View<StudioAction> {
     let mut frame = Canvas::new(940, 205).background(INK, 255);
     for x in (20..940).step_by(40) {
         frame = frame.draw(DrawCommand::Line {
@@ -674,13 +646,11 @@ fn canvas_page(t: &Theme) -> View<Msg> {
         .child(
             studio_row().children([
                 third(card("Curved type", "Arc label", t), 248).child(
-                    arc_label("RUST / LVGL", 48, 200, 160).style(
-                        Style::default()
-                            .width(Size::Px(200))
-                            .height(Size::Px(130))
-                            .fg(TEAL)
-                            .font(Font::montserrat_16()),
-                    ),
+                    arc_label("RUST / LVGL", 48, 200, 160)
+                        .width(px(200))
+                        .height(px(130))
+                        .text_color(TEAL)
+                        .font(Font::montserrat_16()),
                 ),
                 third(
                     card("Native motion", "Scoped animation / reversible", t),
@@ -689,14 +659,11 @@ fn canvas_page(t: &Theme) -> View<Msg> {
                 .child(
                     obj().style(full(110)).scrollable(false).child(
                         obj()
-                            .style(
-                                Style::default()
-                                    .width(Size::Px(42))
-                                    .height(Size::Px(42))
-                                    .bg(ORANGE)
-                                    .radius(12)
-                                    .align(Align::LeftMid),
-                            )
+                            .width(px(42))
+                            .height(px(42))
+                            .background(ORANGE)
+                            .radius(12)
+                            .align(Align::LeftMid)
                             .animate(
                                 Animation::new(AnimationProperty::X, 12, 200, 1400)
                                     .reverse(1400)
@@ -710,23 +677,23 @@ fn canvas_page(t: &Theme) -> View<Msg> {
                     248,
                 )
                 .child(custom(super::native::Pulse::default()))
-                .child(action_button("Try a toast", Msg::Toast, t)),
+                .child(action_button("Try a toast", StudioAction::Toast, t)),
             ]),
         )
 }
 
-fn composition(app: &Studio, t: &Theme) -> View<Msg> {
+fn composition(app: &Studio, t: &Theme) -> View<StudioAction> {
     let list = list::list(
         t,
         [
             ListItem::new("Studio workspace")
                 .detail("Your components in one place")
-                .on_click(Msg::Click)
+                .on_click(StudioAction::Click)
                 .view(t),
             ListItem::new("Device settings")
                 .detail("Open the next page")
                 .chevron(true)
-                .on_click(Msg::Push)
+                .on_click(StudioAction::Push)
                 .view(t),
         ],
     )
@@ -734,11 +701,11 @@ fn composition(app: &Studio, t: &Theme) -> View<Msg> {
     let files = file_explorer::view(
         t,
         "/studio/assets",
-        Some(Msg::File(0)),
+        Some(StudioAction::File(0)),
         [
-            FileEntry::directory(1, "Animations", Msg::File(1)),
-            FileEntry::file(2, "studio-motion.json", Msg::File(2)),
-            FileEntry::file(3, "status.gif", Msg::File(3)),
+            FileEntry::directory(1, "Animations", StudioAction::File(1)),
+            FileEntry::file(2, "studio-motion.json", StudioAction::File(2)),
+            FileEntry::file(3, "status.gif", StudioAction::File(3)),
         ],
     )
     .style(full(160));
@@ -747,12 +714,12 @@ fn composition(app: &Studio, t: &Theme) -> View<Msg> {
             studio_row().children([
                 half(
                     Panel::new("Your workspace")
-                        .action(action_button("Details", Msg::Push, t))
+                        .action(action_button("Details", StudioAction::Push, t))
                         .child(list)
                         .view(t),
                     268,
                 )
-                .style(Style::default().radius(16)),
+                .radius(16),
                 half(
                     card(
                         "Files, without surprises",
@@ -785,7 +752,7 @@ fn composition(app: &Studio, t: &Theme) -> View<Msg> {
                                     },
                                     t,
                                 )
-                                .style(Style::default().width(Size::Percent(100))),
+                                .width(percent(100)),
                             )
                             .child(action_button(
                                 if app.nav.can_go_back() {
@@ -794,19 +761,18 @@ fn composition(app: &Studio, t: &Theme) -> View<Msg> {
                                     "Open device"
                                 },
                                 if app.nav.can_go_back() {
-                                    Msg::Back
+                                    StudioAction::Back
                                 } else {
-                                    Msg::Push
+                                    StudioAction::Push
                                 },
                                 t,
                             )),
-                        Msg::Back,
+                        StudioAction::Back,
                     )
                     .style(full(164)),
                 ),
                 half(
-                    card("A moment of attention", "Message box / modal / toast", t)
-                        .style(Style::default().gap(10)),
+                    card("A moment of attention", "Message box / modal / toast", t).gap(10),
                     306,
                 )
                 .child(
@@ -814,11 +780,11 @@ fn composition(app: &Studio, t: &Theme) -> View<Msg> {
                         .msgbox_title("Workspace prepared")
                         .msgbox_buttons(["Got it"])
                         .style(full(140))
-                        .on_value_changed(|_| Msg::Toast),
+                        .on_value_changed(|_| StudioAction::Toast),
                 )
-                .child(studio_row().style(Style::default().pad(6)).children([
-                    primary("Open dialog", Msg::Dialog(true), t),
-                    action_button("Show toast", Msg::Toast, t),
+                .child(studio_row().padding(6).children([
+                    primary("Open dialog", StudioAction::Dialog(true), t),
+                    action_button("Show toast", StudioAction::Toast, t),
                 ])),
             ]),
         )

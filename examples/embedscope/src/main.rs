@@ -9,7 +9,7 @@ const WIDTH: u32 = 320;
 const HEIGHT: u32 = 240;
 
 #[derive(Clone)]
-enum Msg {
+enum CounterAction {
     Increment,
 }
 
@@ -17,13 +17,15 @@ enum Msg {
 struct Counter(u32);
 
 impl App for Counter {
-    type Msg = Msg;
+    // This independent example uses published 0.3.1, whose App still names its
+    // associated type Msg. The unreleased workspace API uses Action instead.
+    type Msg = CounterAction;
 
-    fn update(&mut self, _: Msg) {
+    fn update(&mut self, _: CounterAction) {
         self.0 += 1;
     }
 
-    fn view(&self, theme: &Theme) -> View<Msg> {
+    fn view(&self, theme: &Theme) -> View<CounterAction> {
         column([
             label("rs_lvgl + EmbedScope"),
             label(format!("Count: {}", self.0)),
@@ -34,7 +36,7 @@ impl App for Counter {
                         .width(Size::Px(224))
                         .height(Size::Px(56)),
                 )
-                .on_click(Msg::Increment),
+                .on_click(CounterAction::Increment),
         ])
         .style(
             Style::surface(theme)

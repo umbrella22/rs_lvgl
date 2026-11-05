@@ -4,7 +4,7 @@ use rs_lvgl_ui::prelude::*;
 mod support;
 
 #[derive(Clone)]
-enum Msg {
+enum MixerAction {
     Volume(i32),
     Enabled(bool),
     Reset,
@@ -22,43 +22,44 @@ impl Default for Mixer {
     }
 }
 impl App for Mixer {
-    type Msg = Msg;
-    fn update(&mut self, msg: Msg) {
-        match msg {
-            Msg::Volume(value) => self.volume = value,
-            Msg::Enabled(value) => self.enabled = value,
-            Msg::Reset => *self = Self::default(),
+    type Action = MixerAction;
+    fn update(&mut self, action: MixerAction) {
+        match action {
+            MixerAction::Volume(value) => self.volume = value,
+            MixerAction::Enabled(value) => self.enabled = value,
+            MixerAction::Reset => *self = Self::default(),
         }
     }
-    fn view(&self, theme: &Theme) -> View<Msg> {
+    fn view(&self, theme: &Theme) -> View<MixerAction> {
         support::frame(
             theme,
             "Component dashboard",
             "A panel composes stateful controls without raw widgets.",
             Panel::new("Audio output")
-                .style(Style::default().height(Size::Percent(100)))
+                .style(style().height(percent(100)))
                 .child(
                     support::row()
                         .child(label(format!("Volume {}%", self.volume)))
-                        .child(switch(self.enabled).on_value_changed(|n| Msg::Enabled(n != 0))),
+                        .child(
+                            switch(self.enabled).on_value_changed(|n| MixerAction::Enabled(n != 0)),
+                        ),
                 )
                 .child(
                     slider(0, 100, self.volume)
-                        .style(
-                            Style::default()
-                                .width(Size::Percent(100))
-                                .height(Size::Px(18)),
-                        )
-                        .on_value_changed(Msg::Volume),
+                        .width(percent(100))
+                        .height(px(18))
+                        .on_value_changed(MixerAction::Volume),
                 )
                 .child(
-                    bar(0, 100, if self.enabled { self.volume } else { 0 }).style(
-                        Style::default()
-                            .width(Size::Percent(100))
-                            .height(Size::Px(16)),
-                    ),
+                    bar(0, 100, if self.enabled { self.volume } else { 0 })
+                        .width(percent(100))
+                        .height(px(16)),
                 )
-                .child(support::action(theme, "Restore defaults", Msg::Reset))
+                .child(support::action(
+                    theme,
+                    "Restore defaults",
+                    MixerAction::Reset,
+                ))
                 .view(theme),
         )
     }
@@ -73,8 +74,8 @@ mod tests {
     #[test]
     fn panel_restores_shared_state() {
         support::audit::check("sdl_demo", Mixer::default, |ui, app| {
-            ui.post(Msg::Volume(20)).unwrap();
-            ui.post(Msg::Enabled(false)).unwrap();
+            ui.post(MixerAction::Volume(20)).unwrap();
+            ui.post(MixerAction::Enabled(false)).unwrap();
             ui.drain(app, 8).unwrap();
             support::audit::click(ui, app, "Restore defaults");
             assert_eq!(app.volume, 65);

@@ -52,7 +52,7 @@ const BRIGHTNESS: [(Brightness, &str); 3] = [
 ];
 
 #[derive(Clone, Debug)]
-enum Msg {
+enum ComponentsAction {
     Nav(NavMsg<Page>),
     ToggleWifi,
     Brightness(Brightness),
@@ -88,14 +88,14 @@ impl Demo {
         }
     }
 
-    fn root_page(&self, theme: &Theme) -> View<Msg> {
+    fn root_page(&self, theme: &Theme) -> View<ComponentsAction> {
         list::list(
             theme,
             [
                 list::section(theme, "Network").key(Key::Named("net")),
                 ListItem::new("Wi-Fi")
                     .icon(symbol::WIFI)
-                    .trailing(switch(self.wifi).on_value_changed(|_| Msg::ToggleWifi))
+                    .trailing(switch(self.wifi).on_value_changed(|_| ComponentsAction::ToggleWifi))
                     .view(theme)
                     .key(Key::Named("wifi")),
                 list::section(theme, "Device").key(Key::Named("device")),
@@ -103,53 +103,61 @@ impl Demo {
                     .icon(symbol::IMAGE)
                     .detail(name(self.brightness))
                     .chevron(true)
-                    .on_click(Msg::Nav(NavMsg::Push(Page::Display)))
+                    .on_click(ComponentsAction::Nav(NavMsg::Push(Page::Display)))
                     .view(theme)
                     .key(Key::Named("display")),
-                nav::link(theme, "Logs", Msg::Nav(NavMsg::Push(Page::Logs)))
-                    .key(Key::Named("logs")),
+                nav::link(
+                    theme,
+                    "Logs",
+                    ComponentsAction::Nav(NavMsg::Push(Page::Logs)),
+                )
+                .key(Key::Named("logs")),
                 ListItem::new("Save")
                     .icon(symbol::SAVE)
-                    .on_click(Msg::Save)
+                    .on_click(ComponentsAction::Save)
                     .view(theme)
                     .key(Key::Named("save")),
                 ListItem::new("Reset")
                     .icon(symbol::TRASH)
-                    .on_click(Msg::AskReset)
+                    .on_click(ComponentsAction::AskReset)
                     .view(theme)
                     .key(Key::Named("reset")),
                 ListItem::new("Quit")
                     .icon(symbol::CLOSE)
-                    .on_click(Msg::Quit)
+                    .on_click(ComponentsAction::Quit)
                     .view(theme)
                     .key(Key::Named("quit")),
             ],
         )
     }
 
-    fn display_page(&self, theme: &Theme) -> View<Msg> {
+    fn display_page(&self, theme: &Theme) -> View<ComponentsAction> {
         list::list(
             theme,
             BRIGHTNESS.iter().map(|(level, label)| {
                 ListItem::new(*label)
                     .selected(*level == self.brightness)
-                    .on_click(Msg::Brightness(*level))
+                    .on_click(ComponentsAction::Brightness(*level))
                     .view(theme)
                     .key(Key::Named(label))
             }),
         )
     }
 
-    fn logs_page(&self, theme: &Theme) -> View<Msg> {
+    fn logs_page(&self, theme: &Theme) -> View<ComponentsAction> {
         Panel::new("Events")
-            .action(panel::icon_button(theme, symbol::SAVE, Msg::Save))
+            .action(panel::icon_button(
+                theme,
+                symbol::SAVE,
+                ComponentsAction::Save,
+            ))
             .children(
                 self.log
                     .iter()
                     .enumerate()
                     .map(|(index, line)| label(line.clone()).key(Key::Id(index as u64))),
             )
-            .style(Style::default().flex_grow(1).height(Size::Percent(100)))
+            .style(style().grow(1).height(percent(100)))
             .view(theme)
     }
 
@@ -167,27 +175,27 @@ fn name(level: Brightness) -> &'static str {
 }
 
 impl App for Demo {
-    type Msg = Msg;
+    type Action = ComponentsAction;
 
-    fn update(&mut self, msg: Msg) {
-        match msg {
-            Msg::Nav(msg) => self.nav.update(msg),
-            Msg::ToggleWifi => {
+    fn update(&mut self, action: ComponentsAction) {
+        match action {
+            ComponentsAction::Nav(navigation_action) => self.nav.update(navigation_action),
+            ComponentsAction::ToggleWifi => {
                 self.wifi = !self.wifi;
                 self.record(if self.wifi { "wifi on" } else { "wifi off" });
             }
-            Msg::Brightness(level) => {
+            ComponentsAction::Brightness(level) => {
                 self.brightness = level;
                 self.record(format!("brightness {}", name(level)));
             }
-            Msg::Save => {
+            ComponentsAction::Save => {
                 self.toasts
                     .push_kind(ToastKind::Success, "Settings saved", 2000);
                 self.record("saved");
             }
-            Msg::AskReset => self.confirm_reset = true,
-            Msg::CancelReset => self.confirm_reset = false,
-            Msg::Reset => {
+            ComponentsAction::AskReset => self.confirm_reset = true,
+            ComponentsAction::CancelReset => self.confirm_reset = false,
+            ComponentsAction::Reset => {
                 self.confirm_reset = false;
                 self.wifi = true;
                 self.brightness = Brightness::Medium;
@@ -195,24 +203,30 @@ impl App for Demo {
                 self.toasts.push("Settings reset", 2000);
                 self.record("reset");
             }
-            Msg::DismissToast(id) => self.toasts.dismiss(id),
-            Msg::Tick(elapsed) => {
+            ComponentsAction::DismissToast(id) => self.toasts.dismiss(id),
+            ComponentsAction::Tick(elapsed) => {
                 self.toasts.advance(elapsed);
             }
-            Msg::Quit => self.quit = true,
+            ComponentsAction::Quit => self.quit = true,
         }
     }
 
-    fn view(&self, theme: &Theme) -> View<Msg> {
+    fn view(&self, theme: &Theme) -> View<ComponentsAction> {
         let (title, page) = match self.nav.current() {
             Page::Root => ("Settings", self.root_page(theme)),
             Page::Display => ("Display", self.display_page(theme)),
             Page::Logs => ("Logs", self.logs_page(theme)),
         };
-        nav::view(&self.nav, theme, title, page, Msg::Nav(NavMsg::Back))
+        nav::view(
+            &self.nav,
+            theme,
+            title,
+            page,
+            ComponentsAction::Nav(NavMsg::Back),
+        )
     }
 
-    fn overlay(&self, theme: &Theme) -> Option<View<Msg>> {
+    fn overlay(&self, theme: &Theme) -> Option<View<ComponentsAction>> {
         if !self.confirm_reset && self.toasts.is_empty() {
             return None;
         }
@@ -221,13 +235,17 @@ impl App for Demo {
             children.push(
                 Dialog::new("Reset settings?")
                     .text("Wi-Fi and display settings return to their defaults.")
-                    .button("Cancel", Msg::CancelReset)
-                    .primary("Reset", Msg::Reset)
-                    .on_dismiss(Msg::CancelReset)
+                    .button("Cancel", ComponentsAction::CancelReset)
+                    .primary("Reset", ComponentsAction::Reset)
+                    .on_dismiss(ComponentsAction::CancelReset)
                     .view(theme),
             );
         }
-        children.push(toast::view(&self.toasts, theme, Msg::DismissToast));
+        children.push(toast::view(
+            &self.toasts,
+            theme,
+            ComponentsAction::DismissToast,
+        ));
         Some(layers(children))
     }
 }
@@ -265,7 +283,7 @@ fn main() {
         // Toasts count down in application state. Posting a tick only while
         // toasts are visible keeps an idle loop from re-rendering.
         if !app.toasts.is_empty() {
-            let _ = ui.post(Msg::Tick(elapsed.as_millis() as u32));
+            let _ = ui.post(ComponentsAction::Tick(elapsed.as_millis() as u32));
         }
         match runtime::frame(&mut ui, &mut app, 32) {
             Ok(Some(_)) => {}

@@ -2,7 +2,7 @@
 use super::*;
 use rs_lvgl::NativeObject;
 
-pub(super) fn view(app: &Studio, t: &Theme) -> View<Msg> {
+pub(super) fn view(app: &Studio, t: &Theme) -> View<StudioAction> {
     let mut samples = Vec::new();
     for (kind, title, caption) in [
         (0, "Native list", "Select a sample action"),
@@ -51,11 +51,8 @@ pub(super) fn view(app: &Studio, t: &Theme) -> View<Msg> {
     ;
         samples.push(
             card(title, caption, t)
-                .style(
-                    Style::default()
-                        .width(Size::Percent(32))
-                        .height(Size::Px(430)),
-                )
+                .width(percent(32))
+                .height(px(430))
                 .child(sample)
                 .on_bubbled_event(|event| {
                     matches!(
@@ -66,14 +63,14 @@ pub(super) fn view(app: &Studio, t: &Theme) -> View<Msg> {
                                 ..
                             })
                     )
-                    .then_some(Msg::Click)
+                    .then_some(StudioAction::Click)
                 }),
         );
     }
     studio_column().child(studio_row().children(samples))
-        .child(card("One native provider. Three ways to build.", "Typed views / imperative widgets / raw C bindings",t).style(Style::default().height(Size::Px(128)))
+        .child(card("One native provider. Three ways to build.", "Typed views / imperative widgets / raw C bindings",t).height(px(128))
             .child(text(&format!("{} native actions received. Native samples keep their children and callbacks inside one mounted subtree.",app.clicks),t)
-                .style(Style::default().width(Size::Percent(100)))))
+                .width(percent(100))))
 }
 
 #[derive(Default)]

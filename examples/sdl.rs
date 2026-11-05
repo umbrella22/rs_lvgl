@@ -3,7 +3,7 @@ use rs_lvgl_ui::{App, Theme, View};
 mod support;
 
 #[derive(Clone)]
-enum Msg {
+enum CounterAction {
     Increment,
     Decrement,
 }
@@ -12,14 +12,14 @@ struct Counter {
     value: i32,
 }
 impl App for Counter {
-    type Msg = Msg;
-    fn update(&mut self, msg: Msg) {
-        match msg {
-            Msg::Increment => self.value += 1,
-            Msg::Decrement => self.value -= 1,
+    type Action = CounterAction;
+    fn update(&mut self, action: CounterAction) {
+        match action {
+            CounterAction::Increment => self.value += 1,
+            CounterAction::Decrement => self.value -= 1,
         }
     }
-    fn view(&self, theme: &Theme) -> View<Msg> {
+    fn view(&self, theme: &Theme) -> View<CounterAction> {
         support::frame(
             theme,
             "Native SDL window",
@@ -28,8 +28,8 @@ impl App for Counter {
                 .child(support::value(theme, format!("Count: {}", self.value)))
                 .child(
                     support::row()
-                        .child(support::action(theme, "Subtract", Msg::Decrement))
-                        .child(support::action(theme, "Add", Msg::Increment)),
+                        .child(support::action(theme, "Subtract", CounterAction::Decrement))
+                        .child(support::action(theme, "Add", CounterAction::Increment)),
                 ),
         )
     }

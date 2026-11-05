@@ -3,7 +3,7 @@ use rs_lvgl_ui::prelude::*;
 mod support;
 
 #[derive(Clone)]
-enum Msg {
+enum ScaleAction {
     Value(i32),
     Reset,
 }
@@ -16,14 +16,14 @@ impl Default for Ruler {
     }
 }
 impl App for Ruler {
-    type Msg = Msg;
-    fn update(&mut self, msg: Msg) {
-        self.value = match msg {
-            Msg::Value(value) => value,
-            Msg::Reset => 50,
+    type Action = ScaleAction;
+    fn update(&mut self, action: ScaleAction) {
+        self.value = match action {
+            ScaleAction::Value(value) => value,
+            ScaleAction::Reset => 50,
         };
     }
-    fn view(&self, theme: &Theme) -> View<Msg> {
+    fn view(&self, theme: &Theme) -> View<ScaleAction> {
         support::frame(
             theme,
             "Scale and slider",
@@ -31,29 +31,24 @@ impl App for Ruler {
             support::column()
                 .child(support::value(theme, format!("Position {}", self.value)))
                 .child(
-                    scale(0, 100, 21, 5).style(
-                        Style::default()
-                            .width(Size::Percent(100))
-                            .height(Size::Px(64))
-                            .pad_left(20)
-                            .pad_right(20)
-                            .pad_top(10)
-                            .radius(6)
-                            .bg(Color::rgb(233, 238, 243))
-                            .bg_opacity(255)
-                            .fg(Color::rgb(25, 35, 47)),
-                    ),
+                    scale(0, 100, 21, 5)
+                        .width(percent(100))
+                        .height(px(64))
+                        .padding_left(20)
+                        .padding_right(20)
+                        .padding_top(10)
+                        .radius(6)
+                        .background(Color::rgb(233, 238, 243))
+                        .background_opacity(255)
+                        .text_color(Color::rgb(25, 35, 47)),
                 )
                 .child(
                     slider(0, 100, self.value)
-                        .style(
-                            Style::default()
-                                .width(Size::Percent(100))
-                                .height(Size::Px(18)),
-                        )
-                        .on_value_changed(Msg::Value),
+                        .width(percent(100))
+                        .height(px(18))
+                        .on_value_changed(ScaleAction::Value),
                 )
-                .child(support::action(theme, "Center", Msg::Reset)),
+                .child(support::action(theme, "Center", ScaleAction::Reset)),
         )
     }
 }

@@ -44,7 +44,7 @@ fn init_capture() -> (Display, Buffer) {
 struct SnapshotApp;
 
 impl App for SnapshotApp {
-    type Msg = ();
+    type Action = ();
 
     fn update(&mut self, _: ()) {}
 
@@ -52,7 +52,7 @@ impl App for SnapshotApp {
         let block = |id: u64, color: Color| {
             obj().key(Key::Id(id)).style(
                 Style::default()
-                    .bg(color)
+                    .background(color)
                     .width(Size::Px(20))
                     .height(Size::Px(20)),
             )

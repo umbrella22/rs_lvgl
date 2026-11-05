@@ -6,9 +6,9 @@ use std::{cell::RefCell, rc::Rc};
 
 struct Messages(Vec<i32>);
 impl App for Messages {
-    type Msg = i32;
-    fn update(&mut self, msg: i32) {
-        self.0.push(msg);
+    type Action = i32;
+    fn update(&mut self, action: i32) {
+        self.0.push(action);
     }
     fn view(&self, _: &Theme) -> View<i32> {
         button("Post").on_click(7)
@@ -74,7 +74,7 @@ fn wrong_kind_modifier_survives_map_and_has_explicit_mode() {
     let mut ui = Ui::new(&display, theme()).unwrap();
     struct Invalid;
     impl App for Invalid {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             column([label("public").password(true).map(|_: ()| ())])
@@ -110,7 +110,7 @@ fn diagnostics_identify_nested_paths_and_balance_failures() {
     })));
     struct Invalid;
     impl App for Invalid {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             column([
@@ -166,7 +166,7 @@ fn diagnostics_identify_nested_paths_and_balance_failures() {
     }
     struct Failure;
     impl App for Failure {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             column([label("valid"), custom(Fails).key(Key::Named("failure"))])
@@ -194,7 +194,7 @@ fn diagnostics_identify_nested_paths_and_balance_failures() {
     assert_eq!(ui.stats().mounted_nodes, 0);
     struct Recovered;
     impl App for Recovered {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             label("recovered")
@@ -222,17 +222,17 @@ fn render_decisions_merge_and_preserve_dirty_overlay_and_first_mount() {
         views: Cell<usize>,
     }
     impl App for Page {
-        type Msg = Msg;
-        fn update(&mut self, msg: Msg) {
-            match msg {
+        type Action = Msg;
+        fn update(&mut self, action: Msg) {
+            match action {
                 Msg::Quiet => {}
                 Msg::Change => self.value += 1,
                 Msg::Overlay => self.overlay = !self.overlay,
             }
         }
-        fn update_with_render(&mut self, msg: Msg) -> RenderDecision {
-            let quiet = matches!(msg, Msg::Quiet);
-            self.update(msg);
+        fn update_with_render(&mut self, action: Msg) -> RenderDecision {
+            let quiet = matches!(action, Msg::Quiet);
+            self.update(action);
             if quiet {
                 RenderDecision::Skip
             } else {
@@ -262,8 +262,8 @@ fn render_decisions_merge_and_preserve_dirty_overlay_and_first_mount() {
     ui.post(Msg::Quiet).unwrap();
     assert!(!ui.drain(&mut app, 8).unwrap().reconciled);
     assert_eq!(app.views.get(), initial);
-    for msg in [Msg::Quiet, Msg::Change, Msg::Quiet] {
-        ui.post(msg).unwrap();
+    for action in [Msg::Quiet, Msg::Change, Msg::Quiet] {
+        ui.post(action).unwrap();
     }
     assert!(ui.drain(&mut app, 8).unwrap().reconciled);
     assert_eq!(app.views.get(), initial + 1);
@@ -287,7 +287,7 @@ fn stable_children_restore_externally_changed_native_order() {
     let display = init();
     struct Page;
     impl App for Page {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             column((0..3).map(|id| label_static("fixed").key(Key::Id(id))))
@@ -326,7 +326,7 @@ fn dedicated_modifiers_reject_wrong_kinds_and_accept_textarea() {
     let display = init();
     struct Page(u8);
     impl App for Page {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             match self.0 {
@@ -353,7 +353,7 @@ fn reordered_diagnostic_path_uses_destination_child_index() {
     let display = init();
     struct Page(bool);
     impl App for Page {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             let ids = if self.0 { [2, 1] } else { [1, 2] };

@@ -50,7 +50,7 @@ fn file_entries_accept_keys_and_preserve_focus_across_reorder() {
         selected: Vec<u64>,
     }
     impl App for Files {
-        type Msg = u64;
+        type Action = u64;
         fn update(&mut self, id: u64) {
             self.selected.push(id);
         }
@@ -110,7 +110,7 @@ struct Board {
     clicks: Vec<u64>,
 }
 impl App for Board {
-    type Msg = u64;
+    type Action = u64;
     fn update(&mut self, id: u64) {
         self.clicks.push(id);
     }
@@ -275,7 +275,7 @@ struct Modals {
     remove_origin: bool,
 }
 impl App for Modals {
-    type Msg = ();
+    type Action = ();
     fn update(&mut self, _: ()) {}
     fn view(&self, _: &Theme) -> View<()> {
         let mut root = column([]);
@@ -392,7 +392,7 @@ fn dialog_marks_modal_and_invalid_grid_scope_preserves_existing_tree() {
     use rs_lvgl_ui::components::dialog::Dialog;
     struct TestApp(u8);
     impl App for TestApp {
-        type Msg = ();
+        type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             match self.0 {

@@ -14,7 +14,7 @@ use rs_lvgl::Display;
 use rs_lvgl_ui::prelude::*;
 
 #[derive(Clone, Debug)]
-enum Msg {
+enum FanSettingsAction {
     SpeedChanged(i32),
     ToggleMute,
     Select(usize),
@@ -40,66 +40,82 @@ impl Settings {
 }
 
 impl App for Settings {
-    type Msg = Msg;
+    type Action = FanSettingsAction;
 
-    fn update(&mut self, msg: Msg) {
-        match msg {
-            Msg::SpeedChanged(value) => self.speed = value,
-            Msg::ToggleMute => self.muted = !self.muted,
-            Msg::Select(index) => self.selected = index,
-            Msg::Save => self.saves += 1,
+    fn update(&mut self, action: FanSettingsAction) {
+        match action {
+            FanSettingsAction::SpeedChanged(value) => self.speed = value,
+            FanSettingsAction::ToggleMute => self.muted = !self.muted,
+            FanSettingsAction::Select(index) => self.selected = index,
+            FanSettingsAction::Save => self.saves += 1,
         }
     }
 
-    fn view(&self, theme: &Theme) -> View<Msg> {
+    fn view(&self, theme: &Theme) -> View<FanSettingsAction> {
         let modes = ["Auto", "Manual", "Night"];
 
         column([
-            label("Fan settings").style(Style::title(theme)),
+            label("Fan settings")
+                .font(theme.title_font)
+                .text_color(theme.text),
             row([
                 label("Speed")
                     .key(Key::Named("speed-label"))
-                    .style(Style::body(theme)),
+                    .font(theme.body_font)
+                    .text_color(theme.text),
                 slider(0, 100, self.speed)
                     .key(Key::Named("speed"))
-                    .style(Style::default().height(Size::Px(16)).flex_grow(1))
-                    .on_value_changed(Msg::SpeedChanged),
+                    .height(px(16))
+                    .grow(1)
+                    .on_value_changed(FanSettingsAction::SpeedChanged),
             ])
-            .style(Style::surface(theme).width(Size::Percent(100)).gap(12)),
+            .style(Style::surface(theme))
+            .width(percent(100))
+            .gap(12),
             row([
                 label(if self.muted { "Muted" } else { "Sound on" })
                     .key(Key::Named("mute-label"))
-                    .style(Style::body(theme)),
+                    .font(theme.body_font)
+                    .text_color(theme.text),
                 switch(self.muted)
                     .key(Key::Named("mute"))
-                    .on_value_changed(|_| Msg::ToggleMute),
+                    .on_value_changed(|_| FanSettingsAction::ToggleMute),
             ])
-            .style(Style::surface(theme).width(Size::Percent(100)).gap(12)),
-            column([label("Mode").style(Style::muted(theme))])
+            .style(Style::surface(theme))
+            .width(percent(100))
+            .gap(12),
+            column([label("Mode").font(theme.body_font).text_color(theme.muted)])
                 .key(Key::Named("modes"))
-                .style(Style::surface(theme).width(Size::Percent(100)).gap(8))
+                .style(Style::surface(theme))
+                .width(percent(100))
+                .gap(8)
                 .children(modes.iter().enumerate().map(|(index, mode)| {
                     button(*mode)
                         .key(Key::Id(index as u64))
                         .style(if index == self.selected {
                             Style::accent(theme)
                         } else {
-                            Style::body(theme).bg(theme.surface).shadow_width(0)
+                            Style::body(theme).background(theme.surface).shadow_width(0)
                         })
-                        .on_click(Msg::Select(index))
+                        .on_click(FanSettingsAction::Select(index))
                 })),
             row([
                 label(format!("Speed {}%", self.speed))
                     .key(Key::Named("summary"))
-                    .style(Style::body(theme).flex_grow(1)),
+                    .font(theme.body_font)
+                    .text_color(theme.text)
+                    .grow(1),
                 button("Save")
                     .key(Key::Named("save"))
                     .style(Style::accent(theme))
-                    .on_click(Msg::Save),
+                    .on_click(FanSettingsAction::Save),
             ])
-            .style(Style::default().width(Size::Percent(100)).gap(12)),
+            .width(percent(100))
+            .gap(12),
         ])
-        .style(Style::screen(theme).gap(12).pad(16))
+        .style(Style::screen(theme))
+        .gap(12)
+        .padding(16)
     }
 }
 
@@ -114,10 +130,11 @@ fn main() {
     ui.mount(&app).expect("initial mount");
     let mounted = ui.stats();
 
-    ui.post(Msg::SpeedChanged(85)).expect("post speed");
-    ui.post(Msg::ToggleMute).expect("post mute");
-    ui.post(Msg::Select(2)).expect("post select");
-    ui.post(Msg::Save).expect("post save");
+    ui.post(FanSettingsAction::SpeedChanged(85))
+        .expect("post speed");
+    ui.post(FanSettingsAction::ToggleMute).expect("post mute");
+    ui.post(FanSettingsAction::Select(2)).expect("post select");
+    ui.post(FanSettingsAction::Save).expect("post save");
     let drained = ui.drain(&mut app, 16).expect("drain");
 
     let updated = ui.stats();

@@ -18,25 +18,25 @@ extern crate alloc;
 use rs_lvgl_ui::prelude::*;
 
 #[derive(Clone)]
-pub enum Msg { Increment, Child(()) }
+pub enum CounterAction { Increment, Child(()) }
 pub struct Counter(pub u32);
 impl App for Counter {
-    type Msg = Msg;
-    fn update(&mut self, _: Msg) { self.0 += 1; }
-    fn view(&self, theme: &Theme) -> View<Msg> {
+    type Action = CounterAction;
+    fn update(&mut self, _: CounterAction) { self.0 += 1; }
+    fn view(&self, theme: &Theme) -> View<CounterAction> {
         column([
-            label(alloc::format!("Count: {}", self.0)),
+            label(alloc::format!("Count: {}", self.0)).font(theme.title_font).text_color(theme.text),
             row([
-                button("Add").style(Style::accent(theme)).on_click(Msg::Increment),
-                child().map(Msg::Child),
+                button("Add").style(Style::accent(theme)).on_click(CounterAction::Increment),
+                child().map(CounterAction::Child),
             ]),
             grid([GridTrack::Fr(1)], [GridTrack::Content], [
                 label("Cell").grid_cell(0, 0, 1, 1),
             ]),
             obj().children(core::iter::once(label("Absolute"))),
-        ]).style(Style::default().gap(12))
+        ]).gap(12)
     }
-    fn overlay(&self, _: &Theme) -> Option<View<Msg>> { Some(column([])) }
+    fn overlay(&self, _: &Theme) -> Option<View<CounterAction>> { Some(column([])) }
 }
 fn child() -> View<()> { button("Child").on_click(()) }
 pub fn dynamic(items: &[u64]) -> View<()> {
@@ -49,10 +49,64 @@ pub fn into_view(node: rs_lvgl_ui::Node<()>) -> View<()> { node }
 pub fn into_node(view: View<()>) -> rs_lvgl_ui::Node<()> { view }
 """
 
+APP_ACTIONS = """#![no_std]
+use rs_lvgl_ui::prelude::*;
+#[derive(Clone)]
+pub enum FanAction { SetSpeed(i32) }
+pub struct Fan;
+impl App for Fan {
+    type Action = FanAction;
+    fn update(&mut self, _action: Self::Action) {}
+    fn view(&self, _: &Theme) -> View<Self::Action> {
+        button("Set speed").on_click(FanAction::SetSpeed(40))
+    }
+    fn overlay(&self, _: &Theme) -> Option<View<Self::Action>> { None }
+}
+pub fn run<A: App<Action = FanAction>>(ui: &mut Ui<FanAction>, app: &mut A) {
+    let _ = ui.mount(app);
+    let _ = ui.drain(app, 1);
+    let _ = ui.update(app);
+}
+pub fn action_type(action: <Fan as App>::Action) -> FanAction { action }
+"""
+
 SELECTIVE = """#![no_std]
 use rs_lvgl_ui::prelude::*;
 pub fn from_root() -> View<()> { rs_lvgl_ui::slider(0, 100, 20) }
 pub fn from_prelude() -> View<()> { slider(0, 100, 30).on_value_changed(|_| ()) }
+"""
+
+FLAT_STYLES = """#![no_std]
+use rs_lvgl_ui::prelude::*;
+pub fn from_prelude(theme: &Theme) -> View<()> {
+    column([label("Title").font(theme.title_font).text_color(theme.text)])
+        .gap(12).padding(16).padding_left(0).padding_right(1)
+        .padding_top(2).padding_bottom(3)
+        .width(percent(100)).height(content()).grow(1)
+        .min_width(px(8)).max_width(px(200)).min_height(px(0)).max_height(px(240))
+        .background(theme.surface).background_opacity(128).opacity(240)
+        .border(theme.accent, 1).radius(8).align(Align::Center)
+        .text_align(TextAlign::Center).offset(-1, 2).floating(false)
+        .flex_align(FlexAlign::Start, FlexAlign::Center).hidden(false).disabled(false)
+        .shadow_width(0).outline_width(0).text_letter_space(0)
+        .arc_color(theme.accent).arc_width(2).anim_duration(0)
+        .style(style().padding_top(0))
+        .state_style(State::PRESSED, style().opacity(200))
+}
+pub fn from_root() -> rs_lvgl_ui::View<()> {
+    rs_lvgl_ui::obj().width(rs_lvgl_ui::px(40)).height(rs_lvgl_ui::content())
+        .max_width(rs_lvgl_ui::percent(100)).style(rs_lvgl_ui::style().gap(0))
+}
+pub fn inspect_patch(patch: Style) {
+    let _: Color = patch.background_value();
+    let _: u8 = patch.background_opacity_value();
+    let _: Color = patch.text_color_value();
+    let _: i16 = patch.padding_left_value();
+    let _: i16 = patch.padding_right_value();
+    let _: i16 = patch.padding_top_value();
+    let _: i16 = patch.padding_bottom_value();
+    let _: u8 = patch.grow_value();
+}
 """
 
 UNTRUSTED_NATIVE_OBJECT = """#![no_std]
@@ -87,17 +141,17 @@ fn is_copy<T: Copy>() {}
 pub fn preserved_copy() {
     is_copy::<Font>(); is_copy::<Style>(); is_copy::<Theme>(); is_copy::<ImageSource>();
 }
-pub fn policies(ui: &mut Ui<Msg>, font: FontResource) -> View<Msg> {
+pub fn policies(ui: &mut Ui<CounterAction>, font: FontResource) -> View<CounterAction> {
     let policy = QueuePolicy::new(QueueOverflow::RejectNew).coalesce(|_, _| None);
-    let _ = ui.post_with(Msg::Increment, policy);
+    let _ = ui.post_with(CounterAction::Increment, policy);
     ui.set_event_queue_policy(policy);
-    ui.set_event_queue_observer(Some(alloc::rc::Rc::new(|_: PostOutcome<Msg>| {})));
+    ui.set_event_queue_observer(Some(alloc::rc::Rc::new(|_: PostOutcome<CounterAction>| {})));
     let _: QueueStats = ui.queue_stats();
     label_static("loaded font").font_resource(font)
 }
 pub struct Quiet;
 impl App for Quiet {
-    type Msg = ();
+    type Action = ();
     fn update(&mut self, _: ()) {}
     fn update_with_render(&mut self, _: ()) -> RenderDecision { RenderDecision::Skip }
     fn view(&self, _: &Theme) -> View<()> { label_static("quiet") }
@@ -175,10 +229,35 @@ def main():
               errors=("E0200",), symbols=("NativeObject",))
         check("external-unsafe-impl", BORROWED_NATIVE_OBJECT)
         check("core-no-std", CORE)
+        check("app-action-associated-type", APP_ACTIONS)
+        check("app-msg-associated-type-removed",
+              APP_ACTIONS.replace("type Action = FanAction;", "type Msg = FanAction;"),
+              errors=("E0437", "E0046"), symbols=("Msg", "Action"))
+        check("app-msg-projection-removed", APP_ACTIONS + '''
+pub fn old(_: <Fan as App>::Msg) {}
+''', errors=("E0576",), symbols=("Msg", "App"))
+        check("app-action-type-mismatch", APP_ACTIONS + '''
+pub fn wrong(app: &mut Fan) { app.update(()); }
+''', errors=("E0308",), symbols=("FanAction",))
+        check("flat-styles-no-std", FLAT_STYLES)
+        check("flat-styles-strict-no-std", FLAT_STYLES, features=("strict",))
+        check("explicit-size-unit-required", '''#![no_std]
+pub fn invalid() { let _ = rs_lvgl_ui::obj::<()>().width(100); }
+''', errors=("E0308",), symbols=("Size",))
+        for old, argument in (
+            ("bg", "rs_lvgl_ui::Color::rgb(1, 2, 3)"),
+            ("bg_opacity", "128"),
+            ("fg", "rs_lvgl_ui::Color::rgb(1, 2, 3)"),
+            ("pad", "8"), ("pad_left", "8"), ("pad_right", "8"),
+            ("pad_top", "8"), ("pad_bottom", "8"), ("flex_grow", "1"),
+        ):
+            check(f"removed-style-{old}",
+                  f'#![no_std]\npub fn old() {{ let _ = rs_lvgl_ui::style().{old}({argument}); }}\n',
+                  errors=("E0599",), symbols=(old,))
         check("additions-no-std", ADDITIONS)
         check("strict-no-std", ADDITIONS, features=("strict",))
         check("diagnostics-no-std", ADDITIONS + '''
-pub fn sink(ui: &mut Ui<Msg>) {
+pub fn sink(ui: &mut Ui<CounterAction>) {
     ui.set_diagnostic_sink(Some(alloc::rc::Rc::new(|_: rs_lvgl_ui::DiagnosticEvent| {})));
 }
 ''', features=("diagnostics",))

@@ -48,26 +48,29 @@ cargo run -p rs_lvgl_ui --example studio --features showcase
 
 ```toml
 [dependencies]
-rs_lvgl = { version = "0.3", default-features = false, features = ["alloc"] }
-rs_lvgl_ui = "0.3"
+rs_lvgl = { version = "0.4.0", default-features = false, features = ["alloc"] }
+rs_lvgl_ui = "0.4.0"
 ```
 
 `rs_lvgl` 和 `rs_lvgl_ui` 支持 `no_std`。在嵌入式设备上使用 UI 层时，
 需要提供分配器以及对应的显示和输入驱动。
 
-从 0.2 升级时，请阅读 [0.3 迁移与运行时契约](https://github.com/umbrella22/rs_lvgl/blob/main/docs/ui-runtime.md)，
-复核外部 `NativeObject` 实现，并检查动态资源要求的原生配置。
+[运行时契约](https://github.com/umbrella22/rs_lvgl/blob/main/docs/ui-runtime.md)说明了
+`NativeObject` 的安全要求、动态资源生命周期和原生配置。
 
 ## 描述界面
 
-`App` 保存应用状态，`view` 用普通函数构建 `View<Msg>`，输入通过消息交给 `update` 处理。
+`App` 保存应用状态，`view` 用普通函数构建 `View<CounterAction>`，输入通过消息交给 `update` 处理。
+
+下面的示例使用 0.4.0 API。`CounterAction` 是计数器自己的操作枚举，
+`type Action = CounterAction` 将它关联到框架；状态保存在 `Counter`，操作逻辑写在 `update` 中。
 `Ui` 负责将变化应用到 LVGL 控件。
 
 ```rust
 use rs_lvgl_ui::prelude::*;
 
 #[derive(Clone)]
-enum Msg {
+enum CounterAction {
     Increment,
 }
 
@@ -76,21 +79,23 @@ struct Counter {
 }
 
 impl App for Counter {
-    type Msg = Msg;
+    type Action = CounterAction;
 
-    fn update(&mut self, _: Msg) {
+    fn update(&mut self, _: CounterAction) {
         self.value += 1;
     }
 
-    fn view(&self, theme: &Theme) -> View<Msg> {
+    fn view(&self, theme: &Theme) -> View<CounterAction> {
         column([
-            label(format!("Count: {}", self.value)),
+            label(format!("Count: {}", self.value))
+                .font(theme.title_font)
+                .text_color(theme.text),
             button("Add one")
                 .key(Key::Named("increment"))
                 .style(Style::accent(theme))
-                .on_click(Msg::Increment),
+                .on_click(CounterAction::Increment),
         ])
-        .style(Style::default().gap(12))
+        .gap(12)
     }
 }
 ```
@@ -104,7 +109,7 @@ impl App for Counter {
 
 ```toml
 [dependencies.rs_lvgl_ui]
-version = "0.3"
+version = "0.4.0"
 default-features = false
 features = [
     "alloc", "components", "widget-slider", "widget-switch", "font-montserrat-16"
@@ -130,7 +135,7 @@ features = [
 
 ## AI 编程助手
 
-仓库提供 `rs-lvgl-ui` 和 `rs-lvgl-native` 两个 skill，包含 API 示例和集成说明，供编程助手使用。
+仓库提供面向 0.4.0 的 `rs-lvgl-ui` 和 `rs-lvgl-native` 两个 skill，包含 API 示例和集成说明，供编程助手使用。
 安装命令：
 
 ```sh

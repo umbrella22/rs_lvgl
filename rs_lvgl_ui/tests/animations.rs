@@ -12,14 +12,14 @@ struct Motion {
     transition: bool,
 }
 impl App for Motion {
-    type Msg = ();
+    type Action = ();
     fn update(&mut self, _: ()) {}
     fn view(&self, _: &Theme) -> View<()> {
         let mut style = Style::default()
             .outline_width(0)
             .width(rs_lvgl_ui::Size::Px(32))
             .height(rs_lvgl_ui::Size::Px(32))
-            .bg(rs_lvgl_ui::Color::rgb(80, 90, 100));
+            .background(rs_lvgl_ui::Color::rgb(80, 90, 100));
         if self.transition {
             style = style.transition(StyleTransition::new(
                 &[TransitionProperty::OutlineWidth],

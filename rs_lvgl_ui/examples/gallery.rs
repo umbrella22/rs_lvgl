@@ -26,7 +26,7 @@ const WIDTH: i32 = 480;
 const HEIGHT: i32 = 320;
 
 #[derive(Clone, Debug)]
-enum Msg {
+enum GalleryAction {
     Inc,
     Dec,
     Speed(i32),
@@ -62,15 +62,15 @@ impl Gallery {
 }
 
 impl App for Gallery {
-    type Msg = Msg;
+    type Action = GalleryAction;
 
-    fn update(&mut self, msg: Msg) {
-        match msg {
-            Msg::Inc => self.count += 1,
-            Msg::Dec => self.count -= 1,
-            Msg::Speed(value) => self.speed = value,
-            Msg::ToggleMute => self.muted = !self.muted,
-            Msg::MoveDown(id) => {
+    fn update(&mut self, action: GalleryAction) {
+        match action {
+            GalleryAction::Inc => self.count += 1,
+            GalleryAction::Dec => self.count -= 1,
+            GalleryAction::Speed(value) => self.speed = value,
+            GalleryAction::ToggleMute => self.muted = !self.muted,
+            GalleryAction::MoveDown(id) => {
                 if let Some(index) = self.items.iter().position(|item| *item == id) {
                     let item = self.items.remove(index);
                     let target = if index + 1 < self.items.len() {
@@ -81,86 +81,110 @@ impl App for Gallery {
                     self.items.insert(target, item);
                 }
             }
-            Msg::Add => {
+            GalleryAction::Add => {
                 self.items.push(self.next_id);
                 self.next_id += 1;
             }
-            Msg::ToggleTheme => self.dark = !self.dark,
-            Msg::Quit => self.quit = true,
+            GalleryAction::ToggleTheme => self.dark = !self.dark,
+            GalleryAction::Quit => self.quit = true,
         }
     }
 
-    fn view(&self, theme: &Theme) -> View<Msg> {
+    fn view(&self, theme: &Theme) -> View<GalleryAction> {
         column([
             row([
                 label("Mosaico gallery")
                     .key(Key::Named("title"))
-                    .style(Style::title(theme).flex_grow(1)),
+                    .font(theme.title_font)
+                    .text_color(theme.text)
+                    .grow(1),
                 button("Theme")
                     .key(Key::Named("theme"))
                     .style(Style::accent(theme))
-                    .on_click(Msg::ToggleTheme),
+                    .on_click(GalleryAction::ToggleTheme),
                 button("Quit")
                     .key(Key::Named("quit"))
                     .style(Style::accent(theme))
-                    .on_click(Msg::Quit),
+                    .on_click(GalleryAction::Quit),
             ])
-            .style(Style::default().width(Size::Percent(100)).gap(8)),
+            .width(percent(100))
+            .gap(8),
             row([
                 button("-")
                     .key(Key::Named("dec"))
                     .style(Style::accent(theme))
-                    .on_click(Msg::Dec),
+                    .on_click(GalleryAction::Dec),
                 label(format!("Count {}", self.count))
                     .key(Key::Named("count"))
-                    .style(Style::body(theme).flex_grow(1)),
+                    .font(theme.body_font)
+                    .text_color(theme.text)
+                    .grow(1),
                 button("+")
                     .key(Key::Named("inc"))
                     .style(Style::accent(theme))
-                    .on_click(Msg::Inc),
+                    .on_click(GalleryAction::Inc),
             ])
-            .style(Style::surface(theme).width(Size::Percent(100)).gap(12)),
+            .style(Style::surface(theme))
+            .width(percent(100))
+            .gap(12),
             row([
                 label(format!("Speed {}%", self.speed))
                     .key(Key::Named("speed-label"))
-                    .style(Style::body(theme)),
+                    .font(theme.body_font)
+                    .text_color(theme.text),
                 slider(0, 100, self.speed)
                     .key(Key::Named("speed"))
-                    .style(Style::default().height(Size::Px(16)).flex_grow(1))
-                    .on_value_changed(Msg::Speed),
+                    .height(px(16))
+                    .grow(1)
+                    .on_value_changed(GalleryAction::Speed),
             ])
-            .style(Style::surface(theme).width(Size::Percent(100)).gap(12)),
+            .style(Style::surface(theme))
+            .width(percent(100))
+            .gap(12),
             row([
                 label(if self.muted { "Muted" } else { "Sound on" })
                     .key(Key::Named("mute-label"))
-                    .style(Style::body(theme).flex_grow(1)),
+                    .font(theme.body_font)
+                    .text_color(theme.text)
+                    .grow(1),
                 switch(self.muted)
                     .key(Key::Named("mute"))
-                    .on_value_changed(|_| Msg::ToggleMute),
+                    .on_value_changed(|_| GalleryAction::ToggleMute),
             ])
-            .style(Style::surface(theme).width(Size::Percent(100)).gap(12)),
-            column([label("Keyed list").style(Style::muted(theme))])
-                .key(Key::Named("list"))
-                .style(Style::surface(theme).width(Size::Percent(100)).gap(8))
-                .children(self.items.iter().map(|id| {
-                    row([
-                        label(format!("Item {id}"))
-                            .key(Key::Named("label"))
-                            .style(Style::body(theme).flex_grow(1)),
-                        button("Move down")
-                            .key(Key::Named("down"))
-                            .style(Style::accent(theme))
-                            .on_click(Msg::MoveDown(*id)),
-                    ])
-                    .key(Key::Id(*id))
-                    .style(Style::default().width(Size::Percent(100)).gap(8))
-                })),
+            .style(Style::surface(theme))
+            .width(percent(100))
+            .gap(12),
+            column([label("Keyed list")
+                .font(theme.body_font)
+                .text_color(theme.muted)])
+            .key(Key::Named("list"))
+            .style(Style::surface(theme))
+            .width(percent(100))
+            .gap(8)
+            .children(self.items.iter().map(|id| {
+                row([
+                    label(format!("Item {id}"))
+                        .key(Key::Named("label"))
+                        .font(theme.body_font)
+                        .text_color(theme.text)
+                        .grow(1),
+                    button("Move down")
+                        .key(Key::Named("down"))
+                        .style(Style::accent(theme))
+                        .on_click(GalleryAction::MoveDown(*id)),
+                ])
+                .key(Key::Id(*id))
+                .width(percent(100))
+                .gap(8)
+            })),
             button("Add item")
                 .key(Key::Named("add"))
                 .style(Style::accent(theme))
-                .on_click(Msg::Add),
+                .on_click(GalleryAction::Add),
         ])
-        .style(Style::screen(theme).gap(12).pad(16))
+        .style(Style::screen(theme))
+        .gap(12)
+        .padding(16)
     }
 }
 

@@ -5,12 +5,12 @@
 //! typically from a tick message the platform posts every frame:
 //!
 //! ```ignore
-//! Msg::Tick(ms) => { self.toasts.advance(ms); }
-//! Msg::Saved => { self.toasts.push("Saved", 2000); }
-//! Msg::DismissToast(id) => self.toasts.dismiss(id),
+//! NotificationAction::Tick(ms) => { self.toasts.advance(ms); }
+//! NotificationAction::Saved => { self.toasts.push("Saved", 2000); }
+//! NotificationAction::DismissToast(id) => self.toasts.dismiss(id),
 //!
-//! fn overlay(&self, theme: &Theme) -> Option<View<Msg>> {
-//!     (!self.toasts.is_empty()).then(|| toast::view(&self.toasts, theme, Msg::DismissToast))
+//! fn overlay(&self, theme: &Theme) -> Option<View<NotificationAction>> {
+//!     (!self.toasts.is_empty()).then(|| toast::view(&self.toasts, theme, NotificationAction::DismissToast))
 //! }
 //! ```
 
@@ -134,29 +134,24 @@ pub fn view<M: Clone + 'static>(
         };
         crate::label(toast.text.clone())
             .key(Key::Id(toast.id))
-            .style(
-                Style::default()
-                    .bg(bg)
-                    .fg(fg)
-                    .font(theme.body_font)
-                    .pad(10)
-                    .radius(8)
-                    .text_align(TextAlign::Center),
-            )
+            .background(bg)
+            .text_color(fg)
+            .font(theme.body_font)
+            .padding(10)
+            .radius(8)
+            .text_align(TextAlign::Center)
             .clickable(true)
             .on_click(dismiss(toast.id))
     }))
     .key(Key::Named("toasts"))
-    .style(
-        Style::neutral()
-            .width(Size::Content)
-            .height(Size::Content)
-            .max_width(Size::Percent(90))
-            .gap(6)
-            .flex_align(FlexAlign::Start, FlexAlign::Center)
-            .align(Align::BottomMid)
-            .offset(0, -16),
-    )
+    .style(Style::neutral())
+    .width(Size::Content)
+    .height(Size::Content)
+    .max_width(Size::Percent(90))
+    .gap(6)
+    .flex_align(FlexAlign::Start, FlexAlign::Center)
+    .align(Align::BottomMid)
+    .offset(0, -16)
     .clickable(false)
     .scrollable(false)
 }

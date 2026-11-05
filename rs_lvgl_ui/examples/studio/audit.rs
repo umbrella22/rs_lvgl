@@ -4,7 +4,7 @@ mod coverage;
 #[path = "../support/audit.rs"]
 mod fixture;
 
-fn mount() -> (rs_lvgl::Display, Studio, Ui<Msg>) {
+fn mount() -> (rs_lvgl::Display, Studio, Ui<StudioAction>) {
     let display = fixture::init(WIDTH as u32, HEIGHT as u32);
     let app = Studio::default();
     let mut ui = Ui::new(&display, palette(false)).unwrap();
@@ -12,12 +12,12 @@ fn mount() -> (rs_lvgl::Display, Studio, Ui<Msg>) {
     ui.mount(&app).unwrap();
     (display, app, ui)
 }
-fn click(pointer: &mut fixture::Pointer, ui: &mut Ui<Msg>, app: &mut Studio, label: &str) {
+fn click(pointer: &mut fixture::Pointer, ui: &mut Ui<StudioAction>, app: &mut Studio, label: &str) {
     pointer.click(fixture::parent(fixture::label(fixture::screen(), label)));
     ui.drain(app, 128)
         .unwrap_or_else(|error| panic!("{label} on page {}: {error}", app.page));
 }
-fn page(pointer: &mut fixture::Pointer, ui: &mut Ui<Msg>, app: &mut Studio, index: usize) {
+fn page(pointer: &mut fixture::Pointer, ui: &mut Ui<StudioAction>, app: &mut Studio, index: usize) {
     click(
         pointer,
         ui,

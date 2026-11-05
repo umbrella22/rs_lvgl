@@ -75,7 +75,7 @@ fn end(before: usize) -> (usize, usize, usize, isize) {
 
 struct Page(u32);
 impl App for Page {
-    type Msg = ();
+    type Action = ();
     fn update(&mut self, _: ()) {
         self.0 += 1;
     }
@@ -167,5 +167,133 @@ fn measurements() {
     ui.unmount();
     drop(ui);
     // SAFETY: UI is gone; this memory display's flush completes synchronously.
+    unsafe { display.delete() };
+}
+
+struct StyledPage {
+    changed: bool,
+    reversed: bool,
+}
+
+impl App for StyledPage {
+    type Action = ();
+    fn update(&mut self, _: ()) {}
+    fn view(&self, theme: &Theme) -> View<()> {
+        column((0..24).map(|position| {
+            let id = if self.reversed {
+                23 - position
+            } else {
+                position
+            };
+            row([
+                label_static("Status")
+                    .font(theme.body_font)
+                    .text_color(theme.text),
+                button_static("Apply")
+                    .style(Style::accent(theme))
+                    .state_style(State::PRESSED, style().opacity(200)),
+            ])
+            .key(Key::Id(id))
+            .width(percent(100))
+            .gap(if self.changed { 10 } else { 6 })
+            .padding(4)
+        }))
+        .style(Style::screen(theme))
+        .gap(6)
+        .padding(8)
+    }
+}
+
+#[test]
+fn styled_measurements() {
+    assert_eq!(
+        rs_lvgl_sys::LV_USE_STDLIB_MALLOC,
+        rs_lvgl_sys::LV_STDLIB_BUILTIN,
+        "COST_UNOBSERVABLE_NATIVE: use check-ui-costs.py"
+    );
+    let before = begin();
+    std::hint::black_box(obj::<()>().gap(12).padding(16));
+    let construction = end(before);
+    assert_eq!(construction, (0, 0, 0, 0), "STYLE_CONSTRUCTION_ALLOCATED");
+    println!("STYLE_CONTROL:PASS");
+    println!(
+        "STYLE_SIZE_JSON:{{\"style\":{},\"view\":{},\"native_style\":{}}}",
+        core::mem::size_of::<Style>(),
+        core::mem::size_of::<View<()>>(),
+        core::mem::size_of::<rs_lvgl_sys::lv_style_t>()
+    );
+
+    let display = rs_lvgl::Display::register::<_, { 64 * 64 }>(64, 64, |_| {}).unwrap();
+    let mut ui = Ui::new(&display, Theme::dark()).unwrap();
+    let mut app = StyledPage {
+        changed: false,
+        reversed: false,
+    };
+    ui.mount(&app).unwrap();
+    ui.update(&app).unwrap();
+    // Prime both key orders and themes before measuring steady-state updates.
+    // The first reorder releases excess child-vector capacity from mounting.
+    app.reversed = true;
+    ui.update(&app).unwrap();
+    app.reversed = false;
+    ui.update(&app).unwrap();
+    ui.set_theme(Theme::light());
+    ui.update(&app).unwrap();
+    ui.set_theme(Theme::dark());
+    ui.update(&app).unwrap();
+    for scenario in [
+        "idle",
+        "unchanged",
+        "style-change",
+        "reorder",
+        "theme-change",
+    ] {
+        let native_before = native_usage();
+        let mut calls = 0;
+        let mut bytes = 0;
+        let mut peak = 0;
+        let mut live_delta = 0;
+        for index in 0..16 {
+            let before = begin();
+            match scenario {
+                "idle" => {
+                    assert!(!ui.drain(&mut app, 8).unwrap().reconciled);
+                }
+                "unchanged" => ui.update(&app).unwrap(),
+                "style-change" => {
+                    app.changed = !app.changed;
+                    ui.update(&app).unwrap();
+                }
+                "reorder" => {
+                    app.reversed = !app.reversed;
+                    ui.update(&app).unwrap();
+                }
+                _ => {
+                    ui.set_theme(if index % 2 == 0 {
+                        Theme::light()
+                    } else {
+                        Theme::dark()
+                    });
+                    assert!(ui.drain(&mut app, 8).unwrap().reconciled);
+                }
+            }
+            let sample = end(before);
+            calls += sample.0;
+            bytes += sample.1;
+            peak = peak.max(sample.2);
+            live_delta += sample.3;
+        }
+        let native_after = native_usage();
+        assert_eq!(live_delta, 0, "STYLE_RUST_GROWTH: {scenario}");
+        assert_eq!(native_after.used_cnt, native_before.used_cnt);
+        assert_eq!(native_after.free_size, native_before.free_size);
+        println!("STYLE_COST_JSON:{{\"scenario\":\"{scenario}\",\"updates\":16,\"rust_alloc_calls\":{calls},\"rust_requested_bytes\":{bytes},\"rust_peak_extra_bytes\":{peak},\"rust_live_delta\":{live_delta},\"native_used_before\":{},\"native_used_after\":{},\"native_live_blocks\":{},\"native_high_water_since_init\":{}}}",
+                 native_before.total_size - native_before.free_size,
+                 native_after.total_size - native_after.free_size,
+                 native_after.used_cnt, native_after.max_used);
+    }
+    ui.unmount();
+    drop(ui);
+    // SAFETY: no UI or pending asynchronous rendering remains on this display.
     unsafe { display.delete() };
 }

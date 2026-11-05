@@ -74,7 +74,7 @@ fn all_pages_render_and_file_actions_survive_navigation() {
         .iter()
         .enumerate()
     {
-        ui.post(Msg::Page(page)).unwrap();
+        ui.post(CapabilityGalleryAction::Page(page)).unwrap();
         ui.drain(&mut app, 64).unwrap();
         app.page = app.next_page.take().unwrap();
         ui.update(&app).unwrap();

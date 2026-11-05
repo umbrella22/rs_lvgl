@@ -3,7 +3,7 @@ use rs_lvgl_ui::prelude::*;
 mod support;
 
 #[derive(Clone)]
-enum Msg {
+enum ProgressAction {
     Advance,
     Reset,
 }
@@ -16,31 +16,25 @@ impl Default for Progress {
     }
 }
 impl App for Progress {
-    type Msg = Msg;
-    fn update(&mut self, msg: Msg) {
-        self.value = match msg {
-            Msg::Advance => (self.value + 10) % 110,
-            Msg::Reset => 0,
+    type Action = ProgressAction;
+    fn update(&mut self, action: ProgressAction) {
+        self.value = match action {
+            ProgressAction::Advance => (self.value + 10) % 110,
+            ProgressAction::Reset => 0,
         };
     }
-    fn view(&self, theme: &Theme) -> View<Msg> {
+    fn view(&self, theme: &Theme) -> View<ProgressAction> {
         support::frame(
             theme,
             "Progress bar",
             "The label and bar share the same value.",
             support::column()
                 .child(support::value(theme, format!("{}% complete", self.value)))
-                .child(
-                    bar(0, 100, self.value).style(
-                        Style::default()
-                            .width(Size::Percent(100))
-                            .height(Size::Px(24)),
-                    ),
-                )
+                .child(bar(0, 100, self.value).width(percent(100)).height(px(24)))
                 .child(
                     support::row()
-                        .child(support::action(theme, "Advance", Msg::Advance))
-                        .child(support::action(theme, "Reset", Msg::Reset)),
+                        .child(support::action(theme, "Advance", ProgressAction::Advance))
+                        .child(support::action(theme, "Reset", ProgressAction::Reset)),
                 ),
         )
     }

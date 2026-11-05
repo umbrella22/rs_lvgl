@@ -1,8 +1,23 @@
 //! Constructors for layout views.
 
-use crate::node::{GridTrack, Node, Tile, WidgetKind};
+use crate::node::{GridTrack, Node, Size, Tile, WidgetKind};
 use crate::View;
 use alloc::string::String;
+
+/// A dimension in pixels. Invalid negative dimensions fail view validation.
+pub const fn px(value: i16) -> Size {
+    Size::Px(value)
+}
+
+/// A dimension relative to the parent, in percent. Values may exceed 100.
+pub const fn percent(value: u8) -> Size {
+    Size::Percent(value)
+}
+
+/// Let LVGL size the object from its content.
+pub const fn content() -> Size {
+    Size::Content
+}
 
 /// An unstyled container for absolute positioning.
 pub fn obj<M>() -> View<M> {
@@ -28,13 +43,13 @@ pub fn row<M>(children: impl IntoIterator<Item = View<M>>) -> View<M> {
 /// use rs_lvgl_ui::prelude::*;
 ///
 /// fn page_title<M>(text: &str, theme: &Theme) -> View<M> {
-///     label(text).style(Style::title(theme))
+///     label(text).font(theme.title_font).text_color(theme.text)
 /// }
 ///
 /// fn settings_view(theme: &Theme) -> View<()> {
 ///     let content = label("Notification preferences");
 ///     let title = page_title("Settings", theme);
-///     column([title, content]).style(Style::default().gap(12))
+///     column([title, content]).gap(12)
 /// }
 /// # let _ = settings_view(&Theme::light());
 /// ```

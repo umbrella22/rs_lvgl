@@ -5,7 +5,7 @@ use std::time::Duration;
 mod support;
 
 #[derive(Clone)]
-enum Msg {
+enum TimerAction {
     Toggle,
 }
 #[derive(Default)]
@@ -20,11 +20,11 @@ impl LvClock for Clock {
     }
 }
 impl App for Clock {
-    type Msg = Msg;
-    fn update(&mut self, _: Msg) {
+    type Action = TimerAction;
+    fn update(&mut self, _: TimerAction) {
         self.paused = !self.paused;
     }
-    fn view(&self, theme: &Theme) -> View<Msg> {
+    fn view(&self, theme: &Theme) -> View<TimerAction> {
         support::frame(
             theme,
             "Rust clock",
@@ -35,16 +35,14 @@ impl App for Clock {
                     format!("{:.1} seconds", self.milliseconds as f64 / 1000.0),
                 ))
                 .child(
-                    bar(0, 10000, (self.milliseconds % 10001) as i32).style(
-                        Style::default()
-                            .width(Size::Percent(100))
-                            .height(Size::Px(24)),
-                    ),
+                    bar(0, 10000, (self.milliseconds % 10001) as i32)
+                        .width(percent(100))
+                        .height(px(24)),
                 )
                 .child(support::action(
                     theme,
                     if self.paused { "Resume" } else { "Pause" },
-                    Msg::Toggle,
+                    TimerAction::Toggle,
                 )),
         )
     }

@@ -57,16 +57,16 @@ impl Host {
 }
 
 impl App for Host {
-    type Msg = Msg;
+    type Action = Msg;
 
-    fn update(&mut self, msg: Msg) {
-        if let Msg::Nav(nav) = &msg {
+    fn update(&mut self, action: Msg) {
+        if let Msg::Nav(nav) = &action {
             self.nav.update(nav.clone());
         }
-        if let Msg::Dismiss(id) = &msg {
+        if let Msg::Dismiss(id) = &action {
             self.toasts.dismiss(*id);
         }
-        self.received.push(msg);
+        self.received.push(action);
     }
 
     fn view(&self, theme: &Theme) -> View<Msg> {

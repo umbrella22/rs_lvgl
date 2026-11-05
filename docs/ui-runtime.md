@@ -1,9 +1,13 @@
 # UI messages, loaded resources and diagnostics
 
-Version 0.3 adds explicit congestion outcomes, optional diagnostics, loaded
-resource retention and render feedback. Applications upgrading from 0.2 must
-review external `NativeObject` implementations as described below. The library
-continues to require `alloc` and one UI thread.
+The 0.4.0 runtime provides explicit congestion outcomes, optional diagnostics,
+loaded resource retention and render feedback. The library requires `alloc`
+and one UI thread. External `NativeObject` implementations must satisfy the
+safety requirements below.
+
+Views use flat style modifiers, explicit dimension helpers and component-specific
+action types through `App::Action`. The [style and action contracts](ui-styles.md)
+cover initialization, precedence, inheritance, theme values and action signatures.
 
 ```mermaid
 flowchart TD
@@ -20,9 +24,9 @@ flowchart TD
   R -->|failure| F[Delete affected subtree before releasing retained data]
 ```
 
-## Native handle migration
+## Native handle safety
 
-`NativeObject` is now an unsafe trait. External implementations must establish
+`NativeObject` is an unsafe trait. External implementations must establish
 that `raw()` refers to an aligned, initialized, live LVGL object in the current
 lifecycle on the UI thread, throughout every borrowing operation and its
 documented retention. `NonNull` establishes only the non-null property.
