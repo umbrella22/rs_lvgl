@@ -20,12 +20,12 @@ impl App for Motion {
         self.running = !self.running;
     }
     fn view(&self, theme: &Theme) -> View<MotionAction> {
-        let mut dot = obj()
+        let mut dot = container()
             .background(theme.accent)
             .radius(14)
             .width(px(28))
             .height(px(28))
-            .align(Align::LeftMid)
+            .align(Align::CenterLeft)
             .floating(true);
         if self.running {
             dot = dot.animate(
@@ -40,7 +40,7 @@ impl App for Motion {
             "Native animation",
             "LVGL animates a mounted node; messages control playback.",
             support::column()
-                .child(obj().width(percent(100)).height(px(100)).child(dot))
+                .child(container().width(percent(100)).height(px(100)).child(dot))
                 .child(support::action(
                     theme,
                     if self.running { "Pause" } else { "Resume" },

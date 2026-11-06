@@ -1,4 +1,4 @@
-use crate::{reconciler::MountedNode, ScrollDir, ScrollOffset};
+use crate::{reconciler::MountedNode, ScrollDirection, ScrollOffset};
 use core::ptr::NonNull;
 
 /// Native scrollbar visibility policy.
@@ -45,7 +45,7 @@ impl ScrollSnap {
 pub(crate) struct Interaction {
     pub event_bubble: Option<bool>,
     pub gesture_bubble: Option<bool>,
-    pub dir: Option<ScrollDir>,
+    pub dir: Option<ScrollDirection>,
     pub snap_x: Option<ScrollSnap>,
     pub snap_y: Option<ScrollSnap>,
     pub scrollbar: Option<ScrollbarMode>,

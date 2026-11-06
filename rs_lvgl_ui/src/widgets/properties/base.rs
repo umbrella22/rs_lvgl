@@ -14,17 +14,28 @@ pub(super) fn apply(
     parts: Parts,
 ) -> Result<(), UiError> {
     match (new, old) {
-        (Props::Label { text, long_mode }, old) => {
+        (
+            Props::Label {
+                text,
+                text_overflow,
+            },
+            old,
+        ) => {
             let (old_text, old_mode) = match old {
-                Some(Props::Label { text, long_mode }) => (Some(text.as_ref()), Some(*long_mode)),
+                Some(Props::Label {
+                    text,
+                    text_overflow,
+                }) => (Some(text.as_ref()), Some(*text_overflow)),
                 _ => (None, None),
             };
             if old_text != Some(text.as_ref()) {
                 set_label_text(obj, text);
             }
-            if old_mode != Some(*long_mode) {
+            if old_mode != Some(*text_overflow) {
                 // SAFETY: `obj` is a live label object.
-                unsafe { rs_lvgl_sys::lv_label_set_long_mode(obj.as_ptr(), long_mode.to_raw()) };
+                unsafe {
+                    rs_lvgl_sys::lv_label_set_long_mode(obj.as_ptr(), text_overflow.to_raw())
+                };
             }
         }
         (Props::Button { text }, old) => {

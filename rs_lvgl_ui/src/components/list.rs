@@ -17,7 +17,7 @@ use crate::View;
 use alloc::boxed::Box;
 use alloc::string::String;
 
-use crate::node::{FlexAlign, Key, LabelLongMode, Size, State, TextAlign, WidgetKind};
+use crate::node::{FlexAlign, ItemAlign, Key, Size, State, TextAlign, TextOverflow, WidgetKind};
 use crate::symbol;
 use crate::theme::{Style, Theme};
 
@@ -138,7 +138,9 @@ impl<M: Clone + 'static> ListItem<M> {
             .padding(10)
             .gap(10)
             .radius(6)
-            .flex_align(FlexAlign::Start, FlexAlign::Center);
+            .justify_content(FlexAlign::Start)
+            .align_items(ItemAlign::Center)
+            .align_content(FlexAlign::Center);
         let base = match self.style {
             Some(style) => base.merged(style),
             None => base,
@@ -165,7 +167,7 @@ impl<M: Clone + 'static> ListItem<M> {
         let content = self.content.map(|node| *node).unwrap_or_else(|| {
             View::new(WidgetKind::Label {
                 text: self.text,
-                long_mode: LabelLongMode::Dots,
+                text_overflow: TextOverflow::Ellipsis,
             })
         });
         row = row.child(super::slot(content, "text", crate::style().grow(1)));

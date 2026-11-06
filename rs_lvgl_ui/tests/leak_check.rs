@@ -184,7 +184,7 @@ impl App for TestApp {
                 .child(textarea("text").keyboard_id(1))
                 .child(pinyin_keyboard(1, Font::cjk_16())),
             8 => lottie(Lottie::new("{}", 32, 32)),
-            _ => obj().style(Style::default().width(Size::Px(-1))),
+            _ => container().style(Style::default().width(Size::Px(-1))),
         }
     }
     fn overlay(&self, theme: &Theme) -> Option<View<String>> {

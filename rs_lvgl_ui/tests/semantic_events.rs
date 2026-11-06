@@ -137,8 +137,8 @@ fn message_box_rejects_invalid_encoded_indices() {
     let mut ui = Ui::new(&display, Theme::dark()).unwrap();
     let mut page = Page {
         make: || {
-            msgbox("body")
-                .msgbox_buttons(["ok"])
+            message_box("body")
+                .message_box_buttons(["ok"])
                 .on_selection_changed(FieldAction::Selection)
         },
         received: vec![],

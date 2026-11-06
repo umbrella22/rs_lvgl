@@ -27,7 +27,7 @@ use alloc::vec::Vec;
 
 use super::list::ListItem;
 use super::panel::icon_button;
-use crate::node::{FlexAlign, Key, LabelLongMode, Size, WidgetKind};
+use crate::node::{FlexAlign, ItemAlign, Key, Size, TextOverflow, WidgetKind};
 use crate::symbol;
 use crate::theme::{Style, Theme};
 
@@ -128,7 +128,9 @@ pub fn view<M: Clone + 'static, P: Clone>(
         .width(Size::Percent(100))
         .padding(8)
         .gap(8)
-        .flex_align(FlexAlign::Start, FlexAlign::Center)
+        .justify_content(FlexAlign::Start)
+        .align_items(ItemAlign::Center)
+        .align_content(FlexAlign::Center)
         .scrollable(false);
     if state.can_go_back() {
         header = header.child(icon_button(theme, symbol::LEFT, back).key(Key::Named("back")));
@@ -136,7 +138,7 @@ pub fn view<M: Clone + 'static, P: Clone>(
     header = header.child(
         View::new(WidgetKind::Label {
             text: title.into(),
-            long_mode: LabelLongMode::Dots,
+            text_overflow: TextOverflow::Ellipsis,
         })
         .key(Key::Named("title"))
         .font(theme.title_font)

@@ -225,7 +225,7 @@ impl App for Studio {
                     Color::rgb(146, 156, 176),
                     Font::montserrat_12(),
                 )
-                .text_letter_space(2)
+                .letter_spacing(2)
                 .padding_bottom(28),
             )
             .children(PAGES.iter().enumerate().map(|(i, (name, _, _))| {
@@ -246,7 +246,7 @@ impl App for Studio {
                 })
                 .text_align(TextAlign::Left)
             }))
-            .child(obj().style(Style::neutral()).grow(1).clickable(false))
+            .child(container().grow(1).clickable(false))
             .child(styled_label(
                 "BUILT WITH RUST",
                 Color::rgb(146, 156, 176),
@@ -272,10 +272,12 @@ impl App for Studio {
             .child(
                 studio_row()
                     .height(px(54))
-                    .flex_align(FlexAlign::SpaceBetween, FlexAlign::Center)
+                    .justify_content(FlexAlign::SpaceBetween)
+                    .align_items(ItemAlign::Center)
+                    .align_content(FlexAlign::Center)
                     .child(
                         styled_label("RS / COMPONENT LIBRARY", theme.muted, Font::montserrat_12())
-                            .text_letter_space(2),
+                            .letter_spacing(2),
                     )
                     .child(studio_row().width(content()).padding(6).children([
                         action_button("Reset", StudioAction::Reset, theme),
@@ -303,13 +305,15 @@ impl App for Studio {
                     .width(percent(100))
                     .grow(1)
                     .scrollable(true)
-                    .scroll_dir(ScrollDir::VER)
+                    .scroll_direction(ScrollDirection::VERTICAL)
                     .scrollbar_mode(ScrollbarMode::Auto),
             )
             .child(
                 studio_row()
                     .height(px(24))
-                    .flex_align(FlexAlign::SpaceBetween, FlexAlign::Center)
+                    .justify_content(FlexAlign::SpaceBetween)
+                    .align_items(ItemAlign::Center)
+                    .align_content(FlexAlign::Center)
                     .child(text(&self.status, theme))
                     .child(text("LOCAL DEMO  /  SAMPLE DATA", theme)),
             );
@@ -353,14 +357,12 @@ fn palette(dark: bool) -> Theme {
 }
 fn studio_row() -> View<StudioAction> {
     rs_lvgl_ui::row([])
-        .style(Style::neutral())
         .width(percent(100))
         .gap(18)
         .scrollable(false)
 }
 fn studio_column() -> View<StudioAction> {
     rs_lvgl_ui::column([])
-        .style(Style::neutral())
         .width(percent(100))
         .gap(18)
         .scrollable(false)
@@ -416,7 +418,7 @@ fn action_button(value: &str, action: StudioAction, theme: &Theme) -> View<Studi
             State::FOCUSED,
             style()
                 .outline_width(2)
-                .outline_pad(2)
+                .outline_offset(2)
                 .outline_color(ORANGE),
         )
 }

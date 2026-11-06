@@ -1,7 +1,8 @@
 # View styling and application actions
 
-The `rs_lvgl_ui` 0.5.0 API uses flat style modifiers, reusable patches and
-component-specific action types.
+This checkout uses flat style modifiers, reusable patches and component-specific
+action types. Version 0.6.0 changes naming, transform units and layout/part APIs
+relative to 0.5.0; see the [migration guide](ui-api-migration.md).
 
 ## Local properties and reusable patches
 
@@ -38,12 +39,13 @@ fn settings_layout(theme: &Theme) -> View<()> {
 `style()` creates an unset reusable patch. Use it for shared values and
 part/state selectors. `Style::surface(theme)`, `Style::accent(theme)` and other
 presets also return reusable values. A preset may be combined with flat
-overrides: `obj().style(Style::surface(theme)).padding(20)`.
+overrides: `container().style(Style::surface(theme)).padding(20)`.
 
 `Style::default()` remains a Rust `Default` construction primitive. Application
-code does not need it to initialize a view. `Style::neutral()` has a different
-purpose: it explicitly clears non-inheritable container appearance/layout
-defaults, while leaving inheritable text properties unset. Applying it to a
+code does not need it to initialize a view. `Style::plain()` has a different
+purpose: it explicitly sets transparent background, zero border/radius/padding/gap,
+content sizing and top-left placement. Text inheritance, extended styles,
+offsets, floating and flex placement remain unset; it is not a complete reset. Applying it to a
 button can deliberately remove that button's native surface.
 
 ## Units, explicit fields and precedence
@@ -86,9 +88,25 @@ implicit black text from the unset patch's stored placeholder values.
 to request a translucent fill. `.background_opacity(128).background(color)`
 ends with an opaque fill, following the same call-order rule.
 
-Flat modifiers target the main style. `part_style`, `state_style` and
-`part_state_style` continue to take explicit `Style` patches. Native states
-switch without an application render. Removing a selector patch during an
+`Scale::percent(50)` expresses half size; `Angle::degrees(90)` expresses a quarter
+turn clockwise. `Scale::ratio(n, d)` preserves precise ratios, rounding to native
+1/256 with ties upward; zero denominator or an unrepresentable rounded result
+returns `UiError::InvalidProperty`. `Angle::tenths(455)` preserves 45.5 degrees.
+Native scale range is 0..=65535 and rotation range is -32768..=32767 tenths.
+Images reject zero scale; style and animation transforms allow it. Out-of-range
+percentage scales or angles fail tree validation before native mutation.
+
+Flex layout uses independent `justify_content(FlexAlign)`,
+`align_items(ItemAlign)` and `align_content(FlexAlign)` values. ItemAlign accepts
+Start/Center/End. Align-content maps native track placement, including single-line
+containers. Floating excludes both layout participation and parent scrolling.
+
+Flat modifiers target the main style. `native_part_style`, `state_style` and
+`native_part_state_style` continue to take explicit `Style` patches. A later patch for the same part/state replaces the entire earlier patch, including
+unset fields. This selector-list rule differs from main-style field merging.
+`thumb_style`/`thumb_state_style` select slider/switch thumbs;
+`progress_style`/`progress_state_style` select slider/progress-bar filled regions.
+Native states switch without an application render. Removing a selector patch during an
 update restores its base/class values on the existing object. Object-wide
 fields retain their main-style restrictions. A retained `font_resource`
 continues to override a static main-style font until removed.

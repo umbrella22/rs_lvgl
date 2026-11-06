@@ -37,8 +37,8 @@ impl App for Gauge {
                                 .height(px(176))
                                 .padding(12)
                                 .arc_color(theme.accent)
-                                .part_style(
-                                    Part::Knob,
+                                .native_part_style(
+                                    NativePart::Knob,
                                     style()
                                         .background(theme.accent)
                                         .background_opacity(255)

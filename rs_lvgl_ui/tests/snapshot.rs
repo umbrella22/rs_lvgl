@@ -50,7 +50,7 @@ impl App for SnapshotApp {
 
     fn view(&self, _: &Theme) -> View<()> {
         let block = |id: u64, color: Color| {
-            obj().key(Key::Id(id)).style(
+            container().key(Key::Id(id)).style(
                 Style::default()
                     .background(color)
                     .width(Size::Px(20))

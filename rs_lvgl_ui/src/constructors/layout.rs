@@ -20,8 +20,8 @@ pub const fn content() -> Size {
 }
 
 /// An unstyled container for absolute positioning.
-pub fn obj<M>() -> View<M> {
-    Node::new(WidgetKind::Obj)
+pub fn container<M>() -> View<M> {
+    Node::new(WidgetKind::Container)
 }
 
 /// A horizontal flex container with the supplied children.

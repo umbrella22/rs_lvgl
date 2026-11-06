@@ -4,6 +4,19 @@ use crate::node::{CalendarDate, ImageSource, Node, RollerMode, WidgetKind};
 use alloc::string::String;
 
 impl<M, K> Node<M, K> {
+    /// Set how a label displays text that exceeds its available space.
+    pub fn text_overflow(mut self, overflow: crate::TextOverflow) -> Self
+    where
+        K: crate::typed::Supports<crate::typed::capability::Label>,
+    {
+        if let WidgetKind::Label { text_overflow, .. } = &mut self.kind {
+            *text_overflow = overflow;
+        } else {
+            self.record_invalid_property(crate::Property::TextOverflow);
+        }
+        self
+    }
+
     #[cfg(feature = "widget-textarea")]
     pub fn placeholder(mut self, text: impl Into<String>) -> Self
     where
@@ -123,7 +136,7 @@ impl<M, K> Node<M, K> {
 
     /// Spinner animation parameters. Ignored for other kinds.
     #[cfg(feature = "widget-spinner")]
-    pub fn spinner_anim(mut self, duration: u32, angle: u32) -> Self
+    pub fn spinner_animation(mut self, duration: u32, angle: u32) -> Self
     where
         K: crate::typed::Supports<crate::typed::capability::Spinner>,
     {
@@ -173,11 +186,11 @@ impl<M, K> Node<M, K> {
 
     /// Message box title. Ignored for other kinds.
     #[cfg(feature = "widget-msgbox")]
-    pub fn msgbox_title(mut self, text: impl Into<String>) -> Self
+    pub fn message_box_title(mut self, text: impl Into<String>) -> Self
     where
-        K: crate::typed::Supports<crate::typed::capability::Msgbox>,
+        K: crate::typed::Supports<crate::typed::capability::MessageBox>,
     {
-        if let WidgetKind::Msgbox { title, .. } = &mut self.kind {
+        if let WidgetKind::MessageBox { title, .. } = &mut self.kind {
             *title = Some(text.into());
         } else {
             self.record_invalid_property(crate::Property::MessageBoxTitle);
@@ -188,11 +201,11 @@ impl<M, K> Node<M, K> {
     /// Message box footer buttons. A click reports the button index through
     /// [`Node::on_value_changed`]. Ignored for other kinds.
     #[cfg(feature = "widget-msgbox")]
-    pub fn msgbox_buttons(mut self, texts: impl IntoIterator<Item = impl Into<String>>) -> Self
+    pub fn message_box_buttons(mut self, texts: impl IntoIterator<Item = impl Into<String>>) -> Self
     where
-        K: crate::typed::Supports<crate::typed::capability::Msgbox>,
+        K: crate::typed::Supports<crate::typed::capability::MessageBox>,
     {
-        if let WidgetKind::Msgbox { buttons, .. } = &mut self.kind {
+        if let WidgetKind::MessageBox { buttons, .. } = &mut self.kind {
             *buttons = texts.into_iter().map(Into::into).collect();
         } else {
             self.record_invalid_property(crate::Property::MessageBoxButtons);
@@ -246,9 +259,9 @@ impl<M, K> Node<M, K> {
     #[cfg(feature = "widget-animimage")]
     pub fn repeat(mut self, count: u32) -> Self
     where
-        K: crate::typed::Supports<crate::typed::capability::AnimImage>,
+        K: crate::typed::Supports<crate::typed::capability::AnimatedImage>,
     {
-        if let WidgetKind::AnimImage { repeat, .. } = &mut self.kind {
+        if let WidgetKind::AnimatedImage { repeat, .. } = &mut self.kind {
             *repeat = count;
         } else {
             self.record_invalid_property(crate::Property::Repeat);

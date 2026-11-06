@@ -19,6 +19,9 @@ impl private::Sealed for Erased {}
 #[doc(hidden)]
 pub mod capability {
     pub struct Text;
+    pub struct Label;
+    pub struct Thumb;
+    pub struct Progress;
     pub struct Numeric;
     pub struct Toggle;
     pub struct Selection;
@@ -30,10 +33,10 @@ pub mod capability {
     pub struct Spinner;
     pub struct Led;
     pub struct Table;
-    pub struct Msgbox;
+    pub struct MessageBox;
     pub struct Calendar;
     pub struct ImageButton;
-    pub struct AnimImage;
+    pub struct AnimatedImage;
 }
 
 /// Sealed capability relation used by typed descriptor modifiers.
@@ -59,11 +62,11 @@ pub mod kind {
         )*};
     }
     kinds! {
-        Obj: [Children]; Row: [Children]; Column: [Children]; Grid: [Children];
-        Label: []; Button: [];
-        #[cfg(feature = "widget-switch")] Switch: [Toggle];
-        #[cfg(feature = "widget-slider")] Slider: [Numeric];
-        #[cfg(feature = "widget-bar")] Bar: [Numeric];
+        Container: [Children]; Row: [Children]; Column: [Children]; Grid: [Children];
+        Label: [super::capability::Label]; Button: [];
+        #[cfg(feature = "widget-switch")] Switch: [Toggle, Thumb];
+        #[cfg(feature = "widget-slider")] Slider: [Numeric, Thumb, Progress];
+        #[cfg(feature = "widget-bar")] ProgressBar: [Numeric, Progress];
         #[cfg(feature = "widget-arc")] Arc: [Numeric];
         #[cfg(feature = "widget-checkbox")] Checkbox: [Toggle];
         #[cfg(feature = "widget-textarea")] Textarea: [Text];
@@ -75,7 +78,7 @@ pub mod kind {
         #[cfg(feature = "widget-tileview")] Tileview: [Children, Selection];
         #[cfg(feature = "widget-calendar")] Calendar: [Date, super::capability::Calendar];
         #[cfg(feature = "widget-table")] Table: [Cell, super::capability::Table];
-        #[cfg(feature = "widget-msgbox")] Msgbox: [Children, Selection, super::capability::Msgbox];
+        #[cfg(feature = "widget-msgbox")] MessageBox: [Children, Selection, super::capability::MessageBox];
         #[cfg(feature = "widget-keyboard")] Keyboard: [];
         #[cfg(feature = "widget-ime-pinyin")] PinyinKeyboard: [];
         #[cfg(feature = "widget-scale")] Scale: [];
@@ -87,7 +90,7 @@ pub mod kind {
         #[cfg(feature = "widget-led")] Led: [super::capability::Led];
         #[cfg(feature = "widget-image")] Image: [];
         #[cfg(feature = "widget-imagebutton")] ImageButton: [super::capability::ImageButton];
-        #[cfg(feature = "widget-animimage")] AnimImage: [super::capability::AnimImage];
+        #[cfg(feature = "widget-animimage")] AnimatedImage: [super::capability::AnimatedImage];
         #[cfg(feature = "widget-canvas")] Canvas: [];
         #[cfg(feature = "widget-qrcode")] QrCode: [];
         #[cfg(feature = "widget-barcode")] Barcode: [];

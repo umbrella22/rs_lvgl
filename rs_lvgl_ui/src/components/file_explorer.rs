@@ -3,7 +3,7 @@
 //! resulting entries. Paths and filenames are displayed without normalization.
 //! This composition replaces the deprecated native lv_file_explorer widget.
 use super::list::{self, ListItem};
-use crate::{symbol, Key, Size, Style, Theme, View};
+use crate::{symbol, Key, Size, Theme, View};
 use alloc::string::String;
 
 /// A stable entry identity and its activation message. `name` is display text;
@@ -82,7 +82,6 @@ pub fn view<M: Clone + 'static>(
         .grow(1)
         .key(Key::Named("entries")),
     ])
-    .style(Style::neutral())
     .width(Size::Percent(100))
     .height(Size::Percent(100))
 }

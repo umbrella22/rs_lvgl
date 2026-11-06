@@ -1,7 +1,7 @@
 //! Additional native style properties. Options preserve LVGL inheritance and
 //! distinguish an omitted property from an explicit zero.
 
-use crate::{Color, Style, UiError};
+use crate::{Angle, Color, Scale, Style, UiError};
 use core::ptr::NonNull;
 use rs_lvgl_sys::lv_obj_t;
 
@@ -96,35 +96,35 @@ properties! {
     /// Outline opacity from 0 to 255.
     outline_opacity: u8 => lv_obj_set_style_outline_opa, _lv_style_id_t_LV_STYLE_OUTLINE_OPA, |v| v;
     /// Signed distance between the object and its outline, in pixels.
-    outline_pad: i16 => lv_obj_set_style_outline_pad, _lv_style_id_t_LV_STYLE_OUTLINE_PAD, i32::from;
+    outline_offset: i16 => lv_obj_set_style_outline_pad, _lv_style_id_t_LV_STYLE_OUTLINE_PAD, i32::from;
     /// Color at the second gradient stop; the first uses `Style::background`.
-    bg_grad_color: Color => lv_obj_set_style_bg_grad_color, _lv_style_id_t_LV_STYLE_BG_GRAD_COLOR, Color::to_raw;
+    background_gradient_color: Color => lv_obj_set_style_bg_grad_color, _lv_style_id_t_LV_STYLE_BG_GRAD_COLOR, Color::to_raw;
     /// Native two-stop background gradient direction.
-    bg_grad_dir: GradientDirection => lv_obj_set_style_bg_grad_dir, _lv_style_id_t_LV_STYLE_BG_GRAD_DIR, |v: GradientDirection| v as _;
+    background_gradient_direction: GradientDirection => lv_obj_set_style_bg_grad_dir, _lv_style_id_t_LV_STYLE_BG_GRAD_DIR, |v: GradientDirection| v as _;
     /// Position of the first gradient stop, from 0 to 255.
-    bg_main_stop: u8 => lv_obj_set_style_bg_main_stop, _lv_style_id_t_LV_STYLE_BG_MAIN_STOP, i32::from;
+    background_gradient_start: u8 => lv_obj_set_style_bg_main_stop, _lv_style_id_t_LV_STYLE_BG_MAIN_STOP, i32::from;
     /// Position of the second gradient stop, from 0 to 255.
-    bg_grad_stop: u8 => lv_obj_set_style_bg_grad_stop, _lv_style_id_t_LV_STYLE_BG_GRAD_STOP, i32::from;
+    background_gradient_end: u8 => lv_obj_set_style_bg_grad_stop, _lv_style_id_t_LV_STYLE_BG_GRAD_STOP, i32::from;
     /// Opacity of the first gradient stop.
-    bg_main_opacity: u8 => lv_obj_set_style_bg_main_opa, _lv_style_id_t_LV_STYLE_BG_MAIN_OPA, |v| v;
+    background_gradient_start_opacity: u8 => lv_obj_set_style_bg_main_opa, _lv_style_id_t_LV_STYLE_BG_MAIN_OPA, |v| v;
     /// Opacity of the second gradient stop.
-    bg_grad_opacity: u8 => lv_obj_set_style_bg_grad_opa, _lv_style_id_t_LV_STYLE_BG_GRAD_OPA, |v| v;
+    background_gradient_end_opacity: u8 => lv_obj_set_style_bg_grad_opa, _lv_style_id_t_LV_STYLE_BG_GRAD_OPA, |v| v;
     /// Signed extra space between letters in pixels. Inherited by descendants.
-    text_letter_space: i16 => lv_obj_set_style_text_letter_space, _lv_style_id_t_LV_STYLE_TEXT_LETTER_SPACE, i32::from;
+    letter_spacing: i16 => lv_obj_set_style_text_letter_space, _lv_style_id_t_LV_STYLE_TEXT_LETTER_SPACE, i32::from;
     /// Signed extra space between text lines in pixels. Inherited by descendants.
-    text_line_space: i16 => lv_obj_set_style_text_line_space, _lv_style_id_t_LV_STYLE_TEXT_LINE_SPACE, i32::from;
+    line_spacing: i16 => lv_obj_set_style_text_line_space, _lv_style_id_t_LV_STYLE_TEXT_LINE_SPACE, i32::from;
     /// Inherited underline/strikethrough decoration.
     text_decoration: TextDecoration => lv_obj_set_style_text_decor, _lv_style_id_t_LV_STYLE_TEXT_DECOR, |v: TextDecoration| v.0 as _;
-    /// Tint color for image pixels; `image_recolor_opacity` controls strength.
-    image_recolor: Color => lv_obj_set_style_image_recolor, _lv_style_id_t_LV_STYLE_IMAGE_RECOLOR, Color::to_raw;
+    /// Tint color for image pixels; `image_tint_opacity` controls strength.
+    image_tint: Color => lv_obj_set_style_image_recolor, _lv_style_id_t_LV_STYLE_IMAGE_RECOLOR, Color::to_raw;
     /// Image tint opacity from 0 to 255.
-    image_recolor_opacity: u8 => lv_obj_set_style_image_recolor_opa, _lv_style_id_t_LV_STYLE_IMAGE_RECOLOR_OPA, |v| v;
-    /// Horizontal scale in LVGL units: 256 is 100 percent.
-    transform_scale_x: u16 => lv_obj_set_style_transform_scale_x, _lv_style_id_t_LV_STYLE_TRANSFORM_SCALE_X, i32::from;
-    /// Vertical scale in LVGL units: 256 is 100 percent.
-    transform_scale_y: u16 => lv_obj_set_style_transform_scale_y, _lv_style_id_t_LV_STYLE_TRANSFORM_SCALE_Y, i32::from;
-    /// Rotation in tenths of a degree, clockwise. Negative rotations are supported.
-    transform_rotation: i16 => lv_obj_set_style_transform_rotation, _lv_style_id_t_LV_STYLE_TRANSFORM_ROTATION, i32::from;
+    image_tint_opacity: u8 => lv_obj_set_style_image_recolor_opa, _lv_style_id_t_LV_STYLE_IMAGE_RECOLOR_OPA, |v| v;
+    /// Horizontal scale, e.g. `Scale::percent(150)`. Zero is allowed.
+    transform_scale_x: Scale => lv_obj_set_style_transform_scale_x, _lv_style_id_t_LV_STYLE_TRANSFORM_SCALE_X, Scale::to_raw;
+    /// Vertical scale, e.g. `Scale::percent(75)`. Zero is allowed.
+    transform_scale_y: Scale => lv_obj_set_style_transform_scale_y, _lv_style_id_t_LV_STYLE_TRANSFORM_SCALE_Y, Scale::to_raw;
+    /// Clockwise rotation, e.g. `Angle::degrees(90)` or `Angle::tenths(455)`.
+    transform_rotation: Angle => lv_obj_set_style_transform_rotation, _lv_style_id_t_LV_STYLE_TRANSFORM_ROTATION, Angle::to_raw;
     /// Horizontal pivot in pixels relative to the object.
     transform_pivot_x: i16 => lv_obj_set_style_transform_pivot_x, _lv_style_id_t_LV_STYLE_TRANSFORM_PIVOT_X, i32::from;
     /// Vertical pivot in pixels relative to the object.
@@ -141,6 +141,15 @@ impl ExtendedStyle {
     pub(crate) fn validate(self) -> Result<(), UiError> {
         if self.shadow_width.is_some_and(|v| v < 0) || self.outline_width.is_some_and(|v| v < 0) {
             return Err(UiError::InvalidProperty);
+        }
+        for scale in [self.transform_scale_x, self.transform_scale_y]
+            .into_iter()
+            .flatten()
+        {
+            scale.validate()?;
+        }
+        if let Some(angle) = self.transform_rotation {
+            angle.validate()?;
         }
         Ok(())
     }

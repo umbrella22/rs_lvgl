@@ -37,9 +37,9 @@ pub(super) fn apply<M: Clone + 'static>(
             }
         }
         #[cfg(feature = "widget-bar")]
-        (Props::Bar { min, max, value }, old) => {
+        (Props::ProgressBar { min, max, value }, old) => {
             let range_changed = match old {
-                Some(Props::Bar {
+                Some(Props::ProgressBar {
                     min: old_min,
                     max: old_max,
                     ..

@@ -21,7 +21,7 @@ pub(crate) fn tileview_pages(
                 obj.as_ptr(),
                 tile.column,
                 tile.row,
-                tile.dir.to_raw(),
+                tile.directions.to_raw(),
             )
         };
         let Some(page) = NonNull::new(page) else {

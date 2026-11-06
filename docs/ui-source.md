@@ -43,6 +43,10 @@ lifetime rules in detail.
 | [components/](../rs_lvgl_ui/src/components/mod.rs) | Composite views built from ordinary constructors: panels, lists, navigation, dialogs and toasts. |
 | [extensions/](../rs_lvgl_ui/src/extensions/mod.rs) | Optional barcode, QR, GIF, Lottie and Pinyin descriptions/native integration. |
 
+[Transform units](../rs_lvgl_ui/src/units.rs) hold Scale/Angle values independently
+of native adapters. Tree validation rejects unrepresentable units before mutation.
+See the [development migration](ui-api-migration.md) for current source changes.
+
 Smaller focused modules remain at the source root: animation and transitions,
 loaded resources, custom widgets, focus/grid navigation, scrolling, canvas and
 graphics, diagnostics, screens, style extensions, symbols and metrics.

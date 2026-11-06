@@ -28,14 +28,15 @@ pub use crate::RenderDecision;
 pub use crate::{binding, Binding};
 pub use crate::{resource_support, FontResource, ResourceError, ResourceSupport};
 pub use crate::{
-    symbol, table_cell, Align, Animation, AnimationProperty, App, BlendMode, CalendarDate,
+    symbol, table_cell, Align, Angle, Animation, AnimationProperty, App, BlendMode, CalendarDate,
     ChartSeries, ChartType, Color, CustomObject, CustomWidget, CustomWidgetKind, DrainStats,
     Easing, Event, FlexAlign, Font, GestureDirection, GradientDirection, GridAlign, GridCell,
-    GridTrack, ImageSource, InputEvent, Key, LabelLongMode, NativeObject, Obj, Part, PointerEvent,
-    RawImage, RollerMode, ScreenEffect, ScreenTransition, Screens, ScrollDir, ScrollOffset,
-    ScrollSnap, ScrollbarMode, Size, Snapshot, Span, State, Style, StyleTransition, TableCell,
-    TextAlign, TextDecoration, Theme, Tile, TransitionProperty, Ui, UiError, UiStats, View,
-    ANIM_IMAGE_MAX_FRAMES, ANIM_REPEAT_INFINITE, SPINBOX_MAX_DIGITS, TABLE_MAX_CELLS_PER_AXIS,
+    GridTrack, ImageSource, InputEvent, ItemAlign, Key, NativeObject, NativePart, Obj,
+    PointerEvent, RawImage, RollerMode, Scale, ScreenEffect, ScreenTransition, Screens,
+    ScrollDirection, ScrollOffset, ScrollSnap, ScrollbarMode, Size, Snapshot, Span, State, Style,
+    StyleTransition, TableCell, TextAlign, TextDecoration, TextOverflow, Theme, Tile,
+    TransitionProperty, Ui, UiError, UiStats, View, ANIMATED_IMAGE_MAX_FRAMES,
+    ANIMATION_REPEAT_INFINITE, SPINBOX_MAX_DIGITS, TABLE_MAX_CELLS_PER_AXIS,
 };
 #[cfg(feature = "widget-barcode")]
 pub use crate::{Barcode, BarcodeEncoding};

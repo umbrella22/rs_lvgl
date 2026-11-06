@@ -61,11 +61,11 @@ where
 }
 
 /// An inline message box showing `text`. Children are placed below the
-/// text. Add a title with [`View::msgbox_title`] and footer buttons with
-/// [`View::msgbox_buttons`].
+/// text. Add a title with [`View::message_box_title`] and footer buttons with
+/// [`View::message_box_buttons`].
 #[cfg(feature = "widget-msgbox")]
-pub fn msgbox<M>(text: impl Into<String>) -> View<M> {
-    Node::new(WidgetKind::Msgbox {
+pub fn message_box<M>(text: impl Into<String>) -> View<M> {
+    Node::new(WidgetKind::MessageBox {
         title: None,
         text: text.into(),
         buttons: Vec::new(),

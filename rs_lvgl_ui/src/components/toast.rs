@@ -18,8 +18,8 @@ use crate::View;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use crate::node::{Align, Color, FlexAlign, Key, Size, TextAlign};
-use crate::theme::{Style, Theme};
+use crate::node::{Align, Color, FlexAlign, ItemAlign, Key, Size, TextAlign};
+use crate::theme::Theme;
 
 /// Visual kind of a toast.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -144,13 +144,14 @@ pub fn view<M: Clone + 'static>(
             .on_click(dismiss(toast.id))
     }))
     .key(Key::Named("toasts"))
-    .style(Style::neutral())
     .width(Size::Content)
     .height(Size::Content)
     .max_width(Size::Percent(90))
     .gap(6)
-    .flex_align(FlexAlign::Start, FlexAlign::Center)
-    .align(Align::BottomMid)
+    .justify_content(FlexAlign::Start)
+    .align_items(ItemAlign::Center)
+    .align_content(FlexAlign::Center)
+    .align(Align::BottomCenter)
     .offset(0, -16)
     .clickable(false)
     .scrollable(false)

@@ -1,5 +1,8 @@
 # rs_lvgl
 
+0.6.0 统一了 UI 命名，引入显式变换单位、独立布局对齐和语义化控件部件。
+从 0.5.0 升级时请参阅[迁移指南](docs/ui-api-migration.md)。
+
 [English](https://github.com/umbrella22/rs_lvgl/blob/main/README.md) · **简体中文**
 
 [文档](https://umbrella22.github.io/rs_lvgl_website/) · [快速开始](https://umbrella22.github.io/rs_lvgl_website/guide/getting-started.html) · [组件预览](https://umbrella22.github.io/rs_lvgl_website/studio.html) · [演练场](https://umbrella22.github.io/rs_lvgl_website/playground.html)
@@ -48,8 +51,8 @@ cargo run -p rs_lvgl_ui --example studio --features showcase
 
 ```toml
 [dependencies]
-rs_lvgl = { version = "0.5.0", default-features = false, features = ["alloc"] }
-rs_lvgl_ui = "0.5.0"
+rs_lvgl = { version = "0.6.0", default-features = false, features = ["alloc"] }
+rs_lvgl_ui = "0.6.0"
 ```
 
 `rs_lvgl` 和 `rs_lvgl_ui` 支持 `no_std`。在嵌入式设备上使用 UI 层时，
@@ -62,7 +65,7 @@ rs_lvgl_ui = "0.5.0"
 
 `App` 保存应用状态，`view` 用普通函数构建 `View<CounterAction>`，输入通过消息交给 `update` 处理。
 
-下面的示例使用 0.5.0 API。`CounterAction` 是计数器自己的操作枚举，
+下面的示例使用 0.6.0 API。`CounterAction` 是计数器自己的操作枚举，
 `type Action = CounterAction` 将它关联到框架；状态保存在 `Counter`，操作逻辑写在 `update` 中。
 `Ui` 负责将变化应用到 LVGL 控件。
 
@@ -105,7 +108,7 @@ impl App for Counter {
 
 ## 组合与表单
 
-0.5.0 提供惰性条件组合、语义事件、组件插槽、`typed::...` 构造和显式表单绑定。
+0.6.0 提供惰性条件组合、语义事件、组件插槽、`typed::...` 构造和显式表单绑定。
 [组合与表单指南](docs/ui-composition.md)包含类型转换、受控输入和内容复用的写法。
 原有的根模块和 prelude 普通构造函数仍然可用。
 
@@ -115,7 +118,7 @@ impl App for Counter {
 
 ```toml
 [dependencies.rs_lvgl_ui]
-version = "0.5.0"
+version = "0.6.0"
 default-features = false
 features = [
     "alloc", "components", "widget-slider", "widget-switch", "font-montserrat-16"
@@ -141,7 +144,7 @@ features = [
 
 ## AI 编程助手
 
-仓库提供 `rs-lvgl-ui` 和 `rs-lvgl-native` 两个 skill，覆盖 0.5.0，包含可运行示例和集成说明。
+仓库提供 `rs-lvgl-ui` 和 `rs-lvgl-native` 两个 skill，对应 rs_lvgl 0.6.0，包含可运行示例和集成说明。
 安装命令：
 
 ```sh

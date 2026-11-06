@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.6.0 — 2026-11-06
+
+### Breaking changes
+
+- Unify declarative constructor, typed marker, scroll/overflow/placement, animation
+  and style names. Remove replaced paths without aliases. Ordinary plain views
+  no longer repeat their automatic base style; `Style::plain()` retains explicit
+  base-patch behavior. See the [migration guide](docs/ui-api-migration.md).
+- Require `Scale` and `Angle` for transform/image scale and rotation, with checked
+  native ranges and explicit rounding; add typed rotation/scale animation endpoints.
+- Replace coupled flex alignment with independent `justify_content`, `align_items`
+  and `align_content`. Preserve floating layout and parent-scroll exclusion.
+- Expose native selectors as `NativePart`/`native_part_style`; add capability-checked
+  thumb/progress styles for their supported widgets and label text overflow.
+
+
 ## 0.5.0 — 2026-11-06
 
 ### Added

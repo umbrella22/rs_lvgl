@@ -1,6 +1,6 @@
 //! Focus, object interaction flags and scroll control.
 
-use crate::node::{Node, ScrollDir};
+use crate::node::{Node, ScrollDirection};
 
 impl<M, K> Node<M, K> {
     /// Control `LV_STATE_CHECKED`, which selects [`crate::State::CHECKED`] styles.
@@ -77,7 +77,7 @@ impl<M, K> Node<M, K> {
 
     /// Override allowed native scroll directions.
     /// Unset leaves the existing native setting unchanged.
-    pub fn scroll_dir(mut self, value: ScrollDir) -> Self {
+    pub fn scroll_direction(mut self, value: ScrollDirection) -> Self {
         self.interaction.dir = Some(value);
         self
     }

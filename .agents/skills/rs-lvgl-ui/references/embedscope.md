@@ -1,6 +1,6 @@
 # Optional EmbedScope integration
 
-For rs_lvgl 0.5.0 applications, expose UI inspection through an application-owned
+For rs_lvgl 0.6.0 applications, expose UI inspection through an application-owned
 adapter. Default `escope-lvgl` accepts an application `TreeSource` without linking
 another LVGL provider. Read tree data from the application's UI thread and copy
 actual display pixels into an owned capture. Before using a native SDK adapter,

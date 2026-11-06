@@ -121,13 +121,14 @@ impl App for Board {
             [],
         )
         .key(Key::Named("grid"))
-        .style(Style::neutral().width(Size::Px(55)).height(Size::Px(55)))
+        .width(Size::Px(55))
+        .height(Size::Px(55))
         .children(self.ids.iter().enumerate().map(|(i, id)| {
             button("X")
                 .key(Key::Id(*id))
                 .grid_cell((i % 2) as u16, (i / 2) as u16, 1, 1)
                 .style(
-                    Style::neutral()
+                    Style::plain()
                         .width(Size::Px(20))
                         .height(Size::Px(20))
                         .disabled(self.disabled == Some(*id))
@@ -291,7 +292,8 @@ impl App for Modals {
         let mut scope = column([])
             .key(Key::Id(10))
             .modal(true)
-            .style(Style::neutral().hidden(self.hidden).disabled(self.disabled))
+            .hidden(self.hidden)
+            .disabled(self.disabled)
             .child(button("First").key(Key::Id(11)))
             .child(button("Second").key(Key::Id(12)));
         if self.depth == 2 {

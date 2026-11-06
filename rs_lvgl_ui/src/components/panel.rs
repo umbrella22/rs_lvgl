@@ -12,7 +12,7 @@ use crate::View;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use crate::node::{FlexAlign, Key, LabelLongMode, Size, State, WidgetKind};
+use crate::node::{FlexAlign, ItemAlign, Key, Size, State, TextOverflow, WidgetKind};
 use crate::theme::{Style, Theme};
 
 /// A compact accent button showing one glyph, for header actions.
@@ -102,7 +102,7 @@ impl<M: Clone + 'static> Panel<M> {
         };
         let header = crate::row([View::new(WidgetKind::Label {
             text: self.title,
-            long_mode: LabelLongMode::Dots,
+            text_overflow: TextOverflow::Ellipsis,
         })
         .key(Key::Named("title"))
         .font(theme.title_font)
@@ -113,7 +113,9 @@ impl<M: Clone + 'static> Panel<M> {
         .padding(8)
         .padding_left(12)
         .gap(6)
-        .flex_align(FlexAlign::Start, FlexAlign::Center)
+        .justify_content(FlexAlign::Start)
+        .align_items(ItemAlign::Center)
+        .align_content(FlexAlign::Center)
         .background(theme.background)
         .background_opacity(90)
         .scrollable(false)

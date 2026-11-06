@@ -75,9 +75,9 @@ fn label_text(label: *mut lv_obj_t) -> String {
 
 fn tiles() -> [Tile; 3] {
     [
-        Tile::new(0, 0, ScrollDir::RIGHT),
-        Tile::new(1, 0, ScrollDir::HOR),
-        Tile::new(2, 0, ScrollDir::LEFT),
+        Tile::new(0, 0, ScrollDirection::RIGHT),
+        Tile::new(1, 0, ScrollDirection::HORIZONTAL),
+        Tile::new(2, 0, ScrollDirection::LEFT),
     ]
 }
 
@@ -88,7 +88,7 @@ fn tileview_active_tile_is_controlled_and_reported() {
         let active = state.min(2);
         let mut tiles = tiles().to_vec();
         if state == 9 {
-            tiles[2] = Tile::new(0, 1, ScrollDir::TOP);
+            tiles[2] = Tile::new(0, 1, ScrollDirection::TOP);
         }
         tileview(tiles, active)
             .child(label("a"))
@@ -133,9 +133,9 @@ fn tileview_active_tile_is_controlled_and_reported() {
 fn msgbox_places_title_text_children_and_reports_footer_clicks() {
     let _guard = lock();
     let mut app = TestApp::new(|state| {
-        let mut node = msgbox(if state == 0 { "hello" } else { "bye" })
-            .msgbox_title(if state == 0 { "Title" } else { "Other" })
-            .msgbox_buttons(if state == 0 {
+        let mut node = message_box(if state == 0 { "hello" } else { "bye" })
+            .message_box_title(if state == 0 { "Title" } else { "Other" })
+            .message_box_buttons(if state == 0 {
                 ["OK", "Cancel"]
             } else {
                 ["Yes", "No"]
@@ -143,7 +143,7 @@ fn msgbox_places_title_text_children_and_reports_footer_clicks() {
             .child(label("extra"))
             .on_value_changed(Msg::Value);
         if state == 2 {
-            node = node.msgbox_buttons(["Only"]);
+            node = node.message_box_buttons(["Only"]);
         }
         node
     });
@@ -392,7 +392,7 @@ fn anim_image_swaps_frames_without_dangling_pointers() {
     let _guard = lock();
     let mut app = TestApp::new(|state| {
         if state == 0 {
-            anim_image(
+            animated_image(
                 [
                     ImageSource::rgb565(2, 2, &PIXELS_A),
                     ImageSource::rgb565(2, 2, &PIXELS_B),
@@ -400,7 +400,7 @@ fn anim_image_swaps_frames_without_dangling_pointers() {
                 100,
             )
         } else {
-            anim_image([ImageSource::rgb565(2, 2, &PIXELS_C)], 50).repeat(3)
+            animated_image([ImageSource::rgb565(2, 2, &PIXELS_C)], 50).repeat(3)
         }
     });
     let (mut ui, image) = mount(&app);
@@ -420,7 +420,7 @@ fn anim_image_swaps_frames_without_dangling_pointers() {
         assert_eq!(rs_lvgl_sys::lv_animimg_get_duration(raw), 100);
         assert_eq!(
             rs_lvgl_sys::lv_animimg_get_repeat_count(raw),
-            rs_lvgl_ui::ANIM_REPEAT_INFINITE
+            rs_lvgl_ui::ANIMATION_REPEAT_INFINITE
         );
     }
     advance();
@@ -477,24 +477,24 @@ fn invalid_batch_two_properties_are_rejected() {
         // Tile count differs from the child count.
         |_| tileview(tiles(), 0).child(label("a")),
         // Active tile out of range.
-        |_| tileview([Tile::new(0, 0, ScrollDir::NONE)], 1).child(label("a")),
+        |_| tileview([Tile::new(0, 0, ScrollDirection::NONE)], 1).child(label("a")),
         // Duplicate tile position.
         |_| {
             tileview(
                 [
-                    Tile::new(0, 0, ScrollDir::NONE),
-                    Tile::new(0, 0, ScrollDir::NONE),
+                    Tile::new(0, 0, ScrollDirection::NONE),
+                    Tile::new(0, 0, ScrollDirection::NONE),
                 ],
                 0,
             )
             .child(label("a"))
             .child(label("b"))
         },
-        |_| msgbox("a\0b"),
+        |_| message_box("a\0b"),
         |_| calendar(2026, 13),
         |_| calendar(2026, 1).highlighted([CalendarDate::new(2026, 2, 0)]),
-        |_| anim_image([], 100),
-        |_| anim_image([ImageSource::rgb565(2, 2, &PIXELS_A)], 0),
+        |_| animated_image([], 100),
+        |_| animated_image([ImageSource::rgb565(2, 2, &PIXELS_A)], 0),
         |_| arc_label("a", 10, 0, 400),
     ];
     for case in cases {

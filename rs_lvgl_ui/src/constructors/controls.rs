@@ -1,6 +1,6 @@
 //! Constructors for controls views.
 
-use crate::node::{LabelLongMode, Node, RollerMode, WidgetKind};
+use crate::node::{Node, RollerMode, TextOverflow, WidgetKind};
 use crate::View;
 #[cfg(feature = "widget-ime-pinyin")]
 use crate::{Font, Size, Style};
@@ -10,7 +10,7 @@ use alloc::string::String;
 pub fn label<M>(text: impl Into<String>) -> View<M> {
     Node::new(WidgetKind::Label {
         text: text.into(),
-        long_mode: LabelLongMode::Wrap,
+        text_overflow: TextOverflow::Wrap,
     })
 }
 
@@ -42,8 +42,8 @@ pub fn slider<M>(min: i32, max: i32, value: i32) -> View<M> {
 
 /// A progress bar with a value in `min..=max`.
 #[cfg(feature = "widget-bar")]
-pub fn bar<M>(min: i32, max: i32, value: i32) -> View<M> {
-    Node::new(WidgetKind::Bar { min, max, value })
+pub fn progress_bar<M>(min: i32, max: i32, value: i32) -> View<M> {
+    Node::new(WidgetKind::ProgressBar { min, max, value })
 }
 
 /// A switch with a controlled checked state.
@@ -152,7 +152,7 @@ where
 pub fn pinyin_keyboard<M>(target: u64, font: Font) -> View<M> {
     Node::new(WidgetKind::PinyinKeyboard { target, font })
         .style(
-            Style::neutral()
+            Style::plain()
                 .width(Size::Percent(100))
                 .height(Size::Px(200)),
         )

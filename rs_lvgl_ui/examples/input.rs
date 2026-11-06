@@ -41,7 +41,7 @@ impl App for InputDemo {
     fn view(&self, theme: &Theme) -> View<InputDemoAction> {
         let focus = style()
             .outline_width(2)
-            .outline_pad(3)
+            .outline_offset(3)
             .outline_color(theme.accent)
             .outline_opacity(255);
         column([
@@ -91,7 +91,7 @@ impl App for InputDemo {
             .outline_width(0)
             .state_style(State::FOCUSED, focus)
             .state_style(State::FOCUS_KEY, focus)
-            .scroll_dir(ScrollDir::VER)
+            .scroll_direction(ScrollDirection::VERTICAL)
             .focusable(true)
             .scrollbar_mode(ScrollbarMode::Auto)
             .scroll_momentum(true)

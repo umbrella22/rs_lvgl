@@ -17,7 +17,7 @@ pub(super) fn apply(
     match (new, old) {
         #[cfg(feature = "widget-msgbox")]
         (
-            Props::Msgbox {
+            Props::MessageBox {
                 title,
                 text,
                 buttons,
@@ -25,7 +25,7 @@ pub(super) fn apply(
             old,
         ) => {
             let (old_title, old_text, old_buttons) = match old {
-                Some(Props::Msgbox {
+                Some(Props::MessageBox {
                     title,
                     text,
                     buttons,

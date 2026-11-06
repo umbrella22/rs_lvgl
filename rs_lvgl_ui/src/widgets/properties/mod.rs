@@ -71,7 +71,9 @@ pub(crate) fn apply_props<M: Clone + 'static>(
     retained: &mut Retained,
 ) -> Result<(), UiError> {
     match new {
-        Props::Obj | Props::Row | Props::Column | Props::Grid { .. } | Props::Custom => Ok(()),
+        Props::Container | Props::Row | Props::Column | Props::Grid { .. } | Props::Custom => {
+            Ok(())
+        }
         #[cfg(feature = "widget-tabview")]
         Props::Tabview { .. } => Ok(()),
         #[cfg(feature = "widget-tileview")]
@@ -83,7 +85,7 @@ pub(crate) fn apply_props<M: Clone + 'static>(
         #[cfg(feature = "widget-slider")]
         Props::Slider { .. } => ranges::apply(obj, new, old, slot),
         #[cfg(feature = "widget-bar")]
-        Props::Bar { .. } => ranges::apply(obj, new, old, slot),
+        Props::ProgressBar { .. } => ranges::apply(obj, new, old, slot),
         #[cfg(feature = "widget-arc")]
         Props::Arc { .. } => ranges::apply(obj, new, old, slot),
         #[cfg(feature = "widget-spinbox")]
@@ -115,11 +117,11 @@ pub(crate) fn apply_props<M: Clone + 'static>(
         #[cfg(feature = "widget-imagebutton")]
         Props::ImageButton { .. } => media::apply(obj, new, old, retained),
         #[cfg(feature = "widget-animimage")]
-        Props::AnimImage { .. } => media::apply(obj, new, old, retained),
+        Props::AnimatedImage { .. } => media::apply(obj, new, old, retained),
         #[cfg(feature = "widget-line")]
         Props::Line { .. } => media::apply(obj, new, old, retained),
         #[cfg(feature = "widget-msgbox")]
-        Props::Msgbox { .. } => messagebox::apply(obj, new, old, parts),
+        Props::MessageBox { .. } => messagebox::apply(obj, new, old, parts),
         #[cfg(feature = "widget-ime-pinyin")]
         Props::PinyinKeyboard { .. } => extensions::apply(obj, new, old, parts, retained),
         #[cfg(feature = "widget-qrcode")]

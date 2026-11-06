@@ -1,6 +1,6 @@
 //! Tree composition, styling and grid placement.
 
-use crate::node::{GridAlign, GridCell, Key, Node, Part, Selector, State};
+use crate::node::{GridAlign, GridCell, Key, NativePart, Node, Selector, State, WidgetKind};
 use crate::Style;
 
 impl<M, K> Node<M, K> {
@@ -26,12 +26,87 @@ impl<M, K> Node<M, K> {
         self
     }
 
+    /// Style the draggable thumb of a slider or switch.
+    pub fn thumb_style(self, style: Style) -> Self
+    where
+        K: crate::typed::Supports<crate::typed::capability::Thumb>,
+    {
+        self.thumb_state_style(State::DEFAULT, style)
+    }
+
+    /// Style a slider/switch thumb while the given state is active.
+    pub fn thumb_state_style(self, state: State, style: Style) -> Self
+    where
+        K: crate::typed::Supports<crate::typed::capability::Thumb>,
+    {
+        let supported = match self.kind {
+            #[cfg(feature = "widget-slider")]
+            WidgetKind::Slider { .. } => true,
+            #[cfg(feature = "widget-switch")]
+            WidgetKind::Switch { .. } => true,
+            _ => false,
+        };
+        self.semantic_part_style(
+            supported,
+            NativePart::Knob,
+            state,
+            style,
+            crate::Property::ThumbStyle,
+        )
+    }
+
+    /// Style the filled progress region of a slider or progress bar.
+    pub fn progress_style(self, style: Style) -> Self
+    where
+        K: crate::typed::Supports<crate::typed::capability::Progress>,
+    {
+        self.progress_state_style(State::DEFAULT, style)
+    }
+
+    /// Style a slider/progress bar's filled region while the given state is active.
+    pub fn progress_state_style(self, state: State, style: Style) -> Self
+    where
+        K: crate::typed::Supports<crate::typed::capability::Progress>,
+    {
+        let supported = match self.kind {
+            #[cfg(feature = "widget-slider")]
+            WidgetKind::Slider { .. } => true,
+            #[cfg(feature = "widget-bar")]
+            WidgetKind::ProgressBar { .. } => true,
+            _ => false,
+        };
+        self.semantic_part_style(
+            supported,
+            NativePart::Indicator,
+            state,
+            style,
+            crate::Property::ProgressStyle,
+        )
+    }
+
+    fn semantic_part_style(
+        mut self,
+        supported: bool,
+        part: NativePart,
+        state: State,
+        style: Style,
+        property: crate::Property,
+    ) -> Self {
+        if supported {
+            self.part_styles.push((Selector::new(part, state), style));
+        } else {
+            self.record_invalid_property(property);
+        }
+        self
+    }
+
     /// Apply a style to one widget part (for example a slider indicator).
     ///
     /// Part styles are applied after the main style and override it on that
-    /// part. Replacing or removing a part style restores the class defaults for
+    /// part. A later patch for the same part/state replaces the entire earlier
+    /// patch, including fields it leaves unset. Replacing or removing a part style restores the class defaults for
     /// that part when the view updates.
-    pub fn part_style(mut self, part: Part, style: Style) -> Self {
+    pub fn native_part_style(mut self, part: NativePart, style: Style) -> Self {
         self.part_styles
             .push((Selector::new(part, State::DEFAULT), style));
         self
@@ -44,11 +119,11 @@ impl<M, K> Node<M, K> {
     /// ignored in state styles. Replacing or removing a state style restores
     /// the class defaults for that state when the view updates.
     pub fn state_style(self, state: State, style: Style) -> Self {
-        self.part_state_style(Part::Main, state, style)
+        self.native_part_state_style(NativePart::Main, state, style)
     }
 
     /// Apply a style to one widget part while `state` is active.
-    pub fn part_state_style(mut self, part: Part, state: State, style: Style) -> Self {
+    pub fn native_part_state_style(mut self, part: NativePart, state: State, style: Style) -> Self {
         self.part_styles.push((Selector::new(part, state), style));
         self
     }

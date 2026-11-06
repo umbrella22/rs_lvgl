@@ -25,9 +25,9 @@ switches, text fields, selections and overlays update a shared Rust state.
 | Text & input | Textarea, Keyboard, PinyinKeyboard, CJK fonts, Calendar, Span | ASCII/Chinese text, keyboard targets, native date selection, wrapping |
 | Data & charts | Chart, Table, Scale, Line | Two sample series, table cell events, ticks and polyline rendering |
 | Layout | Grid, Row, Column, Obj, Tabview, Tileview | Equal grid tracks, arrow navigation, controlled tabs and swipeable tiles |
-| Media & codes | Image, ImageButton, AnimImage, GIF, Lottie, QRCode, Barcode | Retained images, pressed image, native animation timers, encoded data |
+| Media & codes | Image, ImageButton, AnimatedImage, GIF, Lottie, QRCode, Barcode | Retained images, pressed image, native animation timers, encoded data |
 | Canvas & motion | Canvas, ArcLabel, custom lifecycle widget, native Animation | Lines/rectangles/text/pixels, curved text, reversible motion, tick-driven opacity |
-| Composition | Panel, List/ListItem, NavState, FileExplorer, Dialog, Toasts, layers, Msgbox | Push/back, sample file selection, modal focus, dismissal and toast expiry |
+| Composition | Panel, List/ListItem, NavState, FileExplorer, Dialog, Toasts, layers, MessageBox | Push/back, sample file selection, modal focus, dismissal and toast expiry |
 | Native extras | Native List, Menu, Window via `raw` | Native menu page/back, descendant click events observed by a typed parent |
 
 The table covers the current declarative widget/component surface and the three

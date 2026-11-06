@@ -2,8 +2,8 @@
 
 use crate::custom::CustomWidgetKind;
 use crate::node::{
-    CalendarDate, ChartSeries, ChartType, Color, GridTrack, ImageSource, LabelLongMode, RollerMode,
-    Span, Tile, WidgetKind,
+    CalendarDate, ChartSeries, ChartType, Color, GridTrack, ImageSource, RollerMode, Span,
+    TextOverflow, Tile, WidgetKind,
 };
 use alloc::{borrow::Cow, string::String, vec::Vec};
 
@@ -34,7 +34,7 @@ pub(crate) enum Props {
     Canvas {
         frame: crate::Canvas,
     },
-    Obj,
+    Container,
     Row,
     Column,
     Grid {
@@ -52,7 +52,7 @@ pub(crate) enum Props {
     },
     Label {
         text: Cow<'static, str>,
-        long_mode: LabelLongMode,
+        text_overflow: TextOverflow,
     },
     Button {
         text: Cow<'static, str>,
@@ -64,7 +64,7 @@ pub(crate) enum Props {
         value: i32,
     },
     #[cfg(feature = "widget-bar")]
-    Bar {
+    ProgressBar {
         min: i32,
         max: i32,
         value: i32,
@@ -76,7 +76,7 @@ pub(crate) enum Props {
     #[cfg(feature = "widget-image")]
     Image {
         source: ImageSource,
-        scale: u16,
+        scale: crate::Scale,
     },
     #[cfg(feature = "widget-checkbox")]
     Checkbox {
@@ -160,7 +160,7 @@ pub(crate) enum Props {
         active: u32,
     },
     #[cfg(feature = "widget-msgbox")]
-    Msgbox {
+    MessageBox {
         title: Option<String>,
         text: String,
         buttons: Vec<String>,
@@ -182,7 +182,7 @@ pub(crate) enum Props {
         pressed: Option<ImageSource>,
     },
     #[cfg(feature = "widget-animimage")]
-    AnimImage {
+    AnimatedImage {
         frames: Vec<ImageSource>,
         duration_ms: u32,
         repeat: u32,
@@ -226,12 +226,12 @@ pub(crate) fn needs_recreate(old: &Props, new: &WidgetKind) -> bool {
         // remove them.
         #[cfg(feature = "widget-msgbox")]
         (
-            Props::Msgbox {
+            Props::MessageBox {
                 title: old_title,
                 buttons: old_buttons,
                 ..
             },
-            WidgetKind::Msgbox { title, buttons, .. },
+            WidgetKind::MessageBox { title, buttons, .. },
         ) => old_title.is_some() != title.is_some() || old_buttons.len() != buttons.len(),
         _ => false,
     }
@@ -256,7 +256,7 @@ pub(crate) fn into_props(kind: WidgetKind) -> (Props, Option<CustomWidgetKind>) 
 
         #[cfg(feature = "widget-canvas")]
         WidgetKind::Canvas { frame } => Props::Canvas { frame },
-        WidgetKind::Obj => Props::Obj,
+        WidgetKind::Container => Props::Container,
         WidgetKind::Row => Props::Row,
         WidgetKind::Column => Props::Column,
         WidgetKind::Grid { columns, rows } => Props::Grid { columns, rows },
@@ -264,15 +264,18 @@ pub(crate) fn into_props(kind: WidgetKind) -> (Props, Option<CustomWidgetKind>) 
         WidgetKind::Tabview { tabs, active } => Props::Tabview { tabs, active },
         #[cfg(feature = "widget-keyboard")]
         WidgetKind::Keyboard { target } => Props::Keyboard { target },
-        WidgetKind::Label { text, long_mode } => Props::Label {
+        WidgetKind::Label {
+            text,
+            text_overflow,
+        } => Props::Label {
             text: text.into(),
-            long_mode,
+            text_overflow,
         },
         WidgetKind::Button { text } => Props::Button { text: text.into() },
         #[cfg(feature = "widget-slider")]
         WidgetKind::Slider { min, max, value } => Props::Slider { min, max, value },
         #[cfg(feature = "widget-bar")]
-        WidgetKind::Bar { min, max, value } => Props::Bar { min, max, value },
+        WidgetKind::ProgressBar { min, max, value } => Props::ProgressBar { min, max, value },
         #[cfg(feature = "widget-switch")]
         WidgetKind::Switch { checked } => Props::Switch { checked },
         #[cfg(feature = "widget-image")]
@@ -372,11 +375,11 @@ pub(crate) fn into_props(kind: WidgetKind) -> (Props, Option<CustomWidgetKind>) 
         #[cfg(feature = "widget-tileview")]
         WidgetKind::Tileview { tiles, active } => Props::Tileview { tiles, active },
         #[cfg(feature = "widget-msgbox")]
-        WidgetKind::Msgbox {
+        WidgetKind::MessageBox {
             title,
             text,
             buttons,
-        } => Props::Msgbox {
+        } => Props::MessageBox {
             title,
             text,
             buttons,
@@ -398,11 +401,11 @@ pub(crate) fn into_props(kind: WidgetKind) -> (Props, Option<CustomWidgetKind>) 
         #[cfg(feature = "widget-imagebutton")]
         WidgetKind::ImageButton { released, pressed } => Props::ImageButton { released, pressed },
         #[cfg(feature = "widget-animimage")]
-        WidgetKind::AnimImage {
+        WidgetKind::AnimatedImage {
             frames,
             duration_ms,
             repeat,
-        } => Props::AnimImage {
+        } => Props::AnimatedImage {
             frames,
             duration_ms,
             repeat,

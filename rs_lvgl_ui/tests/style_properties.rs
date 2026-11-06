@@ -9,11 +9,11 @@ impl App for Styled {
     type Action = ();
     fn update(&mut self, _: ()) {}
     fn view(&self, _: &Theme) -> View<()> {
-        let mut node = obj().style(self.style).child(label("Inherited"));
+        let mut node = container().style(self.style).child(label("Inherited"));
         if let Some(style) = self.state {
             node = node
                 .state_style(State::PRESSED, style)
-                .part_style(Part::Scrollbar, style);
+                .native_part_style(NativePart::Scrollbar, style);
         }
         node
     }
@@ -42,23 +42,23 @@ fn properties_merge_inherit_and_reset_on_the_same_native_object() {
             .shadow_spread(-2)
             .shadow_opacity(137)
             .outline_width(3)
-            .outline_pad(-1)
+            .outline_offset(-1)
             .outline_opacity(91)
             .outline_color(Color::rgb(20, 30, 40))
-            .bg_grad_color(Color::rgb(70, 80, 90))
-            .bg_grad_dir(GradientDirection::Vertical)
-            .bg_main_stop(17)
-            .bg_grad_stop(220)
-            .bg_main_opacity(200)
-            .bg_grad_opacity(100)
-            .text_letter_space(-1)
-            .text_line_space(6)
+            .background_gradient_color(Color::rgb(70, 80, 90))
+            .background_gradient_direction(GradientDirection::Vertical)
+            .background_gradient_start(17)
+            .background_gradient_end(220)
+            .background_gradient_start_opacity(200)
+            .background_gradient_end_opacity(100)
+            .letter_spacing(-1)
+            .line_spacing(6)
             .text_decoration(TextDecoration::UNDERLINE | TextDecoration::STRIKETHROUGH)
-            .image_recolor(Color::rgb(100, 110, 120))
-            .image_recolor_opacity(180)
-            .transform_scale_x(384)
-            .transform_scale_y(192)
-            .transform_rotation(-450)
+            .image_tint(Color::rgb(100, 110, 120))
+            .image_tint_opacity(180)
+            .transform_scale_x(Scale::percent(150))
+            .transform_scale_y(Scale::percent(75))
+            .transform_rotation(Angle::degrees(-45))
             .transform_pivot_x(8)
             .transform_pivot_y(-4)
             .transform_width(2)

@@ -13,9 +13,9 @@ pub use kind::WidgetKind;
 pub(crate) use types::Selector;
 pub use types::{
     table_cell, Align, CalendarDate, ChartSeries, ChartType, Color, FlexAlign, Font, GridAlign,
-    GridCell, GridTrack, ImageSource, LabelLongMode, Part, RawImage, RollerMode, ScrollDir, Size,
-    Span, State, TableCell, TextAlign, Tile, ANIM_IMAGE_MAX_FRAMES, ANIM_REPEAT_INFINITE,
-    SPINBOX_MAX_DIGITS, TABLE_MAX_CELLS_PER_AXIS,
+    GridCell, GridTrack, ImageSource, ItemAlign, NativePart, RawImage, RollerMode, ScrollDirection,
+    Size, Span, State, TableCell, TextAlign, TextOverflow, Tile, ANIMATED_IMAGE_MAX_FRAMES,
+    ANIMATION_REPEAT_INFINITE, SPINBOX_MAX_DIGITS, TABLE_MAX_CELLS_PER_AXIS,
 };
 pub(crate) use validation::validate;
 
@@ -81,15 +81,15 @@ impl<M, K> Node<M, K> {
 
     pub(crate) fn new(kind: WidgetKind) -> Self {
         let style = match &kind {
-            WidgetKind::Obj
+            WidgetKind::Container
             | WidgetKind::Row
             | WidgetKind::Column
             | WidgetKind::Grid { .. }
-            | WidgetKind::Label { .. } => Style::neutral(),
+            | WidgetKind::Label { .. } => Style::plain(),
             #[cfg(feature = "widget-span")]
-            WidgetKind::Spans { .. } => Style::neutral(),
+            WidgetKind::Spans { .. } => Style::plain(),
             #[cfg(feature = "widget-arclabel")]
-            WidgetKind::ArcLabel { .. } => Style::neutral(),
+            WidgetKind::ArcLabel { .. } => Style::plain(),
             _ => Style::default(),
         };
         Self {

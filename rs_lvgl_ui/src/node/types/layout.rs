@@ -15,13 +15,13 @@ pub enum Size {
 pub enum Align {
     #[default]
     TopLeft,
-    TopMid,
+    TopCenter,
     TopRight,
-    LeftMid,
+    CenterLeft,
     Center,
-    RightMid,
+    CenterRight,
     BottomLeft,
-    BottomMid,
+    BottomCenter,
     BottomRight,
 }
 
@@ -29,13 +29,13 @@ impl Align {
     pub(crate) fn to_raw(self) -> rs_lvgl_sys::lv_align_t {
         match self {
             Align::TopLeft => rs_lvgl_sys::lv_align_t_LV_ALIGN_TOP_LEFT,
-            Align::TopMid => rs_lvgl_sys::lv_align_t_LV_ALIGN_TOP_MID,
+            Align::TopCenter => rs_lvgl_sys::lv_align_t_LV_ALIGN_TOP_MID,
             Align::TopRight => rs_lvgl_sys::lv_align_t_LV_ALIGN_TOP_RIGHT,
-            Align::LeftMid => rs_lvgl_sys::lv_align_t_LV_ALIGN_LEFT_MID,
+            Align::CenterLeft => rs_lvgl_sys::lv_align_t_LV_ALIGN_LEFT_MID,
             Align::Center => rs_lvgl_sys::lv_align_t_LV_ALIGN_CENTER,
-            Align::RightMid => rs_lvgl_sys::lv_align_t_LV_ALIGN_RIGHT_MID,
+            Align::CenterRight => rs_lvgl_sys::lv_align_t_LV_ALIGN_RIGHT_MID,
             Align::BottomLeft => rs_lvgl_sys::lv_align_t_LV_ALIGN_BOTTOM_LEFT,
-            Align::BottomMid => rs_lvgl_sys::lv_align_t_LV_ALIGN_BOTTOM_MID,
+            Align::BottomCenter => rs_lvgl_sys::lv_align_t_LV_ALIGN_BOTTOM_MID,
             Align::BottomRight => rs_lvgl_sys::lv_align_t_LV_ALIGN_BOTTOM_RIGHT,
         }
     }
@@ -63,10 +63,8 @@ impl GridTrack {
     }
 }
 
-/// Placement of the children of a `row` or `column` along one axis.
-///
-/// The space-distributing variants only make sense on the main axis; on the
-/// cross axis LVGL treats them as [`FlexAlign::Start`].
+/// Placement along the main axis or placement of flex lines in their container.
+/// Use [`ItemAlign`] for children inside a line.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum FlexAlign {
     #[default]
@@ -87,6 +85,25 @@ impl FlexAlign {
             FlexAlign::SpaceEvenly => rs_lvgl_sys::lv_flex_align_t_LV_FLEX_ALIGN_SPACE_EVENLY,
             FlexAlign::SpaceAround => rs_lvgl_sys::lv_flex_align_t_LV_FLEX_ALIGN_SPACE_AROUND,
             FlexAlign::SpaceBetween => rs_lvgl_sys::lv_flex_align_t_LV_FLEX_ALIGN_SPACE_BETWEEN,
+        }
+    }
+}
+
+/// Placement of a child within its flex line, perpendicular to the flow.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum ItemAlign {
+    #[default]
+    Start,
+    Center,
+    End,
+}
+
+impl ItemAlign {
+    pub(crate) fn to_raw(self) -> rs_lvgl_sys::lv_flex_align_t {
+        match self {
+            Self::Start => rs_lvgl_sys::lv_flex_align_t_LV_FLEX_ALIGN_START,
+            Self::Center => rs_lvgl_sys::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
+            Self::End => rs_lvgl_sys::lv_flex_align_t_LV_FLEX_ALIGN_END,
         }
     }
 }

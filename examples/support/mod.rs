@@ -59,7 +59,9 @@ pub fn row<M>() -> View<M> {
     rs_lvgl_ui::row([])
         .gap(12)
         .width(percent(100))
-        .flex_align(FlexAlign::Start, FlexAlign::Center)
+        .justify_content(FlexAlign::Start)
+        .align_items(ItemAlign::Center)
+        .align_content(FlexAlign::Center)
 }
 pub fn value<M>(theme: &Theme, text: impl Into<String>) -> View<M> {
     label(text).font(theme.title_font).text_color(theme.text)

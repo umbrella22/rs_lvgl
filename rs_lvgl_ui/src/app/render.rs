@@ -20,13 +20,13 @@ impl<M: Clone + 'static> Ui<M> {
                 return Err(UiError::Allocation);
             };
             // The theme's card style would otherwise give the root a
-            // background, border and text color that `Style::neutral` does
+            // background, border and text color that `Style::plain` does
             // not reset.
             widgets::remove_main_theme(root);
-            let style = Style::neutral()
+            let style = Style::plain()
                 .width(Size::Percent(100))
                 .height(Size::Percent(100));
-            widgets::apply_style(root, &style, KindTag::Obj);
+            widgets::apply_style(root, &style, KindTag::Container);
             self.root = Some(root);
         }
         Ok(())
@@ -111,10 +111,10 @@ impl<M: Clone + 'static> Ui<M> {
             return Err(UiError::Allocation);
         };
         widgets::remove_main_theme(root);
-        let style = Style::neutral()
+        let style = Style::plain()
             .width(Size::Percent(100))
             .height(Size::Percent(100));
-        widgets::apply_style(root, &style, KindTag::Obj);
+        widgets::apply_style(root, &style, KindTag::Container);
         // SAFETY: `root` was just created. A non-clickable, non-scrollable
         // root lets input fall through to the view where no overlay widget
         // is hit.

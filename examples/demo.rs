@@ -34,7 +34,7 @@ impl App for Watch {
                 .child(label(format!("October {} / Morning walk", self.day)))
                 .child(label(format!("{} / 10,000 steps", self.steps)))
                 .child(
-                    bar(0, 10000, self.steps as i32)
+                    progress_bar(0, 10000, self.steps as i32)
                         .width(percent(100))
                         .height(px(16)),
                 )

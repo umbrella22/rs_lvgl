@@ -133,7 +133,9 @@ fn map_converts_click_value_and_event_messages() {
         let inner: View<Inner> = column([])
             .child(button("go").on_click(Inner::Clicked))
             .child(slider(0, 10, 3).on_value_changed(Inner::Value))
-            .child(obj().on_event(|event| (*event == Event::Clicked).then_some(Inner::Event)));
+            .child(
+                container().on_event(|event| (*event == Event::Clicked).then_some(Inner::Event)),
+            );
         // Nested maps compose.
         inner.map(Msg::Inner).map(|action| match action {
             Msg::Inner(inner) => Msg::Outer(inner),
@@ -216,8 +218,8 @@ fn state_styles_apply_and_clear() {
 fn part_state_style_targets_part_and_state() {
     let _guard = lock();
     let app = TestApp::new(|_| {
-        slider(0, 10, 5).part_state_style(
-            Part::Knob,
+        slider(0, 10, 5).native_part_state_style(
+            NativePart::Knob,
             State::PRESSED,
             Style::default().background(Color::rgb(10, 20, 30)),
         )
@@ -232,7 +234,7 @@ fn part_state_style_targets_part_and_state() {
 fn state_style_ignores_object_wide_props() {
     let _guard = lock();
     let app = TestApp::new(|_| {
-        obj().state_style(State::PRESSED, Style::default().hidden(true).floating(true))
+        container().state_style(State::PRESSED, Style::default().hidden(true).floating(true))
     });
     let (_ui, widget) = mount(&app);
     assert!(!has_flag(
@@ -288,14 +290,14 @@ fn floating_and_offset_apply_and_clear() {
     let _guard = lock();
     let mut app = TestApp::new(|state| {
         if state == 0 {
-            obj().style(
+            container().style(
                 Style::default()
                     .floating(true)
                     .align(Align::TopRight)
                     .offset(-4, 6),
             )
         } else {
-            obj()
+            container()
         }
     });
     let (mut ui, widget) = mount(&app);
@@ -324,7 +326,12 @@ fn flex_align_applies_and_clears() {
     let mut app = TestApp::new(|state| {
         let column = column([]).child(label("a"));
         if state == 0 {
-            column.style(Style::default().flex_align(FlexAlign::SpaceBetween, FlexAlign::Center))
+            column.style(
+                Style::default()
+                    .justify_content(FlexAlign::SpaceBetween)
+                    .align_items(ItemAlign::Center)
+                    .align_content(FlexAlign::Center),
+            )
         } else {
             column
         }
@@ -371,9 +378,11 @@ fn flex_align_centers_children_after_layout() {
                 Style::default()
                     .width(Size::Px(60))
                     .padding(0)
-                    .flex_align(FlexAlign::Start, FlexAlign::Center),
+                    .justify_content(FlexAlign::Start)
+                    .align_items(ItemAlign::Center)
+                    .align_content(FlexAlign::Center),
             )
-            .child(obj().style(Style::neutral().width(Size::Px(20)).height(Size::Px(10))))
+            .child(container().width(Size::Px(20)).height(Size::Px(10)))
     });
     let (_ui, widget) = mount(&app);
     let item = child(widget, 0);

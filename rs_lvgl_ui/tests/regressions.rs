@@ -65,10 +65,10 @@ fn bg_opacity_merges_over_a_surface_color() {
     let theme = Theme::dark();
     let mut ui = Ui::new(&display, theme).unwrap();
     let mut app = FnApp::<()>::new(|state, theme| match state {
-        0 => obj()
+        0 => container()
             .style(Style::surface(theme))
             .style(Style::default().background_opacity(128)),
-        _ => obj().style(
+        _ => container().style(
             Style::default()
                 .background(Color::rgb(255, 0, 0))
                 .background_opacity(64),
@@ -504,7 +504,9 @@ fn validation_covers_keyboard_ids_and_part_styles() {
     assert_eq!(ui.mount(&duplicate), Err(UiError::InvalidProperty));
 
     let bad_part = FnApp::<()>::new(|_, _| {
-        column([]).child(slider(0, 10, 5).part_style(Part::Knob, Style::default().radius(-1)))
+        column([]).child(
+            slider(0, 10, 5).native_part_style(NativePart::Knob, Style::default().radius(-1)),
+        )
     });
     assert_eq!(ui.mount(&bad_part), Err(UiError::InvalidProperty));
 }

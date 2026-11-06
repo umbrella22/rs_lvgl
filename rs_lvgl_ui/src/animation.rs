@@ -58,15 +58,15 @@ style_properties! {
     OutlineWidth => _lv_style_id_t_LV_STYLE_OUTLINE_WIDTH,
     OutlineColor => _lv_style_id_t_LV_STYLE_OUTLINE_COLOR,
     OutlineOpacity => _lv_style_id_t_LV_STYLE_OUTLINE_OPA,
-    OutlinePad => _lv_style_id_t_LV_STYLE_OUTLINE_PAD,
-    GradientColor => _lv_style_id_t_LV_STYLE_BG_GRAD_COLOR,
-    ImageRecolor => _lv_style_id_t_LV_STYLE_IMAGE_RECOLOR,
-    ImageRecolorOpacity => _lv_style_id_t_LV_STYLE_IMAGE_RECOLOR_OPA,
+    OutlineOffset => _lv_style_id_t_LV_STYLE_OUTLINE_PAD,
+    BackgroundGradientColor => _lv_style_id_t_LV_STYLE_BG_GRAD_COLOR,
+    ImageTint => _lv_style_id_t_LV_STYLE_IMAGE_RECOLOR,
+    ImageTintOpacity => _lv_style_id_t_LV_STYLE_IMAGE_RECOLOR_OPA,
     Rotation => _lv_style_id_t_LV_STYLE_TRANSFORM_ROTATION,
     ScaleX => _lv_style_id_t_LV_STYLE_TRANSFORM_SCALE_X,
     ScaleY => _lv_style_id_t_LV_STYLE_TRANSFORM_SCALE_Y,
-    LetterSpace => _lv_style_id_t_LV_STYLE_TEXT_LETTER_SPACE,
-    LineSpace => _lv_style_id_t_LV_STYLE_TEXT_LINE_SPACE,
+    LetterSpacing => _lv_style_id_t_LV_STYLE_TEXT_LETTER_SPACE,
+    LineSpacing => _lv_style_id_t_LV_STYLE_TEXT_LINE_SPACE,
 }
 
 /// Animate selected style properties when native widget state changes.
@@ -206,9 +206,29 @@ pub enum AnimationProperty {
     Width,
     Height,
     Opacity,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum NativeAnimationProperty {
+    X,
+    Y,
+    Width,
+    Height,
+    Opacity,
     Rotation,
     ScaleX,
     ScaleY,
+}
+impl AnimationProperty {
+    const fn native(self) -> NativeAnimationProperty {
+        match self {
+            Self::X => NativeAnimationProperty::X,
+            Self::Y => NativeAnimationProperty::Y,
+            Self::Width => NativeAnimationProperty::Width,
+            Self::Height => NativeAnimationProperty::Height,
+            Self::Opacity => NativeAnimationProperty::Opacity,
+        }
+    }
 }
 macro_rules! animator {
     ($name:ident, $setter:ident) => {
@@ -229,7 +249,7 @@ animator!(animate_opacity, lv_obj_set_style_opa);
 animator!(animate_rotation, lv_obj_set_style_transform_rotation);
 animator!(animate_scale_x, lv_obj_set_style_transform_scale_x);
 animator!(animate_scale_y, lv_obj_set_style_transform_scale_y);
-impl AnimationProperty {
+impl NativeAnimationProperty {
     fn callback(self) -> rs_lvgl_sys::lv_anim_exec_xcb_t {
         Some(match self {
             Self::X => animate_x,
@@ -246,7 +266,9 @@ impl AnimationProperty {
         let max = rs_lvgl_sys::LV_COORD_MAX as i32;
         let valid = match self {
             Self::Opacity => (0..=255).contains(&value),
-            Self::Width | Self::Height | Self::ScaleX | Self::ScaleY => (0..=max).contains(&value),
+            Self::Width | Self::Height => (0..=max).contains(&value),
+            Self::ScaleX | Self::ScaleY => (0..=u16::MAX as i32).contains(&value),
+            Self::Rotation => i16::try_from(value).is_ok(),
             _ => (-max..=max).contains(&value),
         };
         if valid {
@@ -263,7 +285,7 @@ impl AnimationProperty {
 /// style/layout rules still apply (animate floating children in flex layouts).
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Animation {
-    property: AnimationProperty,
+    property: NativeAnimationProperty,
     from: i32,
     to: i32,
     duration: u32,
@@ -274,6 +296,45 @@ pub struct Animation {
 }
 impl Animation {
     pub const fn new(property: AnimationProperty, from: i32, to: i32, duration_ms: u32) -> Self {
+        Self::native(property.native(), from, to, duration_ms)
+    }
+
+    /// Animate clockwise angles with explicit degree/tenths units.
+    pub const fn rotation(from: crate::Angle, to: crate::Angle, duration_ms: u32) -> Self {
+        Self::native(
+            NativeAnimationProperty::Rotation,
+            from.to_raw(),
+            to.to_raw(),
+            duration_ms,
+        )
+    }
+
+    /// Animate horizontal scale. Zero is allowed; unrepresentable endpoints fail validation.
+    pub const fn scale_x(from: crate::Scale, to: crate::Scale, duration_ms: u32) -> Self {
+        Self::native(
+            NativeAnimationProperty::ScaleX,
+            from.to_raw(),
+            to.to_raw(),
+            duration_ms,
+        )
+    }
+
+    /// Animate vertical scale with the same units as `scale_x`.
+    pub const fn scale_y(from: crate::Scale, to: crate::Scale, duration_ms: u32) -> Self {
+        Self::native(
+            NativeAnimationProperty::ScaleY,
+            from.to_raw(),
+            to.to_raw(),
+            duration_ms,
+        )
+    }
+
+    const fn native(
+        property: NativeAnimationProperty,
+        from: i32,
+        to: i32,
+        duration_ms: u32,
+    ) -> Self {
         Self {
             property,
             from,

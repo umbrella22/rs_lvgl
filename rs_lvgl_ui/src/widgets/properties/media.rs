@@ -20,7 +20,7 @@ pub(super) fn apply(
         (Props::Image { source, scale }, old) => {
             let (old_source, old_scale) = match old {
                 Some(Props::Image { source, scale }) => (Some(*source), *scale),
-                _ => (None, 0),
+                _ => (None, crate::Scale::percent(0)),
             };
             let source_changed = old_source != Some(*source);
             // SAFETY: `obj` is a live image object. `retained` keeps a
@@ -58,7 +58,7 @@ pub(super) fn apply(
                     };
                 }
                 if old_scale != *scale {
-                    rs_lvgl_sys::lv_image_set_scale(obj.as_ptr(), *scale as u32);
+                    rs_lvgl_sys::lv_image_set_scale(obj.as_ptr(), scale.to_raw() as u32);
                 }
             }
         }
@@ -106,7 +106,7 @@ pub(super) fn apply(
         }
         #[cfg(feature = "widget-animimage")]
         (
-            Props::AnimImage {
+            Props::AnimatedImage {
                 frames,
                 duration_ms,
                 repeat,
@@ -114,7 +114,7 @@ pub(super) fn apply(
             old,
         ) => {
             let changed = match old {
-                Some(Props::AnimImage {
+                Some(Props::AnimatedImage {
                     frames: old_frames,
                     duration_ms: old_duration,
                     repeat: old_repeat,

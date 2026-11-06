@@ -30,8 +30,9 @@ impl App for Events {
     }
     fn view(&self, _: &Theme) -> View<Msg> {
         let generation = self.generation;
-        let mut child = obj()
-            .style(Style::neutral().width(Size::Px(32)).height(Size::Px(32)))
+        let mut child = container()
+            .width(Size::Px(32))
+            .height(Size::Px(32))
             .scrollable(false)
             .gesture_bubble(false)
             .event_bubble(self.bubble);
@@ -228,15 +229,16 @@ impl App for Scroller {
     }
     fn view(&self, _: &Theme) -> View<ScrollOffset> {
         let mut node = column([])
-            .style(Style::neutral().width(Size::Px(40)).height(Size::Px(40)))
-            .scroll_dir(ScrollDir::VER)
+            .width(Size::Px(40))
+            .height(Size::Px(40))
+            .scroll_direction(ScrollDirection::VERTICAL)
             .scrollbar_mode(ScrollbarMode::Active)
             .scroll_snap_x(ScrollSnap::None)
             .scroll_snap_y(ScrollSnap::None)
             .scroll_momentum(!self.reset)
             .scroll_elastic(!self.reset)
             .on_scroll(|p| p)
-            .child(obj().style(Style::neutral().height(Size::Px(200)).width(Size::Px(20))));
+            .child(container().height(Size::Px(200)).width(Size::Px(20)));
         if let Some(offset) = self.offset {
             node = node.scroll_to(offset.x, offset.y);
         }

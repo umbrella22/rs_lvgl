@@ -4,7 +4,7 @@ mod builders;
 mod merge;
 mod presets;
 
-use crate::node::{Align, Color, FlexAlign, Font, Size, TextAlign};
+use crate::node::{Align, Color, FlexAlign, Font, ItemAlign, Size, TextAlign};
 
 /// Background color.
 pub(crate) const STYLE_BG: u32 = 1 << 0;
@@ -38,10 +38,12 @@ pub(crate) const STYLE_BG_OPA: u32 = 1 << 25;
 /// Position offset from the aligned position.
 pub(crate) const STYLE_OFFSET: u32 = 1 << 26;
 pub(crate) const STYLE_FLOATING: u32 = 1 << 27;
-/// Flex main and cross axis placement.
-pub(crate) const STYLE_FLEX_ALIGN: u32 = 1 << 28;
-const STYLE_ALL: u32 = (1 << 29) - 1;
-/// Fields fixed by [`Style::neutral`]. Inheritable text properties (color,
+/// Independent flex main, item and line placement.
+pub(crate) const STYLE_JUSTIFY_CONTENT: u32 = 1 << 28;
+pub(crate) const STYLE_ALIGN_ITEMS: u32 = 1 << 29;
+pub(crate) const STYLE_ALIGN_CONTENT: u32 = 1 << 30;
+const STYLE_ALL: u32 = (1 << 31) - 1;
+/// Fields fixed by [`Style::plain`]. Inheritable text properties (color,
 /// font, alignment) are left unset so that children inherit them from the
 /// nearest ancestor that sets them, as in LVGL itself.
 const STYLE_ALL_NEUTRAL: u32 = STYLE_ALL
@@ -52,15 +54,18 @@ const STYLE_ALL_NEUTRAL: u32 = STYLE_ALL
         | STYLE_TEXT_ALIGN
         | STYLE_OFFSET
         | STYLE_FLOATING
-        | STYLE_FLEX_ALIGN);
+        | STYLE_JUSTIFY_CONTENT
+        | STYLE_ALIGN_ITEMS
+        | STYLE_ALIGN_CONTENT);
 
 /// Resolved visual properties for one mounted node.
 ///
 /// A style records which fields the application set. Unset fields inherit the
 /// LVGL widget class default, so a slider keeps its track and a button keeps
-/// its surface unless the view overrides them. [`Style::neutral`] explicitly
-/// clears every non-inheritable layout/appearance field and is the base for
-/// plain containers and labels; text color, font and text alignment stay unset
+/// its surface unless the view overrides them. [`Style::plain`] explicitly
+/// writes base appearance/layout values and is the base for plain containers
+/// and labels. Extended properties and flex placement remain unset; text color,
+/// font and text alignment stay unset
 /// so they inherit from the parent.
 ///
 /// Styles are immutable values: builder methods return a new value. Assigning
@@ -97,12 +102,13 @@ pub struct Style {
     pub(crate) disabled: bool,
     pub(crate) arc_color: Color,
     pub(crate) arc_width: i16,
-    pub(crate) anim_duration: u32,
+    pub(crate) animation_duration: u32,
     pub(crate) offset_x: i16,
     pub(crate) offset_y: i16,
     pub(crate) floating: bool,
     pub(crate) flex_main: FlexAlign,
-    pub(crate) flex_cross: FlexAlign,
+    pub(crate) flex_cross: ItemAlign,
+    pub(crate) flex_track: FlexAlign,
     set: u32,
     pub(crate) transition: Option<crate::StyleTransition>,
     pub(crate) extended: crate::style_properties::ExtendedStyle,
@@ -138,12 +144,13 @@ impl Default for Style {
             disabled: false,
             arc_color: Color::rgb(0, 0, 0),
             arc_width: 0,
-            anim_duration: 0,
+            animation_duration: 0,
             offset_x: 0,
             offset_y: 0,
             floating: false,
             flex_main: FlexAlign::Start,
-            flex_cross: FlexAlign::Start,
+            flex_cross: ItemAlign::Start,
+            flex_track: FlexAlign::Start,
             set: 0,
             transition: None,
             extended: Default::default(),

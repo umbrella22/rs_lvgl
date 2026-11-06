@@ -120,7 +120,7 @@ fn validation_property<M>(node: &Node<M>) -> crate::Property {
         #[cfg(feature = "widget-textarea")]
         WidgetKind::Textarea { .. } => Property::Text,
         #[cfg(feature = "widget-image")]
-        WidgetKind::Image { scale: 0, .. } => Property::Scale,
+        WidgetKind::Image { scale, .. } if scale.validate_image().is_err() => Property::Scale,
         #[cfg(feature = "widget-image")]
         WidgetKind::Image { .. } => Property::Source,
         _ => Property::Value,
@@ -164,13 +164,15 @@ fn is_textarea(kind: &WidgetKind) -> bool {
 
 fn is_container(kind: &WidgetKind) -> bool {
     match kind {
-        WidgetKind::Obj | WidgetKind::Row | WidgetKind::Column | WidgetKind::Grid { .. } => true,
+        WidgetKind::Container | WidgetKind::Row | WidgetKind::Column | WidgetKind::Grid { .. } => {
+            true
+        }
         #[cfg(feature = "widget-tabview")]
         WidgetKind::Tabview { .. } => true,
         #[cfg(feature = "widget-tileview")]
         WidgetKind::Tileview { .. } => true,
         #[cfg(feature = "widget-msgbox")]
-        WidgetKind::Msgbox { .. } => true,
+        WidgetKind::MessageBox { .. } => true,
         _ => false,
     }
 }
@@ -208,7 +210,7 @@ fn validate_navigation<M>(node: &Node<M>, inside_grid: bool) -> Result<(), UiErr
     if node.grid_navigation.is_some()
         && !matches!(
             node.kind,
-            WidgetKind::Obj | WidgetKind::Row | WidgetKind::Column | WidgetKind::Grid { .. }
+            WidgetKind::Container | WidgetKind::Row | WidgetKind::Column | WidgetKind::Grid { .. }
         )
     {
         return Err(UiError::InvalidProperty);

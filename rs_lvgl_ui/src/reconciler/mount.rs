@@ -120,8 +120,8 @@ pub(super) fn create_inner<M: Clone + 'static>(
     }
     if tag != KindTag::Custom {
         widgets::apply_style(obj, &style, tag);
-        for (selector, part_style) in &part_styles {
-            widgets::apply_style_for_selector(obj, part_style, tag, *selector);
+        for (selector, native_part_style) in &part_styles {
+            widgets::apply_style_for_selector(obj, native_part_style, tag, *selector);
         }
     }
     if font_resource.is_some() {

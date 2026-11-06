@@ -8,7 +8,7 @@ pub(crate) enum ValueSource {
     #[cfg(feature = "widget-slider")]
     Slider,
     #[cfg(feature = "widget-bar")]
-    Bar,
+    ProgressBar,
     #[cfg(feature = "widget-switch")]
     Switch,
     #[cfg(feature = "widget-checkbox")]
@@ -95,7 +95,7 @@ pub(super) fn read_value(
             #[cfg(feature = "widget-slider")]
             ValueSource::Slider => ControlValue::Number(rs_lvgl_sys::lv_slider_get_value(obj)),
             #[cfg(feature = "widget-bar")]
-            ValueSource::Bar => ControlValue::Number(rs_lvgl_sys::lv_bar_get_value(obj)),
+            ValueSource::ProgressBar => ControlValue::Number(rs_lvgl_sys::lv_bar_get_value(obj)),
             #[cfg(feature = "widget-switch")]
             ValueSource::Switch => ControlValue::Toggle(rs_lvgl_sys::lv_obj_has_state(
                 obj,

@@ -1,4 +1,4 @@
-//! Settings screen using the rs_lvgl_ui 0.5.0 typed construction and binding APIs.
+//! Settings screen using the rs_lvgl_ui 0.6.0 typed construction and binding APIs.
 //!
 //! Run with:
 //!

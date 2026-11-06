@@ -1,9 +1,13 @@
 # rs_lvgl_ui
 
+Version 0.6.0 uses unified UI names, explicit transform units, independent flex
+alignment and semantic widget parts. Follow the
+[migration guide](../docs/ui-api-migration.md) when upgrading from 0.5.0.
+
 The [browser studio](https://umbrella22.github.io/rs_lvgl_website/en/studio.html) runs all nine component categories in WebAssembly. It shares these Rust views with the desktop studio; see [build instructions](https://github.com/umbrella22/rs_lvgl_website).
 
 
-A declarative Rust UI layer for LVGL 9.6. Version 0.5.0 provides lazy composition,
+A declarative Rust UI layer for LVGL 9.6. Version 0.6.0 provides lazy composition,
 semantic events, typed construction and explicit form bindings. See the
 [composition guide](../docs/ui-composition.md) for conversion boundaries,
 controlled-input behavior and runnable examples.
@@ -72,14 +76,14 @@ widgets are not compiled at all. The defaults keep the full set.
 ```toml
 [dependencies]
 [dependencies.rs_lvgl_ui]
-version = "0.5.0"
+version = "0.6.0"
 default-features = false
 features = [
     "alloc", "components", "widget-slider", "widget-switch", "font-montserrat-20",
 ]
 ```
 
-- Always available: `obj`, `row`, `column`, `grid`, `label`, `button`, custom
+- Always available: `container`, `row`, `column`, `grid`, `label`, `button`, custom
   widgets, `raw` and `Font::montserrat_14`. Composite components require
   the `components` feature.
 - Optional widgets: `animimage`, `arc`, `arclabel`, `bar`, `buttonmatrix`,
@@ -112,7 +116,7 @@ that are shared by several widgets; the full set keeps every lint.
 
 ## Quick start
 
-This example also works with the published 0.5.0 packages.
+This example also works with the published 0.6.0 packages.
 
 Use ordinary function constructors, `App::Action` and flat style modifiers.
 The [style and action guide](../docs/ui-styles.md) defines initialization,
@@ -240,10 +244,10 @@ item with `.into_view()`. See [composition and forms](../docs/ui-composition.md)
   of rows/columns and both grid axes.
 - A whole `Style` value is compared. `style()` sets nothing and
   inherits the LVGL widget class default, so sliders keep their track and
-  buttons keep their surface. `Style::neutral()` explicitly clears every field
-  and is the base for plain containers and labels, except for the inherited
-  text properties (text color, font, text alignment) and arc properties, which
-  stay unset so a label inherits the text color and font of its container.
+  buttons keep their surface. `Style::plain()` explicitly sets base appearance/layout values
+  and is the base for plain containers and labels. Inherited text, arc, extended
+  styles, offsets, floating and flex placement remain unset. It is not a
+  complete reset. A label inherits text color and font from its container.
   Plain containers and the `Ui` root also drop LVGL's default-theme card style,
   so they start transparent and borderless. `.style(...)` merges the fields the
   supplied value sets over the current style. Flat modifiers and reusable
@@ -289,15 +293,15 @@ item with `.into_view()`. See [composition and forms](../docs/ui-composition.md)
   collection; children use `grid_cell` and
   `grid_align`. `tabview` takes one child per tab page and reports the
   active index through `on_value_changed`.
-- `View::part_style(Part, Style)` styles a specific widget part (indicator,
+- `View::native_part_style(NativePart, Style)` styles a specific widget part (indicator,
   knob, scrollbar, selected, items, cursor) and restores class defaults when the
   part style is removed.
-- `View::state_style(State, Style)` and `View::part_state_style(Part, State,
+- `View::state_style(State, Style)` and `View::native_part_state_style(NativePart, State,
   Style)` style a widget while it is in a state (`State::PRESSED`,
   `CHECKED`, `FOCUSED`, `FOCUS_KEY`, `EDITED`, `HOVERED`, `DISABLED`, combined
   with `|`). LVGL switches between them natively; no message or render is
   involved. Object-wide fields (`hidden`, `disabled`, `gap`, `floating`,
-  `flex_align`) only apply in the main style.
+  `justify_content`, `align_items`, `align_content`) only apply in the main style.
 - `View::checked(bool)` controls `LV_STATE_CHECKED` on any widget, so a list
   row or a tab-like button can show `State::CHECKED` styles for the selected
   item. Switches and checkboxes keep their own checked value and ignore it.
@@ -307,12 +311,18 @@ item with `.into_view()`. See [composition and forms](../docs/ui-composition.md)
 - `Style::floating(true)` takes a widget out of its parent's layout and
   scrolling; `Style::align` and `Style::offset(x, y)` then place it relative
   to the parent. Use it for badges, floating action buttons and backdrops.
-- `Style::flex_align(main, cross)` places the children of a `row` or
-  `column` with `FlexAlign` (`Start`, `Center`, `End`, `SpaceEvenly`,
-  `SpaceAround`, `SpaceBetween`), like CSS `justify-content` and
-  `align-items`. `cross` also sets LVGL's track placement, so it moves the
-  items of a single-line container. Other kinds ignore it; unset restores
-  `Start`.
+- `justify_content(FlexAlign)` places row/column children along the flow.
+  `align_items(ItemAlign)` places children within their line, while
+  `align_content(FlexAlign)` places lines within the container, including a single
+  line. Each property merges and clears independently. ItemAlign accepts only
+  Start/Center/End; FlexAlign additionally supports SpaceEvenly/Around/Between.
+  These are LVGL main/cross/track placement contracts, with no implicit stretch.
+- `thumb_style` / `thumb_state_style` target slider/switch thumbs.
+  `progress_style` / `progress_state_style` target the filled region of sliders
+  and progress bars. Typed modifiers reject unsupported widgets; erased misuse
+  follows diagnostics/strict-properties. NativePart remains the raw selector
+  escape. A later patch for the same part/state replaces the entire earlier
+  patch; construct one patch when several fields must apply together.
 - `App::overlay` (default `None`) returns a second tree mounted on the
   display's top layer, above the view. The overlay root fills the display and
   is not clickable, so input reaches the view except where an overlay widget is
@@ -333,11 +343,11 @@ item with `.into_view()`. See [composition and forms](../docs/ui-composition.md)
   descriptor; the mounted tree keeps it alive. `ImageSource::Text` and the unsafe
   `ImageSource::from_raw` descriptor path remain available; the raw variant
   wraps an opaque `RawImage`, so it can only be built through `from_raw`.
-- Widgets: `obj`, `row`, `column`, `grid`, `tabview`, `label`, `button`,
-  `slider`, `bar`, `switch`, `image`, `checkbox`, `textarea`, `dropdown`,
+- Widgets: `container`, `row`, `column`, `grid`, `tabview`, `label`, `button`,
+  `slider`, `progress_bar`, `switch`, `image`, `checkbox`, `textarea`, `dropdown`,
   `arc`, `scale`, `chart`, `keyboard`, `roller`, `spinbox`, `spinner`, `led`,
-  `line`, `button_matrix`, `table`, `tileview`, `msgbox`, `calendar`, `spans`,
-  `image_button`, `anim_image` and `arc_label`, plus `raw`/`custom` escape
+  `line`, `button_matrix`, `table`, `tileview`, `message_box`, `calendar`, `spans`,
+  `image_button`, `animated_image` and `arc_label`, plus `raw`/`custom` escape
   hatches. `WidgetKind` is `#[non_exhaustive]`.
 - LVGL 9.6 deprecates `lv_list`, `lv_win` and `lv_menu` ("build ... from base
   widgets instead"), so they are not wrapped; build them from `column`, `row`,
@@ -352,9 +362,9 @@ item with `.into_view()`. See [composition and forms](../docs/ui-composition.md)
   with `CalendarDate::from_value`, or `-1` for day names and adjacent-month
   days; message box → clicked footer button index.
 - `tileview(tiles, active)` takes one child per `Tile` (column, row and
-  allowed `ScrollDir`); `active` is controlled. Changing the tile layout
+  allowed `ScrollDirection`); `active` is controlled. Changing the tile layout
   recreates the tileview.
-- `msgbox(text)` is always inline (a child of its parent, never a modal
+- `message_box(text)` is always inline (a child of its parent, never a modal
   on the top layer) and has no close button, because LVGL's close helper
   deletes the object behind the mounted tree. Hide it from the view instead.
   Children are placed below the text. Adding or removing the title, or
@@ -365,17 +375,17 @@ item with `.into_view()`. See [composition and forms](../docs/ui-composition.md)
   button matrix are reported by the calendar node.
 - `spans` reuses native spans when the count is unchanged; a span's
   `color`/`font` of `None` inherits from the group.
-- `image_button` and `anim_image` keep generated RGB565 descriptors
+- `image_button` and `animated_image` keep generated RGB565 descriptors
   and the frame pointer array alive for LVGL; animated images accept
-  `1..=ANIM_IMAGE_MAX_FRAMES` frames and loop until `repeat` is set.
+  `1..=ANIMATED_IMAGE_MAX_FRAMES` frames and loop until `repeat` is set.
 - `arc_label(text, radius, start_angle, angle_size)` draws text along an
   arc; `angle_size` must be within `0..=360`.
 - `line` and `button_matrix` own the point buffer and the button
   map that LVGL reads without copying; a changed value installs the new buffer
   before the old one is freed.
 - `Style` also supports per-side padding, text alignment, min/max sizes,
-  `hidden`/`disabled` states, arc indicator color/width, `anim_duration`,
-  `offset`, `floating` and `flex_align`.
+  `hidden`/`disabled` states, arc indicator color/width, `animation_duration`,
+  `offset`, `floating`, `justify_content`, `align_items` and `align_content`.
 - `Ui` is `!Send` and `!Sync`. Safe LVGL handles never escape the crate.
 
 ## Components
@@ -442,7 +452,7 @@ widget-specific value getter never reads a different child's widget type.
 `gesture_bubble(bool)` follows LVGL's separate gesture target selection: when
 the native target becomes an ancestor, that ancestor receives its own gesture.
 
-`scroll_dir(ScrollDir)`, `scroll_snap_x/y(ScrollSnap)`,
+`scroll_direction(ScrollDirection)`, `scroll_snap_x/y(ScrollSnap)`,
 `scrollbar_mode(ScrollbarMode)`, `scroll_momentum(bool)` and
 `scroll_elastic(bool)` override native settings. Unset modifiers leave the
 existing setting unchanged; explicit false/None enum variants reset it.
@@ -518,11 +528,15 @@ the typed hardware reader is exercised by native integration tests.
 Additional `Style` fields apply to the same part/state selectors as existing
 styles. Omitted fields inherit native/theme values; an explicit zero is retained.
 They include `shadow_width/color/opacity/offset_x/offset_y/spread`,
-`outline_width/color/opacity/pad`, `bg_grad_color/dir`, `bg_main_stop`,
-`bg_grad_stop`, both gradient stop opacities, `text_letter_space`,
-`text_line_space`, `text_decoration`, `image_recolor/opacity`,
+`outline_width/color/opacity/offset`, `background_gradient_color/direction`, `background_gradient_start`,
+`background_gradient_end`, both gradient stop opacities, `letter_spacing`,
+`line_spacing`, `text_decoration`, `image_tint/opacity`,
 `transform_scale_x/y`, `transform_rotation`, `transform_pivot_x/y`, and
-`blend_mode`. Scale 256 means 100%; rotation uses tenths of a degree.
+`blend_mode`. Transform scales take `Scale`, e.g. `Scale::percent(150)`;
+rotation takes `Angle::degrees(90)` or `Angle::tenths(455)`. Percent/ratio scales
+round to the nearest native 1/256, with ties upward. Invalid native ranges reject
+before mutation; image scales additionally reject zero. Spinner sweep angles
+remain whole-degree u32 values, a separate control contract.
 
 ```rust
 use rs_lvgl_ui::prelude::*;
@@ -537,7 +551,10 @@ let button: View<()> = button("Focus me")
 
 `StyleTransition` retains its native property list and descriptor until detach
 or deletion. `Animation::new(property, from, to, duration_ms)` supports `delay`,
-`easing`, `repeat` and `reverse`; add it with `View::animate`. Multiple properties
+`easing`, `repeat` and `reverse`; add it with `View::animate`.
+The scalar constructor supports X/Y/Width/Height/Opacity. Rotation uses
+`Animation::rotation(Angle, Angle, duration_ms)`; scaling uses
+`Animation::scale_x/y(Scale, Scale, duration_ms)`. Multiple properties
 and delays form a timeline. Unchanged descriptors preserve playback; a changed
 descriptor restarts that property, and omission cancels it. Changing declarative
 styles while animating the same property applies the style immediately; the next
@@ -703,7 +720,7 @@ impl<M: Clone + 'static> Ui<M> {
 }
 ```
 
-`CustomObject` is an opaque handle to the mounted native object. `obj()` returns
+`CustomObject` is an opaque handle to the mounted native object. `container()` returns
 a lifetime-bound `Obj` view, `raw()` exposes the pointer for native calls, and
 `invalidate()` marks the subtree dirty and counts the invalidation. A no-op
 frame returns from `update` without invalidating; LVGL then keeps the previous
@@ -760,7 +777,7 @@ descriptor, so modifiers, `.map`, keys and ownership retain their behavior.
 Layouts accept their children directly: `row([first, second])`,
 `column(items.iter().map(item_view))`, and `grid(columns, rows, children)`.
 Use an empty array for an empty row or column. `.child` and `.children` remain
-available for incremental assembly. `obj()` remains a plain container, and
+available for incremental assembly. `container()` remains a plain container, and
 `tabview(tabs, active)` / `tileview(tiles, active)` use the existing child
 builders for their pages. Optional functions keep their existing feature gates;
 `raw(factory)` still requires `unsafe` and its documented lifetime obligations.
@@ -796,7 +813,7 @@ builders for their pages. Optional functions keep their existing feature gates;
   `widget-<name>`/`font-montserrat-<size>` features) to select the required
   set. Without `font-montserrat-28`, `Font::montserrat_28` does not exist and
   the built-in themes use Montserrat 14 for titles.
-- `Style::neutral()` does not set `offset` or `floating`. An unset `floating`
+- `Style::plain()` does not set `offset` or `floating`. An unset `floating`
   clears `LV_OBJ_FLAG_FLOATING` on mounted nodes; set it through
   `Style::floating` rather than through raw LVGL calls.
 

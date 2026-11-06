@@ -30,7 +30,7 @@ pub(crate) fn create(
     // create function returns either a new child object or null.
     unsafe {
         let raw = match tag {
-            KindTag::Obj | KindTag::Row | KindTag::Column | KindTag::Grid => {
+            KindTag::Container | KindTag::Row | KindTag::Column | KindTag::Grid => {
                 rs_lvgl_sys::lv_obj_create(parent.as_ptr())
             }
             #[cfg(feature = "widget-tabview")]
@@ -54,7 +54,7 @@ pub(crate) fn create(
             #[cfg(feature = "widget-slider")]
             KindTag::Slider => rs_lvgl_sys::lv_slider_create(parent.as_ptr()),
             #[cfg(feature = "widget-bar")]
-            KindTag::Bar => rs_lvgl_sys::lv_bar_create(parent.as_ptr()),
+            KindTag::ProgressBar => rs_lvgl_sys::lv_bar_create(parent.as_ptr()),
             #[cfg(feature = "widget-switch")]
             KindTag::Switch => rs_lvgl_sys::lv_switch_create(parent.as_ptr()),
             #[cfg(feature = "widget-image")]
@@ -114,7 +114,7 @@ pub(crate) fn create(
             // would create a modal backdrop on the top layer that the
             // mounted tree does not own.
             #[cfg(feature = "widget-msgbox")]
-            KindTag::Msgbox => rs_lvgl_sys::lv_msgbox_create(parent.as_ptr()),
+            KindTag::MessageBox => rs_lvgl_sys::lv_msgbox_create(parent.as_ptr()),
             #[cfg(feature = "widget-calendar")]
             KindTag::Calendar => rs_lvgl_sys::lv_calendar_create(parent.as_ptr()),
             #[cfg(feature = "widget-span")]
@@ -122,7 +122,7 @@ pub(crate) fn create(
             #[cfg(feature = "widget-imagebutton")]
             KindTag::ImageButton => rs_lvgl_sys::lv_imagebutton_create(parent.as_ptr()),
             #[cfg(feature = "widget-animimage")]
-            KindTag::AnimImage => rs_lvgl_sys::lv_animimg_create(parent.as_ptr()),
+            KindTag::AnimatedImage => rs_lvgl_sys::lv_animimg_create(parent.as_ptr()),
             #[cfg(feature = "widget-arclabel")]
             KindTag::ArcLabel => rs_lvgl_sys::lv_arclabel_create(parent.as_ptr()),
             KindTag::Custom => unreachable!("custom widgets are created by their factory"),
@@ -133,7 +133,7 @@ pub(crate) fn create(
 
         if matches!(
             tag,
-            KindTag::Obj | KindTag::Row | KindTag::Column | KindTag::Grid
+            KindTag::Container | KindTag::Row | KindTag::Column | KindTag::Grid
         ) {
             remove_main_theme(obj);
         }
@@ -168,7 +168,7 @@ pub(crate) fn create(
                 parts.label = Some(label);
             }
             #[cfg(feature = "widget-msgbox")]
-            KindTag::Msgbox => {
+            KindTag::MessageBox => {
                 // The text label is the first child of the content area;
                 // the node's children follow it.
                 let label = rs_lvgl_sys::lv_msgbox_add_text(obj.as_ptr(), c"".as_ptr().cast());

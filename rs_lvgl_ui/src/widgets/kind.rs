@@ -43,7 +43,7 @@ pub enum KindTag {
 
     #[cfg(feature = "widget-canvas")]
     Canvas,
-    Obj,
+    Container,
     Row,
     Column,
     Grid,
@@ -56,7 +56,7 @@ pub enum KindTag {
     #[cfg(feature = "widget-slider")]
     Slider,
     #[cfg(feature = "widget-bar")]
-    Bar,
+    ProgressBar,
     #[cfg(feature = "widget-switch")]
     Switch,
     #[cfg(feature = "widget-image")]
@@ -90,7 +90,7 @@ pub enum KindTag {
     #[cfg(feature = "widget-tileview")]
     Tileview,
     #[cfg(feature = "widget-msgbox")]
-    Msgbox,
+    MessageBox,
     #[cfg(feature = "widget-calendar")]
     Calendar,
     #[cfg(feature = "widget-span")]
@@ -98,7 +98,7 @@ pub enum KindTag {
     #[cfg(feature = "widget-imagebutton")]
     ImageButton,
     #[cfg(feature = "widget-animimage")]
-    AnimImage,
+    AnimatedImage,
     #[cfg(feature = "widget-arclabel")]
     ArcLabel,
     Custom,
@@ -119,7 +119,7 @@ pub(crate) fn tag(kind: &WidgetKind) -> KindTag {
 
         #[cfg(feature = "widget-canvas")]
         WidgetKind::Canvas { .. } => KindTag::Canvas,
-        WidgetKind::Obj => KindTag::Obj,
+        WidgetKind::Container => KindTag::Container,
         WidgetKind::Row => KindTag::Row,
         WidgetKind::Column => KindTag::Column,
         WidgetKind::Grid { .. } => KindTag::Grid,
@@ -132,7 +132,7 @@ pub(crate) fn tag(kind: &WidgetKind) -> KindTag {
         #[cfg(feature = "widget-slider")]
         WidgetKind::Slider { .. } => KindTag::Slider,
         #[cfg(feature = "widget-bar")]
-        WidgetKind::Bar { .. } => KindTag::Bar,
+        WidgetKind::ProgressBar { .. } => KindTag::ProgressBar,
         #[cfg(feature = "widget-switch")]
         WidgetKind::Switch { .. } => KindTag::Switch,
         #[cfg(feature = "widget-image")]
@@ -166,7 +166,7 @@ pub(crate) fn tag(kind: &WidgetKind) -> KindTag {
         #[cfg(feature = "widget-tileview")]
         WidgetKind::Tileview { .. } => KindTag::Tileview,
         #[cfg(feature = "widget-msgbox")]
-        WidgetKind::Msgbox { .. } => KindTag::Msgbox,
+        WidgetKind::MessageBox { .. } => KindTag::MessageBox,
         #[cfg(feature = "widget-calendar")]
         WidgetKind::Calendar { .. } => KindTag::Calendar,
         #[cfg(feature = "widget-span")]
@@ -174,7 +174,7 @@ pub(crate) fn tag(kind: &WidgetKind) -> KindTag {
         #[cfg(feature = "widget-imagebutton")]
         WidgetKind::ImageButton { .. } => KindTag::ImageButton,
         #[cfg(feature = "widget-animimage")]
-        WidgetKind::AnimImage { .. } => KindTag::AnimImage,
+        WidgetKind::AnimatedImage { .. } => KindTag::AnimatedImage,
         #[cfg(feature = "widget-arclabel")]
         WidgetKind::ArcLabel { .. } => KindTag::ArcLabel,
         WidgetKind::Custom(_) => KindTag::Custom,
@@ -186,7 +186,7 @@ pub(crate) fn value_source(tag: KindTag) -> ValueSource {
         #[cfg(feature = "widget-slider")]
         KindTag::Slider => ValueSource::Slider,
         #[cfg(feature = "widget-bar")]
-        KindTag::Bar => ValueSource::Bar,
+        KindTag::ProgressBar => ValueSource::ProgressBar,
         #[cfg(feature = "widget-switch")]
         KindTag::Switch => ValueSource::Switch,
         #[cfg(feature = "widget-checkbox")]
@@ -208,7 +208,7 @@ pub(crate) fn value_source(tag: KindTag) -> ValueSource {
         #[cfg(feature = "widget-tileview")]
         KindTag::Tileview => ValueSource::Tileview,
         #[cfg(feature = "widget-msgbox")]
-        KindTag::Msgbox => ValueSource::EventIndex,
+        KindTag::MessageBox => ValueSource::EventIndex,
         #[cfg(feature = "widget-calendar")]
         KindTag::Calendar => ValueSource::Calendar,
         _ => ValueSource::None,

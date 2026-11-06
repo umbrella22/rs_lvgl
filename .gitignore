@@ -24,6 +24,7 @@ rs_lvgl/target/
 !/docs/ui-composition.md
 !/docs/ui-source.md
 !/docs/ui-styles.md
+!/docs/ui-api-migration.md
 !/docs/images/
 /docs/images/*
 !/docs/images/*.png

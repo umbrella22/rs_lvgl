@@ -51,7 +51,7 @@ impl App for Mixer {
                         .on_value_changed(MixerAction::Volume),
                 )
                 .child(
-                    bar(0, 100, if self.enabled { self.volume } else { 0 })
+                    progress_bar(0, 100, if self.enabled { self.volume } else { 0 })
                         .width(percent(100))
                         .height(px(16)),
                 )

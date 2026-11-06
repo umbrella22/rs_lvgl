@@ -30,7 +30,11 @@ impl App for Progress {
             "The label and bar share the same value.",
             support::column()
                 .child(support::value(theme, format!("{}% complete", self.value)))
-                .child(bar(0, 100, self.value).width(percent(100)).height(px(24)))
+                .child(
+                    progress_bar(0, 100, self.value)
+                        .width(percent(100))
+                        .height(px(24)),
+                )
                 .child(
                     support::row()
                         .child(support::action(theme, "Advance", ProgressAction::Advance))

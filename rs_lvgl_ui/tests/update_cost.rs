@@ -268,7 +268,7 @@ fn styled_measurements() {
         "COST_UNOBSERVABLE_NATIVE: use check-ui-costs.py"
     );
     let before = begin();
-    std::hint::black_box(obj::<()>().gap(12).padding(16));
+    std::hint::black_box(container::<()>().gap(12).padding(16));
     let construction = end(before);
     assert_eq!(construction, (0, 0, 0, 0), "STYLE_CONSTRUCTION_ALLOCATED");
     println!("STYLE_CONTROL:PASS");

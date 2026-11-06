@@ -5,9 +5,9 @@ use crate::prelude::*;
 use crate::Node;
 use alloc::{string::String, vec::Vec};
 
-/// Typed version of [`crate::obj`].
-pub fn obj<M>() -> Node<M, kind::Obj> {
-    crate::obj().cast_kind()
+/// Typed version of [`crate::container`].
+pub fn container<M>() -> Node<M, kind::Container> {
+    crate::container().cast_kind()
 }
 
 /// Typed version of [`crate::row`].
@@ -71,9 +71,13 @@ pub fn slider<M>(min: i32, max: i32, value: impl NumericInput<M>) -> Node<M, kin
 }
 
 #[cfg(feature = "widget-bar")]
-/// Typed version of [`crate::bar`].
-pub fn bar<M>(min: i32, max: i32, value: impl NumericInput<M>) -> Node<M, kind::Bar> {
-    value.into_numeric_node(|value| crate::bar(min, max, value).cast_kind())
+/// Typed version of [`crate::progress_bar`].
+pub fn progress_bar<M>(
+    min: i32,
+    max: i32,
+    value: impl NumericInput<M>,
+) -> Node<M, kind::ProgressBar> {
+    value.into_numeric_node(|value| crate::progress_bar(min, max, value).cast_kind())
 }
 
 #[cfg(feature = "widget-switch")]
@@ -189,9 +193,9 @@ where
 }
 
 #[cfg(feature = "widget-msgbox")]
-/// Typed version of [`crate::msgbox`].
-pub fn msgbox<M>(text: impl Into<String>) -> Node<M, kind::Msgbox> {
-    crate::msgbox(text).cast_kind()
+/// Typed version of [`crate::message_box`].
+pub fn message_box<M>(text: impl Into<String>) -> Node<M, kind::MessageBox> {
+    crate::message_box(text).cast_kind()
 }
 
 #[cfg(feature = "widget-calendar")]
@@ -236,7 +240,7 @@ pub fn image<M>(source: ImageSource) -> Node<M, kind::Image> {
 
 #[cfg(feature = "widget-image")]
 /// Typed version of [`crate::image_scaled`].
-pub fn image_scaled<M>(source: ImageSource, scale: u16) -> Node<M, kind::Image> {
+pub fn image_scaled<M>(source: ImageSource, scale: crate::Scale) -> Node<M, kind::Image> {
     crate::image_scaled(source, scale).cast_kind()
 }
 
@@ -248,7 +252,10 @@ pub fn image_resource<M>(source: crate::ImageResource) -> Node<M, kind::Image> {
 
 #[cfg(feature = "widget-image")]
 /// Typed version of [`crate::image_resource_scaled`].
-pub fn image_resource_scaled<M>(source: crate::ImageResource, scale: u16) -> Node<M, kind::Image> {
+pub fn image_resource_scaled<M>(
+    source: crate::ImageResource,
+    scale: crate::Scale,
+) -> Node<M, kind::Image> {
     crate::image_resource_scaled(source, scale).cast_kind()
 }
 
@@ -259,12 +266,12 @@ pub fn image_button<M>(released: ImageSource) -> Node<M, kind::ImageButton> {
 }
 
 #[cfg(feature = "widget-animimage")]
-/// Typed version of [`crate::anim_image`].
-pub fn anim_image<M>(
+/// Typed version of [`crate::animated_image`].
+pub fn animated_image<M>(
     frames: impl IntoIterator<Item = ImageSource>,
     duration_ms: u32,
-) -> Node<M, kind::AnimImage> {
-    crate::anim_image(frames, duration_ms).cast_kind()
+) -> Node<M, kind::AnimatedImage> {
+    crate::animated_image(frames, duration_ms).cast_kind()
 }
 
 #[cfg(feature = "widget-canvas")]

@@ -1,6 +1,6 @@
 # UI messages, loaded resources and diagnostics
 
-The 0.5.0 runtime provides explicit congestion outcomes, optional diagnostics,
+The 0.6.0 runtime provides explicit congestion outcomes, optional diagnostics,
 loaded resource retention and render feedback. The library requires `alloc`
 and one UI thread. External `NativeObject` implementations must satisfy the
 safety requirements below.

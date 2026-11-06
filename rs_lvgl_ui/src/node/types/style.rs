@@ -26,9 +26,9 @@ impl Color {
     }
 }
 
-/// Widget part targeted by [`crate::Node::part_style`].
+/// Widget part targeted by [`crate::Node::native_part_style`].
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum Part {
+pub enum NativePart {
     Main,
     Scrollbar,
     Indicator,
@@ -38,16 +38,16 @@ pub enum Part {
     Cursor,
 }
 
-impl Part {
+impl NativePart {
     pub(crate) fn to_raw(self) -> rs_lvgl_sys::lv_part_t {
         match self {
-            Part::Main => rs_lvgl_sys::lv_part_t_LV_PART_MAIN,
-            Part::Scrollbar => rs_lvgl_sys::lv_part_t_LV_PART_SCROLLBAR,
-            Part::Indicator => rs_lvgl_sys::lv_part_t_LV_PART_INDICATOR,
-            Part::Knob => rs_lvgl_sys::lv_part_t_LV_PART_KNOB,
-            Part::Selected => rs_lvgl_sys::lv_part_t_LV_PART_SELECTED,
-            Part::Items => rs_lvgl_sys::lv_part_t_LV_PART_ITEMS,
-            Part::Cursor => rs_lvgl_sys::lv_part_t_LV_PART_CURSOR,
+            NativePart::Main => rs_lvgl_sys::lv_part_t_LV_PART_MAIN,
+            NativePart::Scrollbar => rs_lvgl_sys::lv_part_t_LV_PART_SCROLLBAR,
+            NativePart::Indicator => rs_lvgl_sys::lv_part_t_LV_PART_INDICATOR,
+            NativePart::Knob => rs_lvgl_sys::lv_part_t_LV_PART_KNOB,
+            NativePart::Selected => rs_lvgl_sys::lv_part_t_LV_PART_SELECTED,
+            NativePart::Items => rs_lvgl_sys::lv_part_t_LV_PART_ITEMS,
+            NativePart::Cursor => rs_lvgl_sys::lv_part_t_LV_PART_CURSOR,
         }
     }
 }
@@ -87,12 +87,12 @@ impl core::ops::BitOr for State {
 /// A part and state pair targeted by a node's extra styles.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct Selector {
-    pub(crate) part: Part,
+    pub(crate) part: NativePart,
     pub(crate) state: State,
 }
 
 impl Selector {
-    pub(crate) const fn new(part: Part, state: State) -> Self {
+    pub(crate) const fn new(part: NativePart, state: State) -> Self {
         Self { part, state }
     }
 

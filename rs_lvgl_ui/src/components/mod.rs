@@ -30,7 +30,7 @@ pub mod toast;
 /// children draw above earlier ones. Input passes through the container to
 /// the view, except where a child is hit.
 pub fn layers<M>(children: impl IntoIterator<Item = View<M>>) -> View<M> {
-    crate::obj()
+    crate::container()
         .style(full_size())
         .clickable(false)
         .scrollable(false)
@@ -38,7 +38,7 @@ pub fn layers<M>(children: impl IntoIterator<Item = View<M>>) -> View<M> {
 }
 
 pub(crate) fn full_size() -> Style {
-    Style::neutral()
+    Style::plain()
         .width(Size::Percent(100))
         .height(Size::Percent(100))
 }

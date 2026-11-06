@@ -33,7 +33,7 @@ impl App for Counter {
             grid([GridTrack::Fr(1)], [GridTrack::Content], [
                 label("Cell").grid_cell(0, 0, 1, 1),
             ]),
-            obj().children(core::iter::once(label("Absolute"))),
+            container().children(core::iter::once(label("Absolute"))),
         ]).gap(12)
     }
     fn overlay(&self, _: &Theme) -> Option<View<CounterAction>> { Some(column([])) }
@@ -142,7 +142,7 @@ TYPED_OPTIONAL = """#![no_std]
 use rs_lvgl_ui::prelude::*;
 pub fn controls() -> View<()> {
     typed::column([
-        typed::bar(0, 100, binding(50, |_: i32| ())).into_view(),
+        typed::progress_bar(0, 100, binding(50, |_: i32| ())).into_view(),
         typed::arc(0, 100, binding(50, |_: i32| ())).into_view(),
         typed::spinbox(0, 100, binding(50, |_: i32| ())).digits(3, 0).step(1).into_view(),
         typed::roller(["a", "b"], 0).visible_rows(3).roller_mode(RollerMode::Normal)
@@ -151,9 +151,9 @@ pub fn controls() -> View<()> {
         typed::calendar(2026, 11).today(CalendarDate::new(2026, 11, 5))
             .highlighted([CalendarDate::new(2026, 11, 6)])
             .on_date_selected(|_: Option<CalendarDate>| ()).into_view(),
-        typed::msgbox("body").msgbox_title("Title").msgbox_buttons(["OK"])
+        typed::message_box("body").message_box_title("Title").message_box_buttons(["OK"])
             .on_selection_changed(|_| ()).into_view(),
-        typed::spinner().spinner_anim(1000, 60).into_view(),
+        typed::spinner().spinner_animation(1000, 60).into_view(),
         typed::led(Color::rgb(1, 2, 3)).brightness(100).into_view(),
     ]).into_view()
 }
@@ -170,14 +170,14 @@ pub fn from_prelude(theme: &Theme) -> View<()> {
         .background(theme.surface).background_opacity(128).opacity(240)
         .border(theme.accent, 1).radius(8).align(Align::Center)
         .text_align(TextAlign::Center).offset(-1, 2).floating(false)
-        .flex_align(FlexAlign::Start, FlexAlign::Center).hidden(false).disabled(false)
-        .shadow_width(0).outline_width(0).text_letter_space(0)
-        .arc_color(theme.accent).arc_width(2).anim_duration(0)
+        .justify_content(FlexAlign::Start).align_items(ItemAlign::Center).align_content(FlexAlign::Center).hidden(false).disabled(false)
+        .shadow_width(0).outline_width(0).letter_spacing(0)
+        .arc_color(theme.accent).arc_width(2).animation_duration(0)
         .style(style().padding_top(0))
         .state_style(State::PRESSED, style().opacity(200))
 }
 pub fn from_root() -> rs_lvgl_ui::View<()> {
-    rs_lvgl_ui::obj().width(rs_lvgl_ui::px(40)).height(rs_lvgl_ui::content())
+    rs_lvgl_ui::container().width(rs_lvgl_ui::px(40)).height(rs_lvgl_ui::content())
         .max_width(rs_lvgl_ui::percent(100)).style(rs_lvgl_ui::style().gap(0))
 }
 pub fn inspect_patch(patch: Style) {
@@ -339,6 +339,73 @@ def main():
                   features=("all-widgets",), errors=("E0277",), symbols=("Supports", capability))
         check("typed-mixed-array-needs-conversion", '#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn bad() { let _ = column([typed::label::<()>("label"), typed::switch(false)]); }',
               features=("controls",), errors=("E0308",), symbols=("Label", "Switch"))
+        check("clarity-names", '#![no_std]\nextern crate alloc;\nuse rs_lvgl_ui::prelude::*;\npub fn screen() -> View<()> {\n    container().scroll_direction(ScrollDirection::HORIZONTAL | ScrollDirection::VERTICAL)\n        .align(Align::TopCenter).child(typed::container())\n        .child(typed::progress_bar(0, 100, 25))\n        .child(typed::message_box("Notice").message_box_title("Title").message_box_buttons(["OK"]))\n        .child(typed::label("Long text").text_overflow(TextOverflow::Ellipsis))\n        .child(typed::animated_image([], 1000).repeat(ANIMATION_REPEAT_INFINITE))\n        .child(typed::spinner().spinner_animation(1000, 90))\n        .native_part_style(NativePart::Main, Style::plain().animation_duration(100))\n}\npub fn markers(_: rs_lvgl_ui::Node<(), typed::kind::Container>,\n    _: rs_lvgl_ui::Node<(), typed::kind::ProgressBar>,\n    _: rs_lvgl_ui::Node<(), typed::kind::MessageBox>,\n    _: rs_lvgl_ui::Node<(), typed::kind::AnimatedImage>) {}\n', features=("all-widgets",))
+        for old in ("obj", "bar", "msgbox", "anim_image", "ScrollDir", "LabelLongMode", "Part", "ANIM_IMAGE_MAX_FRAMES", "ANIM_REPEAT_INFINITE"):
+            for namespace in ("", "prelude::"):
+                check(f"clarity-removed-{namespace.replace('::', '') or 'root'}-{old}",
+                      f'#![no_std]\nuse rs_lvgl_ui::{namespace}{old};\n',
+                      features=("all-widgets",), errors=("E0432",), symbols=(old,))
+        for old in ("obj", "bar", "msgbox", "anim_image"):
+            check(f"clarity-removed-typed-{old}", f'#![no_std]\nuse rs_lvgl_ui::typed::{old};\n',
+                  features=("all-widgets",), errors=("E0432",), symbols=(old,))
+        for old, arg in (("neutral", ""),):
+            check(f"clarity-removed-style-{old}", f'#![no_std]\npub fn old() {{ let _ = rs_lvgl_ui::Style::{old}({arg}); }}\n',
+                  errors=("E0599",), symbols=(old,))
+        check("typed-label-overflow-only", '#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn bad() { let _ = typed::button::<()>("Save").text_overflow(TextOverflow::Clip); }',
+              errors=("E0277",), symbols=("Supports", "Label"))
+        check("semantic-units-no-std", '#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn view() -> View<()> {\n    container().transform_scale_x(Scale::percent(150))\n        .transform_rotation(Angle::degrees(-45))\n        .animate(Animation::rotation(Angle::degrees(0), Angle::tenths(455), 200))\n        .animate(Animation::scale_y(Scale::percent(100), Scale::ratio(3, 2).unwrap(), 200))\n        .child(typed::image_scaled(ImageSource::rgb565(1, 1, &[0, 0]), Scale::percent(50)))\n}\n', features=("image",))
+        for name, expression, ty in (
+            ("scale", 'container::<()>().transform_scale_x(256)', "Scale"),
+            ("angle", 'style().transform_rotation(900)', "Angle"),
+            ("image", 'image_scaled::<()>(ImageSource::rgb565(1, 1, &[0, 0]), 256)', "Scale"),
+            ("typed-image", 'typed::image_scaled::<()>(ImageSource::rgb565(1, 1, &[0, 0]), 256)', "Scale"),
+            ("animation-angle", 'Animation::rotation(0, 900, 200)', "Angle"),
+            ("animation-scale", 'Animation::scale_x(256, 512, 200)', "Scale"),
+        ):
+            check(f"reject-raw-unit-{name}", '#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn bad() { let _ = ' + expression + '; }',
+                  features=("image",), errors=("E0308",), symbols=(ty,))
+        for variant in ("Rotation", "ScaleX", "ScaleY"):
+            check(f"removed-raw-animation-{variant}", f'#![no_std]\npub fn bad() {{ let _ = rs_lvgl_ui::AnimationProperty::{variant}; }}',
+                  errors=("E0599",), symbols=(variant,))
+        check("independent-layout-no-std", '#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn good() -> View<()> { typed::row([]).justify_content(FlexAlign::SpaceBetween).align_items(ItemAlign::Center).style(style().align_content(FlexAlign::End)).into_view() }')
+        check("item-distribution-rejected", '#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn bad() { let _ = row::<()>([]).align_items(FlexAlign::SpaceBetween); }',
+              errors=("E0308",), symbols=("ItemAlign", "FlexAlign"))
+        check("removed-coupled-flex-align", '#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn bad() { let _ = row::<()>([]).flex_align(FlexAlign::Start, FlexAlign::Center); }',
+              errors=("E0599",), symbols=("flex_align",))
+        check("semantic-parts", '#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn view() -> View<()> { container().child(typed::slider(0, 100, 50).thumb_style(style().radius(8)).progress_style(style().opacity(160))).child(typed::switch(false).thumb_state_style(State::CHECKED, style().radius(4))).child(typed::progress_bar(0, 100, 50).progress_state_style(State::PRESSED, style().opacity(80))) }', features=("all-widgets",))
+        for name, expression, capability in (
+            ("bar-thumb", 'typed::progress_bar::<()>(0, 100, 50).thumb_style(style())', "Thumb"),
+            ("switch-progress", 'typed::switch::<()>(false).progress_style(style())', "Progress"),
+            ("arc-progress", 'typed::arc::<()>(0, 100, 50).progress_state_style(State::PRESSED, style())', "Progress"),
+            ("label-thumb", 'typed::label::<()>("text").thumb_state_style(State::PRESSED, style())', "Thumb"),
+        ):
+            check(f"typed-reject-semantic-{name}", '#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn bad() { let _ = ' + expression + '; }',
+                  features=("all-widgets",), errors=("E0277",), symbols=("Supports", capability))
+        for old, argument in (
+            ("bg_grad_color", "Color::rgb(1, 2, 3)"), ("bg_grad_dir", "GradientDirection::Vertical"),
+            ("bg_main_stop", "0"), ("bg_grad_stop", "255"), ("bg_main_opacity", "255"), ("bg_grad_opacity", "255"),
+            ("text_letter_space", "2"), ("text_line_space", "3"), ("outline_pad", "1"),
+            ("image_recolor", "Color::rgb(1, 2, 3)"), ("image_recolor_opacity", "255"), ("anim_duration", "200"),
+        ):
+            for target in ("style()", "container::<()>()"):
+                check(f"removed-clarity-method-{old}-{'style' if target == 'style()' else 'node'}",
+                      f'#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn old() {{ let _ = {target}.{old}({argument}); }}',
+                      errors=("E0599",), symbols=(old,))
+        for old, argument in (("scroll_dir", "ScrollDirection::VERTICAL"), ("part_style", "NativePart::Main, style()"),
+                              ("part_state_style", "NativePart::Main, State::PRESSED, style()"),
+                              ("spinner_anim", "1000, 90"), ("msgbox_title", '"title"'), ("msgbox_buttons", '["ok"]')):
+            check(f"removed-clarity-node-{old}", f'#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn old() {{ let _ = container::<()>().{old}({argument}); }}',
+                  features=("all-widgets",), errors=("E0599",), symbols=(old,))
+        for old in ("Obj", "Bar", "Msgbox", "AnimImage"):
+            check(f"removed-clarity-marker-{old}", f'#![no_std]\nuse rs_lvgl_ui::typed::kind::{old};',
+                  features=("all-widgets",), errors=("E0432",), symbols=(old,))
+        for ty, variants in (("Align", ("TopMid", "BottomMid", "LeftMid", "RightMid")),
+                             ("TextOverflow", ("Dots", "ScrollCircular")),
+                             ("ScrollDirection", ("HOR", "VER")),
+                             ("TransitionProperty", ("ImageRecolor", "ImageRecolorOpacity", "OutlinePad", "LetterSpace", "LineSpace", "GradientColor"))):
+            for old in variants:
+                check(f"removed-clarity-{ty}-{old}", f'#![no_std]\npub fn old() {{ let _ = rs_lvgl_ui::{ty}::{old}; }}',
+                      errors=("E0599",), symbols=(old,))
         check("app-action-associated-type", APP_ACTIONS)
         check("app-msg-associated-type-removed",
               APP_ACTIONS.replace("type Action = FanAction;", "type Msg = FanAction;"),
@@ -352,7 +419,7 @@ pub fn wrong(app: &mut Fan) { app.update(()); }
         check("flat-styles-no-std", FLAT_STYLES)
         check("flat-styles-strict-no-std", FLAT_STYLES, features=("strict",))
         check("explicit-size-unit-required", '''#![no_std]
-pub fn invalid() { let _ = rs_lvgl_ui::obj::<()>().width(100); }
+pub fn invalid() { let _ = rs_lvgl_ui::container::<()>().width(100); }
 ''', errors=("E0308",), symbols=("Size",))
         for old, argument in (
             ("bg", "rs_lvgl_ui::Color::rgb(1, 2, 3)"),
@@ -373,7 +440,7 @@ pub fn sink(ui: &mut Ui<CounterAction>) {
 ''', features=("diagnostics",))
         check("loaded-image-no-std", ADDITIONS + '''
 pub fn loaded(pixels: alloc::rc::Rc<[u8]>) -> Result<View<()>, ResourceError> {
-    Ok(image_resource_scaled(ImageResource::rgb565(1, 1, 2, pixels)?, 256))
+    Ok(image_resource_scaled(ImageResource::rgb565(1, 1, 2, pixels)?, Scale::percent(100)))
 }
 ''', features=("image",))
         check("loaded-font-requires-unsafe", '''#![no_std]
@@ -392,8 +459,8 @@ pub fn transfer(raw: core::ptr::NonNull<rs_lvgl_sys::lv_font_t>,
               errors=("E0432",), symbols=("slider",))
         check("optional-prelude-disabled", '#![no_std]\nuse rs_lvgl_ui::prelude::slider;\n',
               errors=("E0432",), symbols=("slider",))
-        check("native-dependency-not-typed", '#![no_std]\nuse rs_lvgl_ui::prelude::bar;\n',
-              features=("slider",), errors=("E0432",), symbols=("bar",))
+        check("native-dependency-not-typed", '#![no_std]\nuse rs_lvgl_ui::prelude::progress_bar;\n',
+              features=("slider",), errors=("E0432",), symbols=("progress_bar",))
         for name in ("canvas", "qrcode", "barcode", "gif", "lottie", "pinyin_keyboard"):
             for namespace in ("", "prelude::"):
                 check(f"disabled-{namespace.replace('::', '') or 'root'}-{name}",

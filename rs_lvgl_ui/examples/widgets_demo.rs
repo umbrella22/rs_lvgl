@@ -145,7 +145,7 @@ impl Demo {
 
         page.push(
             row([
-                obj()
+                container()
                     .key(Key::Named("avatar"))
                     .background(theme.accent)
                     .width(px(72))
@@ -301,8 +301,8 @@ impl Demo {
                         .key(Key::Named("experience"))
                         .width(percent(100))
                         .height(px(16))
-                        .anim_duration(120)
-                        .part_style(Part::Indicator, style().background(theme.accent))
+                        .animation_duration(120)
+                        .native_part_style(NativePart::Indicator, style().background(theme.accent))
                         .on_value_changed(WidgetDemoAction::Speed),
                 )
                 .child(

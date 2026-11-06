@@ -5,25 +5,25 @@ use alloc::{string::String, vec::Vec};
 
 /// Label overflow behavior.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub enum LabelLongMode {
+pub enum TextOverflow {
     #[default]
     Wrap,
-    Dots,
+    Ellipsis,
     Scroll,
-    ScrollCircular,
+    ScrollLoop,
     Clip,
 }
 
-impl LabelLongMode {
+impl TextOverflow {
     pub(crate) fn to_raw(self) -> rs_lvgl_sys::lv_label_long_mode_t {
         match self {
-            LabelLongMode::Wrap => rs_lvgl_sys::lv_label_long_mode_t_LV_LABEL_LONG_MODE_WRAP,
-            LabelLongMode::Dots => rs_lvgl_sys::lv_label_long_mode_t_LV_LABEL_LONG_MODE_DOTS,
-            LabelLongMode::Scroll => rs_lvgl_sys::lv_label_long_mode_t_LV_LABEL_LONG_MODE_SCROLL,
-            LabelLongMode::ScrollCircular => {
+            TextOverflow::Wrap => rs_lvgl_sys::lv_label_long_mode_t_LV_LABEL_LONG_MODE_WRAP,
+            TextOverflow::Ellipsis => rs_lvgl_sys::lv_label_long_mode_t_LV_LABEL_LONG_MODE_DOTS,
+            TextOverflow::Scroll => rs_lvgl_sys::lv_label_long_mode_t_LV_LABEL_LONG_MODE_SCROLL,
+            TextOverflow::ScrollLoop => {
                 rs_lvgl_sys::lv_label_long_mode_t_LV_LABEL_LONG_MODE_SCROLL_CIRCULAR
             }
-            LabelLongMode::Clip => rs_lvgl_sys::lv_label_long_mode_t_LV_LABEL_LONG_MODE_CLIP,
+            TextOverflow::Clip => rs_lvgl_sys::lv_label_long_mode_t_LV_LABEL_LONG_MODE_CLIP,
         }
     }
 }
@@ -76,16 +76,16 @@ pub struct TableCell {
 
 /// A set of scroll directions, combined with `|`.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub struct ScrollDir(u8);
+pub struct ScrollDirection(u8);
 
-impl ScrollDir {
+impl ScrollDirection {
     pub const NONE: Self = Self(rs_lvgl_sys::lv_dir_t_LV_DIR_NONE as u8);
     pub const LEFT: Self = Self(rs_lvgl_sys::lv_dir_t_LV_DIR_LEFT as u8);
     pub const RIGHT: Self = Self(rs_lvgl_sys::lv_dir_t_LV_DIR_RIGHT as u8);
     pub const TOP: Self = Self(rs_lvgl_sys::lv_dir_t_LV_DIR_TOP as u8);
     pub const BOTTOM: Self = Self(rs_lvgl_sys::lv_dir_t_LV_DIR_BOTTOM as u8);
-    pub const HOR: Self = Self(rs_lvgl_sys::lv_dir_t_LV_DIR_HOR as u8);
-    pub const VER: Self = Self(rs_lvgl_sys::lv_dir_t_LV_DIR_VER as u8);
+    pub const HORIZONTAL: Self = Self(rs_lvgl_sys::lv_dir_t_LV_DIR_HOR as u8);
+    pub const VERTICAL: Self = Self(rs_lvgl_sys::lv_dir_t_LV_DIR_VER as u8);
     pub const ALL: Self = Self(rs_lvgl_sys::lv_dir_t_LV_DIR_ALL as u8);
 
     pub(crate) fn to_raw(self) -> rs_lvgl_sys::lv_dir_t {
@@ -93,7 +93,7 @@ impl ScrollDir {
     }
 }
 
-impl core::ops::BitOr for ScrollDir {
+impl core::ops::BitOr for ScrollDirection {
     type Output = Self;
 
     fn bitor(self, other: Self) -> Self {
@@ -107,12 +107,16 @@ impl core::ops::BitOr for ScrollDir {
 pub struct Tile {
     pub column: u8,
     pub row: u8,
-    pub dir: ScrollDir,
+    pub directions: ScrollDirection,
 }
 
 impl Tile {
-    pub const fn new(column: u8, row: u8, dir: ScrollDir) -> Self {
-        Self { column, row, dir }
+    pub const fn new(column: u8, row: u8, directions: ScrollDirection) -> Self {
+        Self {
+            column,
+            row,
+            directions,
+        }
     }
 }
 
@@ -196,11 +200,11 @@ impl Span {
 }
 
 /// Repeat count that makes an animated image loop forever.
-pub const ANIM_REPEAT_INFINITE: u32 = rs_lvgl_sys::LV_ANIM_REPEAT_INFINITE;
+pub const ANIMATION_REPEAT_INFINITE: u32 = rs_lvgl_sys::LV_ANIM_REPEAT_INFINITE;
 
 /// Largest number of frames an animated image accepts (LVGL stores the
 /// frame count in an `int8_t`).
-pub const ANIM_IMAGE_MAX_FRAMES: usize = 127;
+pub const ANIMATED_IMAGE_MAX_FRAMES: usize = 127;
 
 /// Chart presentation type.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]

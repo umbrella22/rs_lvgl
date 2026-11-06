@@ -1,6 +1,6 @@
 //! Constructors for media views.
 
-use crate::node::{ImageSource, Node, WidgetKind, ANIM_REPEAT_INFINITE};
+use crate::node::{ImageSource, Node, WidgetKind, ANIMATION_REPEAT_INFINITE};
 #[cfg(feature = "widget-barcode")]
 use crate::Barcode;
 #[cfg(feature = "widget-canvas")]
@@ -16,23 +16,26 @@ use crate::View;
 /// An image at its original scale.
 #[cfg(feature = "widget-image")]
 pub fn image<M>(source: ImageSource) -> View<M> {
-    Node::new(WidgetKind::Image { source, scale: 256 })
+    Node::new(WidgetKind::Image {
+        source,
+        scale: crate::Scale::percent(100),
+    })
 }
 
-/// An image with a scale of 256 representing its original size.
+/// An image with an explicit scale factor; zero is rejected during validation.
 #[cfg(feature = "widget-image")]
-pub fn image_scaled<M>(source: ImageSource, scale: u16) -> View<M> {
+pub fn image_scaled<M>(source: ImageSource, scale: crate::Scale) -> View<M> {
     Node::new(WidgetKind::Image { source, scale })
 }
 
 /// An already loaded image retained through source replacement and unmount.
 #[cfg(feature = "widget-image")]
 pub fn image_resource<M>(source: crate::ImageResource) -> View<M> {
-    image_resource_scaled(source, 256)
+    image_resource_scaled(source, crate::Scale::percent(100))
 }
 
 #[cfg(feature = "widget-image")]
-pub fn image_resource_scaled<M>(source: crate::ImageResource, scale: u16) -> View<M> {
+pub fn image_resource_scaled<M>(source: crate::ImageResource, scale: crate::Scale) -> View<M> {
     // SAFETY: the node retains source and transfers it into native retention
     // before its descriptor is discarded, including failure/deletion paths.
     let raw = unsafe { ImageSource::from_raw(source.as_ptr()) };
@@ -54,11 +57,14 @@ pub fn image_button<M>(released: ImageSource) -> View<M> {
 /// An image that shows every frame once per `duration_ms`, looping
 /// forever unless [`View::repeat`] is set.
 #[cfg(feature = "widget-animimage")]
-pub fn anim_image<M>(frames: impl IntoIterator<Item = ImageSource>, duration_ms: u32) -> View<M> {
-    Node::new(WidgetKind::AnimImage {
+pub fn animated_image<M>(
+    frames: impl IntoIterator<Item = ImageSource>,
+    duration_ms: u32,
+) -> View<M> {
+    Node::new(WidgetKind::AnimatedImage {
         frames: frames.into_iter().collect(),
         duration_ms,
-        repeat: ANIM_REPEAT_INFINITE,
+        repeat: ANIMATION_REPEAT_INFINITE,
     })
 }
 

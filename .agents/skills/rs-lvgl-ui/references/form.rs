@@ -1,4 +1,4 @@
-//! Controlled form using rs_lvgl_ui 0.5.0.
+//! Controlled form using rs_lvgl_ui 0.6.0.
 //! rs_lvgl (alloc); rs_lvgl_ui (alloc, widget-slider, widget-switch, widget-textarea).
 use rs_lvgl_ui::prelude::*;
 

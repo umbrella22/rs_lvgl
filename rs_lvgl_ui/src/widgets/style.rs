@@ -1,14 +1,14 @@
 //! Native local styles and selector restoration.
 
 use super::KindTag;
-use crate::node::{Part, Selector, Size};
+use crate::node::{NativePart, Selector, Size};
 use crate::theme::{
-    Style, STYLE_ALIGN, STYLE_ANIM_DURATION, STYLE_ARC_COLOR, STYLE_ARC_WIDTH, STYLE_BG,
-    STYLE_BG_OPA, STYLE_BORDER, STYLE_DISABLED, STYLE_FG, STYLE_FLEX_ALIGN, STYLE_FLOATING,
-    STYLE_FONT, STYLE_GAP, STYLE_GROW, STYLE_HEIGHT, STYLE_HIDDEN, STYLE_MAX_HEIGHT,
-    STYLE_MAX_WIDTH, STYLE_MIN_HEIGHT, STYLE_MIN_WIDTH, STYLE_OFFSET, STYLE_OPACITY,
-    STYLE_PAD_BOTTOM, STYLE_PAD_LEFT, STYLE_PAD_RIGHT, STYLE_PAD_TOP, STYLE_RADIUS,
-    STYLE_TEXT_ALIGN, STYLE_WIDTH,
+    Style, STYLE_ALIGN, STYLE_ALIGN_CONTENT, STYLE_ALIGN_ITEMS, STYLE_ANIM_DURATION,
+    STYLE_ARC_COLOR, STYLE_ARC_WIDTH, STYLE_BG, STYLE_BG_OPA, STYLE_BORDER, STYLE_DISABLED,
+    STYLE_FG, STYLE_FLOATING, STYLE_FONT, STYLE_GAP, STYLE_GROW, STYLE_HEIGHT, STYLE_HIDDEN,
+    STYLE_JUSTIFY_CONTENT, STYLE_MAX_HEIGHT, STYLE_MAX_WIDTH, STYLE_MIN_HEIGHT, STYLE_MIN_WIDTH,
+    STYLE_OFFSET, STYLE_OPACITY, STYLE_PAD_BOTTOM, STYLE_PAD_LEFT, STYLE_PAD_RIGHT, STYLE_PAD_TOP,
+    STYLE_RADIUS, STYLE_TEXT_ALIGN, STYLE_WIDTH,
 };
 use core::ptr::NonNull;
 use rs_lvgl_sys::lv_obj_t;
@@ -79,7 +79,7 @@ pub(crate) fn clear_selector_style(obj: NonNull<lv_obj_t>, selector: Selector) {
                 selector,
             );
         }
-        if part == Part::Indicator {
+        if part == NativePart::Indicator {
             rs_lvgl_sys::lv_obj_remove_local_style_prop(
                 obj.as_ptr(),
                 rs_lvgl_sys::_lv_style_id_t_LV_STYLE_ARC_COLOR as rs_lvgl_sys::lv_style_prop_t,
@@ -184,7 +184,7 @@ fn apply_style_selector(
         if style.is_set(STYLE_ANIM_DURATION) {
             rs_lvgl_sys::lv_obj_set_style_anim_duration(
                 obj.as_ptr(),
-                style.anim_duration,
+                style.animation_duration,
                 selector,
             );
         }
@@ -235,25 +235,28 @@ fn apply_style_selector(
             {
                 rs_lvgl_sys::lv_obj_set_height(obj.as_ptr(), LV_SIZE_CONTENT);
             }
-            if style.is_set(STYLE_FLEX_ALIGN) && matches!(tag, KindTag::Row | KindTag::Column) {
-                rs_lvgl_sys::lv_obj_set_style_flex_main_place(
-                    obj.as_ptr(),
-                    style.flex_main.to_raw(),
-                    0,
-                );
-                rs_lvgl_sys::lv_obj_set_style_flex_cross_place(
-                    obj.as_ptr(),
-                    style.flex_cross.to_raw(),
-                    0,
-                );
-                // LVGL places items inside their line (cross) and lines inside
-                // the container (track); a single-line container needs both
-                // to move its items.
-                rs_lvgl_sys::lv_obj_set_style_flex_track_place(
-                    obj.as_ptr(),
-                    style.flex_cross.to_raw(),
-                    0,
-                );
+            if matches!(tag, KindTag::Row | KindTag::Column) {
+                if style.is_set(STYLE_JUSTIFY_CONTENT) {
+                    rs_lvgl_sys::lv_obj_set_style_flex_main_place(
+                        obj.as_ptr(),
+                        style.flex_main.to_raw(),
+                        0,
+                    );
+                }
+                if style.is_set(STYLE_ALIGN_ITEMS) {
+                    rs_lvgl_sys::lv_obj_set_style_flex_cross_place(
+                        obj.as_ptr(),
+                        style.flex_cross.to_raw(),
+                        0,
+                    );
+                }
+                if style.is_set(STYLE_ALIGN_CONTENT) {
+                    rs_lvgl_sys::lv_obj_set_style_flex_track_place(
+                        obj.as_ptr(),
+                        style.flex_track.to_raw(),
+                        0,
+                    );
+                }
             }
             if style.is_set(STYLE_GAP) {
                 match tag {

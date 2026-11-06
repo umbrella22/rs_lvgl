@@ -1,12 +1,14 @@
 //! Style builders operations.
 
+use crate::ItemAlign;
+
 use super::{
-    Style, STYLE_ALIGN, STYLE_ANIM_DURATION, STYLE_ARC_COLOR, STYLE_ARC_WIDTH, STYLE_BG,
-    STYLE_BG_OPA, STYLE_BORDER, STYLE_DISABLED, STYLE_FG, STYLE_FLEX_ALIGN, STYLE_FLOATING,
-    STYLE_FONT, STYLE_GAP, STYLE_GROW, STYLE_HEIGHT, STYLE_HIDDEN, STYLE_MAX_HEIGHT,
-    STYLE_MAX_WIDTH, STYLE_MIN_HEIGHT, STYLE_MIN_WIDTH, STYLE_OFFSET, STYLE_OPACITY,
-    STYLE_PAD_BOTTOM, STYLE_PAD_LEFT, STYLE_PAD_RIGHT, STYLE_PAD_TOP, STYLE_RADIUS,
-    STYLE_TEXT_ALIGN, STYLE_WIDTH,
+    Style, STYLE_ALIGN, STYLE_ALIGN_CONTENT, STYLE_ALIGN_ITEMS, STYLE_ANIM_DURATION,
+    STYLE_ARC_COLOR, STYLE_ARC_WIDTH, STYLE_BG, STYLE_BG_OPA, STYLE_BORDER, STYLE_DISABLED,
+    STYLE_FG, STYLE_FLOATING, STYLE_FONT, STYLE_GAP, STYLE_GROW, STYLE_HEIGHT, STYLE_HIDDEN,
+    STYLE_JUSTIFY_CONTENT, STYLE_MAX_HEIGHT, STYLE_MAX_WIDTH, STYLE_MIN_HEIGHT, STYLE_MIN_WIDTH,
+    STYLE_OFFSET, STYLE_OPACITY, STYLE_PAD_BOTTOM, STYLE_PAD_LEFT, STYLE_PAD_RIGHT, STYLE_PAD_TOP,
+    STYLE_RADIUS, STYLE_TEXT_ALIGN, STYLE_WIDTH,
 };
 use crate::node::{Align, Color, FlexAlign, Font, Size, TextAlign};
 
@@ -181,18 +183,26 @@ impl Style {
         self
     }
 
-    /// Place the children of a `row` or `column`: `main` along the flow
-    /// direction, `cross` perpendicular to it, like CSS `justify-content` and
-    /// `align-items`.
-    ///
-    /// `cross` sets both LVGL's cross place (items inside their line) and
-    /// track place (lines inside the container), so it also moves the items
-    /// of a single-line container. Unset, both are [`FlexAlign::Start`].
-    /// Other kinds ignore it. Main-part only.
-    pub fn flex_align(mut self, main: FlexAlign, cross: FlexAlign) -> Self {
-        self.flex_main = main;
-        self.flex_cross = cross;
-        self.set |= STYLE_FLEX_ALIGN;
+    /// Place children along the flow direction of a row or column. Main-part only.
+    pub fn justify_content(mut self, align: FlexAlign) -> Self {
+        self.flex_main = align;
+        self.set |= STYLE_JUSTIFY_CONTENT;
+        self
+    }
+
+    /// Place children within their line, perpendicular to the flow. Main-part only.
+    /// `align_content` independently places that line within the container.
+    pub fn align_items(mut self, align: ItemAlign) -> Self {
+        self.flex_cross = align;
+        self.set |= STYLE_ALIGN_ITEMS;
+        self
+    }
+
+    /// Place flex lines within the container, including its single line.
+    /// This is LVGL track placement; it does not imply CSS stretch semantics.
+    pub fn align_content(mut self, align: FlexAlign) -> Self {
+        self.flex_track = align;
+        self.set |= STYLE_ALIGN_CONTENT;
         self
     }
 
@@ -223,8 +233,8 @@ impl Style {
     }
 
     /// Style transition duration in milliseconds.
-    pub fn anim_duration(mut self, duration: u32) -> Self {
-        self.anim_duration = duration;
+    pub fn animation_duration(mut self, duration: u32) -> Self {
+        self.animation_duration = duration;
         self.set |= STYLE_ANIM_DURATION;
         self
     }
@@ -333,8 +343,16 @@ impl Style {
         self.floating
     }
 
-    pub fn flex_align_value(&self) -> (FlexAlign, FlexAlign) {
-        (self.flex_main, self.flex_cross)
+    pub fn justify_content_value(&self) -> FlexAlign {
+        self.flex_main
+    }
+
+    pub fn align_items_value(&self) -> ItemAlign {
+        self.flex_cross
+    }
+
+    pub fn align_content_value(&self) -> FlexAlign {
+        self.flex_track
     }
 
     pub fn arc_color_value(&self) -> Color {
@@ -345,7 +363,7 @@ impl Style {
         self.arc_width
     }
 
-    pub fn anim_duration_value(&self) -> u32 {
-        self.anim_duration
+    pub fn animation_duration_value(&self) -> u32 {
+        self.animation_duration
     }
 }

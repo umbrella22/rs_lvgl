@@ -26,7 +26,7 @@ impl App for Motion {
                 100,
             ));
         }
-        let mut node = obj()
+        let mut node = container()
             .style(style)
             .state_style(State::PRESSED, Style::default().outline_width(10));
         if let Some(animation) = self.animation {
@@ -121,7 +121,7 @@ fn unmount_and_reinitialize_cancel_infinite_and_delayed_animations() {
         let mut ui = Ui::new(&display, common::theme()).unwrap();
         let app = Motion {
             animation: Some(
-                Animation::new(AnimationProperty::Rotation, 0, 900, 40)
+                Animation::rotation(Angle::degrees(0), Angle::degrees(90), 40)
                     .repeat(u32::MAX)
                     .reverse(40),
             ),

@@ -144,14 +144,17 @@ pub use events::{Event, GestureDirection, InputEvent, PointerEvent, ScrollOffset
 pub use events::{PostOutcome, QueueOverflow, QueuePolicy, QueueStats};
 pub use node::{
     table_cell, Align, CalendarDate, ChartSeries, ChartType, Color, EventHandler, FlexAlign, Font,
-    GridAlign, GridCell, GridTrack, Handlers, ImageSource, Key, LabelLongMode, Node, Part,
-    RawImage, RollerMode, ScrollDir, Size, Span, State, TableCell, TextAlign, TextChangedHandler,
-    Tile, ValueChangedHandler, WidgetKind, ANIM_IMAGE_MAX_FRAMES, ANIM_REPEAT_INFINITE,
-    SPINBOX_MAX_DIGITS, TABLE_MAX_CELLS_PER_AXIS,
+    GridAlign, GridCell, GridTrack, Handlers, ImageSource, ItemAlign, Key, NativePart, Node,
+    RawImage, RollerMode, ScrollDirection, Size, Span, State, TableCell, TextAlign,
+    TextChangedHandler, TextOverflow, Tile, ValueChangedHandler, WidgetKind,
+    ANIMATED_IMAGE_MAX_FRAMES, ANIMATION_REPEAT_INFINITE, SPINBOX_MAX_DIGITS,
+    TABLE_MAX_CELLS_PER_AXIS,
 };
 pub use scroll::{ScrollSnap, ScrollbarMode};
 mod animation;
 pub use animation::{Animation, AnimationProperty, Easing, StyleTransition, TransitionProperty};
+mod units;
+pub use units::{Angle, Scale};
 mod style_properties;
 pub use style_properties::{BlendMode, GradientDirection, TextDecoration};
 pub use theme::{Style, Theme};

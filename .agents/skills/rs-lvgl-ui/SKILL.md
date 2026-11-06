@@ -8,7 +8,9 @@ description: Build or modify declarative Rust screens with rs_lvgl_ui, including
 ## Locate the API
 
 Identify the application's Cargo dependency and the actual source checkout. This
-skill targets `rs_lvgl_ui` 0.5.0 from `umbrella22/rs_lvgl`, layered over LVGL 9.6.
+skill targets rs_lvgl_ui 0.6.0, layered over LVGL 9.6. For an older release,
+use the skill from its matching tag. Do not insert 0.6.0 names into an application
+consuming an older API.
 Read the resolved manifests and relevant APIs before assuming a symbol or feature
 exists. Other LVGL wrappers have different APIs. In this source repository, the main
 entry points are `rs_lvgl_ui/src/{constructors,app,node,theme}/mod.rs`,
@@ -35,7 +37,7 @@ wrapper migration. Preserve other work in the checkout.
 - Import `rs_lvgl_ui::prelude::*` or explicit root functions/types. Build with
   `column([label("Title"), button("Save").on_click(SettingsAction::Save)])`.
   `row(children)` and `column(children)` accept arrays or iterators;
-  `grid(columns, rows, children)` also takes its children directly. `obj()` is
+  `grid(columns, rows, children)` also takes its children directly. `container()` is
   the plain container; native tabview/tileview use `.child`/`.children` for their
   pages. Append builders remain useful for conditional or incremental assembly.
   `View<M>` aliases the existing descriptor type; associated constructors such
@@ -60,10 +62,10 @@ a memory display does not provide a visible simulator or board driver.
 
 ## Composition and forms
 
-Version 0.5.0 includes lazy children, semantic callbacks, component slots, typed
-construction and explicit bindings. Use [the runnable form](references/form.rs)
-with 0.5.0 and its declared widget features. Verify the resolved dependency when
-adapting an application that still uses an earlier release.
+Version 0.6.0 includes lazy children, semantic callbacks, component slots, typed
+construction and explicit bindings. The [runnable form](references/form.rs)
+preserves those composition contracts in this checkout. Resolve the actual source
+and declared widget features before choosing development or released names.
 
 - `child_if(condition, || view)` evaluates its FnOnce closure only for true.
   Lists use iterators and stable business keys; functions accept props/state
@@ -94,6 +96,33 @@ Typed erasure adds no allocation. Bindings consume the existing event slot.
 Owned text, capturing handlers, child vectors, map, slots and native storage
 still have costs; measure Rust and LVGL separately for memory claims.
 
+## UI 0.6.0 and migration
+
+Use container/progress_bar/message_box/animated_image; match typed constructors
+and Container/ProgressBar/MessageBox/AnimatedImage markers. Use ScrollDirection
+and scroll_direction with HORIZONTAL/VERTICAL; TextOverflow with Ellipsis and
+ScrollLoop; Align::TopCenter/BottomCenter/CenterLeft/CenterRight. Old names have
+no aliases in this source. The included [clarity example](references/api-clarity.rs)
+compiles the 0.6.0 API.
+
+Use Scale::percent(50) and Angle::degrees(90) for transforms and image scale.
+Scale::ratio(n, d) is checked and rounds to native 1/256, ties upward;
+Angle::tenths retains sub-degree precision. Native scale/angle overflow rejects
+before mutation. Images reject zero scale; style transforms allow it. Rotation
+and scale animations use Animation::rotation/scale_x/scale_y with typed endpoints.
+Spinner sweep angles remain whole degrees.
+
+Use justify_content(FlexAlign), align_items(ItemAlign), align_content(FlexAlign)
+independently. Migrating old flex_align(main,cross) requires all three writes:
+main, cross-as-ItemAlign, and cross-as-align_content. Floating also excludes
+parent scrolling. There is no implicit CSS stretch or absolute-position contract.
+
+Use thumb_style/thumb_state_style on sliders/switches and
+progress_style/progress_state_style on sliders/progress bars. Other native parts
+use NativePart and native_part_style/native_part_state_style. A later style for
+the same part/state replaces the whole prior patch; combine fields in one patch.
+Typed misuse fails capability bounds; erased misuse follows diagnostics/strict.
+
 ## Styles and input
 
 View constructors initialize their own embedded style. Prefer direct modifiers:
@@ -102,7 +131,9 @@ Dimensions use `px`, `percent` or `content`; spacing is in pixels.
 `.font(theme.title_font).text_color(theme.text)` makes theme inputs explicit.
 `style()` creates an unset reusable patch; `Style::default()` is only the Rust
 value-construction primitive. Both leave properties unset and preserve inheritance.
-`Style::neutral()` explicitly clears the container defaults. `Style::accent(theme)`
+`Style::plain()` explicitly writes plain-node base values; it is not an empty
+patch or complete reset. Ordinary containers/labels already apply it. Extended
+properties, offsets, floating, flex placement and inherited text remain unset. `Style::accent(theme)`
 provides a flat themed action button. Native defaults can include shadows; set
 shadow width/color/opacity/offset explicitly when the design needs elevation.
 Flat modifiers and `.style(patch)` follow call order: the last explicit field

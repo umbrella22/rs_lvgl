@@ -204,7 +204,7 @@ fn spinner_and_led_apply_their_parameters() {
             row([]).child(spinner()).child(led(Color::rgb(255, 0, 0)))
         } else {
             row([])
-                .child(spinner().spinner_anim(500, 90))
+                .child(spinner().spinner_animation(500, 90))
                 .child(led(Color::rgb(0, 255, 0)).brightness(120))
         }
     });
@@ -407,7 +407,7 @@ fn invalid_widget_properties_are_rejected() {
         |_| spinbox(0, 1000, 0).digits(3, 0),
         |_| spinbox(0, 10, 0).digits(2, 2),
         |_| spinbox(0, 10, 0).step(0),
-        |_| spinner().spinner_anim(1000, 361),
+        |_| spinner().spinner_animation(1000, 361),
         |_| button_matrix([[""]]),
         |_| button_matrix(Vec::<Vec<String>>::new()),
         |_| table([vec!["a", "b"], vec!["c"]]),

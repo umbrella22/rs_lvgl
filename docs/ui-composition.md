@@ -1,8 +1,8 @@
 # UI composition and controlled forms
 
-`rs_lvgl_ui` 0.5.0 provides `child_if`, semantic value handlers, component slots,
+`rs_lvgl_ui` 0.6.0 provides `child_if`, semantic value handlers, component slots,
 `typed::...` and `binding`. Install it from crates.io with
-`rs_lvgl_ui = "0.5.0"`. Existing root/prelude constructors still return
+`rs_lvgl_ui = "0.6.0"`. Existing root/prelude constructors still return
 `View<ComponentAction>`.
 
 ## Conditional children, lists and functions

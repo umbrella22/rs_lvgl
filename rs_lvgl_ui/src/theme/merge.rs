@@ -1,22 +1,26 @@
 //! Style merge operations.
 
 use super::{
-    Style, STYLE_ALIGN, STYLE_ALL_NEUTRAL, STYLE_ANIM_DURATION, STYLE_ARC_COLOR, STYLE_ARC_WIDTH,
-    STYLE_BG, STYLE_BG_OPA, STYLE_BORDER, STYLE_DISABLED, STYLE_FG, STYLE_FLEX_ALIGN,
-    STYLE_FLOATING, STYLE_FONT, STYLE_GAP, STYLE_GROW, STYLE_HEIGHT, STYLE_HIDDEN,
-    STYLE_MAX_HEIGHT, STYLE_MAX_WIDTH, STYLE_MIN_HEIGHT, STYLE_MIN_WIDTH, STYLE_OFFSET,
-    STYLE_OPACITY, STYLE_PAD_BOTTOM, STYLE_PAD_LEFT, STYLE_PAD_RIGHT, STYLE_PAD_TOP, STYLE_RADIUS,
-    STYLE_TEXT_ALIGN, STYLE_WIDTH,
+    Style, STYLE_ALIGN, STYLE_ALIGN_CONTENT, STYLE_ALIGN_ITEMS, STYLE_ALL_NEUTRAL,
+    STYLE_ANIM_DURATION, STYLE_ARC_COLOR, STYLE_ARC_WIDTH, STYLE_BG, STYLE_BG_OPA, STYLE_BORDER,
+    STYLE_DISABLED, STYLE_FG, STYLE_FLOATING, STYLE_FONT, STYLE_GAP, STYLE_GROW, STYLE_HEIGHT,
+    STYLE_HIDDEN, STYLE_JUSTIFY_CONTENT, STYLE_MAX_HEIGHT, STYLE_MAX_WIDTH, STYLE_MIN_HEIGHT,
+    STYLE_MIN_WIDTH, STYLE_OFFSET, STYLE_OPACITY, STYLE_PAD_BOTTOM, STYLE_PAD_LEFT,
+    STYLE_PAD_RIGHT, STYLE_PAD_TOP, STYLE_RADIUS, STYLE_TEXT_ALIGN, STYLE_WIDTH,
 };
 
 impl Style {
-    /// A neutral style: transparent, unpadded, square, content-sized and
-    /// top-left aligned.
+    /// Explicit plain-node base values: transparent, unpadded, square,
+    /// content-sized and top-left aligned.
+    ///
+    /// This sets base appearance/layout fields; it is not an empty patch or a
+    /// complete reset. Extended properties, offsets, floating and flex placement
+    /// remain unset, so merging this base preserves earlier writes to them.
     ///
     /// Text color, font and text alignment are not set: LVGL inherits them
     /// from the parent, so `crate::column([]).style(Style::body(theme))` styles
     /// every label inside the column.
-    pub fn neutral() -> Self {
+    pub fn plain() -> Self {
         Self {
             set: STYLE_ALL_NEUTRAL,
             ..Self::default()
@@ -106,7 +110,7 @@ impl Style {
             self.arc_width = other.arc_width;
         }
         if other.is_set(STYLE_ANIM_DURATION) {
-            self.anim_duration = other.anim_duration;
+            self.animation_duration = other.animation_duration;
         }
         if other.is_set(STYLE_OFFSET) {
             self.offset_x = other.offset_x;
@@ -115,9 +119,14 @@ impl Style {
         if other.is_set(STYLE_FLOATING) {
             self.floating = other.floating;
         }
-        if other.is_set(STYLE_FLEX_ALIGN) {
+        if other.is_set(STYLE_JUSTIFY_CONTENT) {
             self.flex_main = other.flex_main;
+        }
+        if other.is_set(STYLE_ALIGN_ITEMS) {
             self.flex_cross = other.flex_cross;
+        }
+        if other.is_set(STYLE_ALIGN_CONTENT) {
+            self.flex_track = other.flex_track;
         }
         if other.transition.is_some() {
             self.transition = other.transition;

@@ -2,7 +2,7 @@
 
 use super::{is_container, is_textarea};
 use crate::node::{
-    GridTrack, ImageSource, Node, WidgetKind, ANIM_IMAGE_MAX_FRAMES, SPINBOX_MAX_DIGITS,
+    GridTrack, ImageSource, Node, WidgetKind, ANIMATED_IMAGE_MAX_FRAMES, SPINBOX_MAX_DIGITS,
     TABLE_MAX_CELLS_PER_AXIS,
 };
 use crate::UiError;
@@ -141,12 +141,10 @@ pub(super) fn validate_kind<M>(node: &Node<M>) -> Result<(), UiError> {
         #[cfg(feature = "widget-slider")]
         WidgetKind::Slider { min, max, value } => validate_range(*min, *max, *value)?,
         #[cfg(feature = "widget-bar")]
-        WidgetKind::Bar { min, max, value } => validate_range(*min, *max, *value)?,
+        WidgetKind::ProgressBar { min, max, value } => validate_range(*min, *max, *value)?,
         #[cfg(feature = "widget-image")]
         WidgetKind::Image { source, scale } => {
-            if *scale == 0 {
-                return Err(UiError::InvalidProperty);
-            }
+            scale.validate_image()?;
             validate_image_source(source)?;
         }
         #[cfg(feature = "widget-roller")]
@@ -265,7 +263,7 @@ pub(super) fn validate_kind<M>(node: &Node<M>) -> Result<(), UiError> {
             }
         }
         #[cfg(feature = "widget-msgbox")]
-        WidgetKind::Msgbox {
+        WidgetKind::MessageBox {
             title,
             text,
             buttons,
@@ -306,12 +304,12 @@ pub(super) fn validate_kind<M>(node: &Node<M>) -> Result<(), UiError> {
             }
         }
         #[cfg(feature = "widget-animimage")]
-        WidgetKind::AnimImage {
+        WidgetKind::AnimatedImage {
             frames,
             duration_ms,
             repeat: _,
         } => {
-            if frames.is_empty() || frames.len() > ANIM_IMAGE_MAX_FRAMES || *duration_ms == 0 {
+            if frames.is_empty() || frames.len() > ANIMATED_IMAGE_MAX_FRAMES || *duration_ms == 0 {
                 return Err(UiError::InvalidProperty);
             }
             for frame in frames {
@@ -326,7 +324,7 @@ pub(super) fn validate_kind<M>(node: &Node<M>) -> Result<(), UiError> {
                 return Err(UiError::InvalidProperty);
             }
         }
-        WidgetKind::Obj | WidgetKind::Row | WidgetKind::Column => {}
+        WidgetKind::Container | WidgetKind::Row | WidgetKind::Column => {}
         #[cfg(feature = "widget-switch")]
         WidgetKind::Switch { .. } => {}
         #[cfg(feature = "widget-led")]

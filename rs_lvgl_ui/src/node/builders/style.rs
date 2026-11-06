@@ -1,6 +1,6 @@
 //! Flat modifiers update the style already embedded in a view description.
 
-use crate::node::{Align, Color, FlexAlign, Font, Node, Size, TextAlign};
+use crate::node::{Align, Color, FlexAlign, Font, ItemAlign, Node, Size, TextAlign};
 use crate::StyleTransition;
 
 macro_rules! modifiers {
@@ -43,11 +43,13 @@ modifiers! {
     text_align(align: TextAlign) => "Set the alignment of text inside the widget.";
     offset(x: i16, y: i16) => "Offset from the aligned position in pixels; layout-managed children need floating placement.";
     floating(floating: bool) => "Exclude this object from parent layout and scrolling.";
-    flex_align(main: FlexAlign, cross: FlexAlign) => "Place children along the main and cross axes of a row or column.";
+    justify_content(align: FlexAlign) => "Place children along the flow direction of a row or column.";
+    align_items(align: ItemAlign) => "Place children within their flex line, perpendicular to the flow.";
+    align_content(align: FlexAlign) => "Place flex lines inside the container, including a single line.";
     hidden(hidden: bool) => "Set whether the object is hidden.";
     disabled(disabled: bool) => "Set the object's disabled state.";
     arc_color(color: Color) => "Set the indicator color of an arc.";
     arc_width(width: i16) => "Set the indicator width of an arc in pixels.";
-    anim_duration(duration: u32) => "Set native style animation duration in milliseconds.";
+    animation_duration(duration: u32) => "Set native style animation duration in milliseconds.";
     transition(transition: StyleTransition) => "Set a native transition for the specified style properties.";
 }

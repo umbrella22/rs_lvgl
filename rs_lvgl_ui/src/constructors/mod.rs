@@ -16,8 +16,6 @@ pub fn style() -> crate::Style {
 }
 #[cfg(feature = "widget-arc")]
 pub use controls::arc;
-#[cfg(feature = "widget-bar")]
-pub use controls::bar;
 pub use controls::button;
 #[cfg(feature = "widget-buttonmatrix")]
 pub use controls::button_matrix;
@@ -32,6 +30,8 @@ pub use controls::label;
 pub use controls::label_static;
 #[cfg(feature = "widget-ime-pinyin")]
 pub use controls::pinyin_keyboard;
+#[cfg(feature = "widget-bar")]
+pub use controls::progress_bar;
 #[cfg(feature = "widget-roller")]
 pub use controls::roller;
 #[cfg(feature = "widget-slider")]
@@ -55,7 +55,7 @@ pub use data::led;
 #[cfg(feature = "widget-line")]
 pub use data::line;
 #[cfg(feature = "widget-msgbox")]
-pub use data::msgbox;
+pub use data::message_box;
 #[cfg(feature = "widget-scale")]
 pub use data::scale;
 #[cfg(feature = "widget-span")]
@@ -65,8 +65,8 @@ pub use data::spinner;
 #[cfg(feature = "widget-table")]
 pub use data::table;
 pub use layout::column;
+pub use layout::container;
 pub use layout::grid;
-pub use layout::obj;
 pub use layout::row;
 #[cfg(feature = "widget-tabview")]
 pub use layout::tabview;
@@ -74,7 +74,7 @@ pub use layout::tabview;
 pub use layout::tileview;
 pub use layout::{content, percent, px};
 #[cfg(feature = "widget-animimage")]
-pub use media::anim_image;
+pub use media::animated_image;
 #[cfg(feature = "widget-barcode")]
 pub use media::barcode;
 #[cfg(feature = "widget-canvas")]

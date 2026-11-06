@@ -60,7 +60,6 @@ impl App for Gallery {
                 })
         }))
         .key(Key::Named("tabs"))
-        .style(Style::neutral())
         .padding(FOCUS_SPACE)
         .gap(12)
         .height(px(52))
@@ -80,7 +79,7 @@ impl App for Gallery {
                 .font(theme.body_font)
                 .text_color(theme.text)
                 .text_color(ACCENT)
-                .text_letter_space(3),
+                .letter_spacing(3),
             label(TABS[self.page])
                 .font(theme.title_font)
                 .text_color(theme.text),
@@ -99,7 +98,6 @@ impl App for Gallery {
                     .grow(1),
                 action_button("Quit", CapabilityGalleryAction::Quit),
             ])
-            .style(Style::neutral())
             .width(percent(100))
             .padding(FOCUS_SPACE)
             .gap(12),
@@ -129,7 +127,7 @@ fn action_button(text: &str, action: CapabilityGalleryAction) -> View<Capability
         .outline_color(ACCENT)
         .outline_width(FOCUS_WIDTH)
         .outline_opacity(255)
-        .outline_pad(FOCUS_PAD);
+        .outline_offset(FOCUS_PAD);
     rs_lvgl_ui::button(text)
         .background(PANEL)
         .text_color(Color::rgb(231, 238, 246))
@@ -138,7 +136,7 @@ fn action_button(text: &str, action: CapabilityGalleryAction) -> View<Capability
         .shadow_width(0)
         .outline_color(ACCENT)
         .outline_width(0)
-        .outline_pad(FOCUS_PAD)
+        .outline_offset(FOCUS_PAD)
         .transition(StyleTransition::new(
             &[
                 TransitionProperty::OutlineWidth,
@@ -156,7 +154,7 @@ fn card(theme: &Theme, title: &str) -> View<CapabilityGalleryAction> {
         .font(theme.body_font)
         .text_color(theme.text)
         .text_color(ACCENT)
-        .text_letter_space(1)])
+        .letter_spacing(1)])
     .style(Style::surface(theme))
     .background(PANEL)
     .padding(20)
@@ -168,7 +166,6 @@ fn styles(theme: &Theme) -> View<CapabilityGalleryAction> {
         row([])
             // Preserve the cards' outer outline and the blurred shadow,
             // including its downward offset, inside this clipping row.
-            .style(Style::neutral())
             .width(percent(100))
             .padding(20)
             .gap(24)
@@ -177,8 +174,8 @@ fn styles(theme: &Theme) -> View<CapabilityGalleryAction> {
                     .width(percent(48))
                     .height(px(164))
                     .background(Color::rgb(25, 75, 105))
-                    .bg_grad_color(Color::rgb(31, 45, 72))
-                    .bg_grad_dir(GradientDirection::Horizontal)
+                    .background_gradient_color(Color::rgb(31, 45, 72))
+                    .background_gradient_direction(GradientDirection::Horizontal)
                     .shadow_width(20)
                     .shadow_color(Color::rgb(0, 0, 0))
                     .shadow_opacity(130)
@@ -203,41 +200,35 @@ fn styles(theme: &Theme) -> View<CapabilityGalleryAction> {
                         label("Spacing + underline")
                             .font(theme.body_font)
                             .text_color(theme.text)
-                            .text_letter_space(2)
+                            .letter_spacing(2)
                             .text_decoration(TextDecoration::UNDERLINE),
                     )
                     .child(
                         label("Soft state transitions")
                             .font(theme.body_font)
                             .text_color(theme.text)
-                            .text_line_space(5),
+                            .line_spacing(5),
                     ),
             ),
         card(theme, "EXPLICIT ANIMATION")
             .width(percent(100))
             .height(px(120))
             .child(
-                obj()
-                    .style(Style::neutral())
-                    .width(percent(100))
-                    .height(px(28))
-                    .child(
-                        obj()
-                            .style(Style::neutral())
-                            .width(px(52))
-                            .height(px(18))
-                            .background(ACCENT)
-                            .radius(9)
-                            .animate(
-                                Animation::new(AnimationProperty::X, 0, 600, 1500)
-                                    .easing(Easing::EaseInOut)
-                                    .reverse(1500)
-                                    .repeat(u32::MAX),
-                            ),
-                    ),
+                container().width(percent(100)).height(px(28)).child(
+                    container()
+                        .width(px(52))
+                        .height(px(18))
+                        .background(ACCENT)
+                        .radius(9)
+                        .animate(
+                            Animation::new(AnimationProperty::X, 0, 600, 1500)
+                                .easing(Easing::EaseInOut)
+                                .reverse(1500)
+                                .repeat(u32::MAX),
+                        ),
+                ),
             ),
     ])
-    .style(Style::neutral())
     .gap(24)
 }
 fn canvas_page(theme: &Theme) -> View<CapabilityGalleryAction> {
@@ -302,15 +293,10 @@ fn media(theme: &Theme) -> View<CapabilityGalleryAction> {
                         160,
                         160,
                     )),
-                    obj()
-                        .style(Style::neutral())
-                        .width(px(70))
-                        .height(px(70))
-                        .child(gif(Gif::new(Rc::<[u8]>::from(
-                            include_bytes!("assets/status.gif").as_slice(),
-                        )))),
+                    container().width(px(70)).height(px(70)).child(gif(Gif::new(
+                        Rc::<[u8]>::from(include_bytes!("assets/status.gif").as_slice()),
+                    ))),
                 ])
-                .style(Style::neutral())
                 .gap(40)
                 .height(px(170)),
             )
@@ -320,7 +306,6 @@ fn media(theme: &Theme) -> View<CapabilityGalleryAction> {
                     .text_color(theme.text),
             ),
     ])
-    .style(Style::neutral())
     .width(percent(100))
     .gap(20)
 }
@@ -363,7 +348,6 @@ impl Gallery {
                 .grow(1),
             ),
         ])
-        .style(Style::neutral())
         .width(percent(100))
         .gap(20)
     }

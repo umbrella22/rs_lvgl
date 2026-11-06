@@ -21,7 +21,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use super::full_size;
-use crate::node::{Align, Color, FlexAlign, Key, Size, State};
+use crate::node::{Align, Color, FlexAlign, ItemAlign, Key, Size, State};
 use crate::theme::{Style, Theme};
 
 const FOCUS_WIDTH: i16 = 2;
@@ -61,11 +61,7 @@ impl<M: Clone + 'static> Dialog<M> {
 
     /// Add a paragraph of body text.
     pub fn text(mut self, text: impl Into<String>) -> Self {
-        self.body.push(
-            crate::label(text)
-                .style(Style::neutral())
-                .width(Size::Percent(100)),
-        );
+        self.body.push(crate::label(text).width(Size::Percent(100)));
         self
     }
 
@@ -141,7 +137,7 @@ impl<M: Clone + 'static> Dialog<M> {
                 .outline_color(theme.accent)
                 .outline_width(FOCUS_WIDTH)
                 .outline_opacity(255)
-                .outline_pad(FOCUS_PAD);
+                .outline_offset(FOCUS_PAD);
             let buttons = self.buttons.into_iter().enumerate().map(|(index, button)| {
                 let style = if button.primary {
                     Style::accent(theme)
@@ -167,11 +163,13 @@ impl<M: Clone + 'static> Dialog<M> {
                     .width(Size::Percent(100))
                     .padding(FOCUS_SPACE)
                     .gap(FOCUS_SPACE * 2)
-                    .flex_align(FlexAlign::End, FlexAlign::Center)
+                    .justify_content(FlexAlign::End)
+                    .align_items(ItemAlign::Center)
+                    .align_content(FlexAlign::Center)
                     .scrollable(false),
             );
         }
-        let mut backdrop = crate::obj()
+        let mut backdrop = crate::container()
             .key(Key::Named("dialog"))
             .style(
                 full_size()

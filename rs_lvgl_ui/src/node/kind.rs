@@ -1,8 +1,8 @@
 //! Typed widget descriptions and feature-gated properties.
 
 use super::{
-    CalendarDate, ChartSeries, ChartType, Color, Font, GridTrack, ImageSource, LabelLongMode,
-    RollerMode, Span, Tile,
+    CalendarDate, ChartSeries, ChartType, Color, Font, GridTrack, ImageSource, RollerMode, Span,
+    TextOverflow, Tile,
 };
 use crate::custom::CustomWidgetKind;
 use alloc::{string::String, vec::Vec};
@@ -38,7 +38,7 @@ pub enum WidgetKind {
     Canvas {
         frame: crate::Canvas,
     },
-    Obj,
+    Container,
     Row,
     Column,
     Grid {
@@ -54,7 +54,7 @@ pub enum WidgetKind {
     },
     Label {
         text: String,
-        long_mode: LabelLongMode,
+        text_overflow: TextOverflow,
     },
     Button {
         text: String,
@@ -66,7 +66,7 @@ pub enum WidgetKind {
         value: i32,
     },
     #[cfg(feature = "widget-bar")]
-    Bar {
+    ProgressBar {
         min: i32,
         max: i32,
         value: i32,
@@ -79,7 +79,7 @@ pub enum WidgetKind {
     Image {
         source: ImageSource,
         /// LVGL zoom factor: 256 is 100%.
-        scale: u16,
+        scale: crate::Scale,
     },
     #[cfg(feature = "widget-checkbox")]
     Checkbox {
@@ -185,7 +185,7 @@ pub enum WidgetKind {
     /// An inline message box: an optional title, a text, optional footer
     /// buttons, and children placed below the text in its content area.
     #[cfg(feature = "widget-msgbox")]
-    Msgbox {
+    MessageBox {
         title: Option<String>,
         text: String,
         buttons: Vec<String>,
@@ -211,7 +211,7 @@ pub enum WidgetKind {
     },
     /// An image that cycles through `frames`.
     #[cfg(feature = "widget-animimage")]
-    AnimImage {
+    AnimatedImage {
         frames: Vec<ImageSource>,
         duration_ms: u32,
         repeat: u32,

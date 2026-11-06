@@ -566,7 +566,7 @@ fn image_source_and_scale_update_in_place() {
 
     struct ImageApp {
         source: ImageSource,
-        scale: u16,
+        scale: Scale,
     }
     impl App for ImageApp {
         type Action = ();
@@ -576,11 +576,14 @@ fn image_source_and_scale_update_in_place() {
         }
     }
 
-    let mut app = ImageApp { source, scale: 256 };
+    let mut app = ImageApp {
+        source,
+        scale: Scale::percent(100),
+    };
     ui.mount(&app).unwrap();
     assert_eq!(ui.stats().created_nodes, 2);
 
-    app.scale = 512;
+    app.scale = Scale::percent(200);
     ui.update(&app).unwrap();
     assert_eq!(ui.stats().created_nodes, 2);
     assert_eq!(ui.stats().deleted_nodes, 0);
@@ -996,7 +999,7 @@ fn style_sides_alignment_bounds_and_states() {
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             column([]).child(
-                obj().key(Key::Named("box")).style(
+                container().key(Key::Named("box")).style(
                     Style::default()
                         .width(Size::Px(50))
                         .height(Size::Px(50))
@@ -1234,7 +1237,7 @@ fn grid_tracks_and_cells_place_children_and_update_in_place() {
                 vec![GridTrack::Fr(1), GridTrack::Fr(1)]
             };
             let cell = |column, row| {
-                obj()
+                container()
                     .key(Key::Id((row * 2 + column) as u64))
                     .grid_cell(column as u16, row as u16, 1, 1)
                     .style(Style::default().width(Size::Px(10)).height(Size::Px(10)))
@@ -1305,7 +1308,7 @@ fn grid_content_row_sizes_to_children() {
                         .key(Key::Named("grid"))
                         .style(Style::default().width(Size::Percent(100)))
                         .child(
-                            obj()
+                            container()
                                 .grid_cell(0, 0, 1, 1)
                                 .style(Style::default().width(Size::Px(10)).height(Size::Px(10))),
                         ),
@@ -1450,7 +1453,7 @@ fn rgb565_image_source_builds_descriptor_and_updates_in_place() {
 
     struct ImageApp {
         second: bool,
-        scale: u16,
+        scale: Scale,
     }
     impl App for ImageApp {
         type Action = ();
@@ -1471,14 +1474,14 @@ fn rgb565_image_source_builds_descriptor_and_updates_in_place() {
 
     let mut app = ImageApp {
         second: false,
-        scale: 256,
+        scale: Scale::percent(100),
     };
     ui.mount(&app).unwrap();
     let image = child(app_root(), 0);
     let first_src = unsafe { rs_lvgl_sys::lv_image_get_src(image.as_ptr()) };
     assert!(!first_src.is_null());
 
-    app.scale = 512;
+    app.scale = Scale::percent(200);
     ui.update(&app).unwrap();
     assert_eq!(ui.stats().created_nodes, 2);
     assert_eq!(ui.stats().deleted_nodes, 0);
@@ -1541,8 +1544,8 @@ fn part_styles_override_and_restore_the_target_part() {
                     .height(Size::Px(16)),
             );
             let slider = if self.styled {
-                slider.part_style(
-                    Part::Indicator,
+                slider.native_part_style(
+                    NativePart::Indicator,
                     Style::default().background(rs_lvgl_ui::Color::rgb(200, 10, 20)),
                 )
             } else {
@@ -1591,11 +1594,11 @@ fn animation_duration_style_applies() {
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
             column([]).child(
-                obj().key(Key::Named("box")).style(
+                container().key(Key::Named("box")).style(
                     Style::default()
                         .width(Size::Px(10))
                         .height(Size::Px(10))
-                        .anim_duration(self.duration),
+                        .animation_duration(self.duration),
                 ),
             )
         }

@@ -20,7 +20,7 @@ fn flat_modifiers_and_reusable_patches_keep_explicit_zero_and_call_order() {
     let mut ui = Ui::new(&display, common::theme()).unwrap();
     let app = Page(|_| {
         let patch = style().padding(9).gap(12).grow(4).shadow_width(6);
-        obj().children([
+        container().children([
             column([])
                 .padding(9)
                 .gap(12)
@@ -34,11 +34,14 @@ fn flat_modifiers_and_reusable_patches_keep_explicit_zero_and_call_order() {
                 .grow(0)
                 .shadow_width(0)
                 .padding_top(3),
-            obj().padding(9).style(style().padding(0)).padding_left(2),
-            obj()
+            container()
+                .padding(9)
+                .style(style().padding(0))
+                .padding_left(2),
+            container()
                 .background(Color::rgb(12, 34, 56))
                 .style(style().background_opacity(80)),
-            obj()
+            container()
                 .background_opacity(80)
                 .background(Color::rgb(12, 34, 56)),
         ])
@@ -78,7 +81,7 @@ fn explicit_units_reach_native_layout_and_invalid_updates_preserve_it() {
     let mut ui = Ui::new(&display, common::theme()).unwrap();
     let mut app = Page(|_| {
         column([
-            obj().width(percent(50)).height(px(10)),
+            container().width(percent(50)).height(px(10)),
             label("x")
                 .width(content())
                 .height(content())
@@ -168,10 +171,10 @@ fn removing_state_and_part_patches_restores_flat_base_on_the_same_object() {
     let display = common::init();
     let mut ui = Ui::new(&display, common::theme()).unwrap();
     let mut app = Page(|_| {
-        obj()
+        container()
             .outline_width(2)
             .state_style(State::PRESSED, style().outline_width(9).shadow_width(5))
-            .part_style(Part::Scrollbar, style().outline_width(7))
+            .native_part_style(NativePart::Scrollbar, style().outline_width(7))
     });
     ui.mount(&app).unwrap();
     let root = common::app_root();
@@ -187,7 +190,7 @@ fn removing_state_and_part_patches_restores_flat_base_on_the_same_object() {
         assert_eq!(sys::lv_obj_get_style_outline_width(raw, 0), 9);
         assert_eq!(sys::lv_obj_get_style_shadow_width(raw, 0), 5);
     }
-    app.0 = |_| obj().outline_width(2);
+    app.0 = |_| container().outline_width(2);
     ui.update(&app).unwrap();
     assert_eq!(common::app_root(), root);
     // SAFETY: the update preserves object identity while removing overrides.

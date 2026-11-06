@@ -71,7 +71,9 @@ fn overview(app: &Studio, theme: &Theme) -> View<StudioAction> {
         .height(px(326))
         .child(
             studio_row()
-                .flex_align(FlexAlign::SpaceBetween, FlexAlign::Center)
+                .justify_content(FlexAlign::SpaceBetween)
+                .align_items(ItemAlign::Center)
+                .align_content(FlexAlign::Center)
                 .child(metric(
                     &format!("{}%", app.value),
                     "Output level",
@@ -164,14 +166,16 @@ fn controls(app: &Studio, t: &Theme) -> View<StudioAction> {
                             .focusable(true)
                             .on_value_changed(StudioAction::Value),
                     )
-                    .child(bar(0, 100, app.value).style(full(8))),
+                    .child(progress_bar(0, 100, app.value).style(full(8))),
                 third(
                     card("Switch it up", "Switch / checkbox / status LED", t),
                     280,
                 )
                 .child(
                     studio_row()
-                        .flex_align(FlexAlign::SpaceBetween, FlexAlign::Center)
+                        .justify_content(FlexAlign::SpaceBetween)
+                        .align_items(ItemAlign::Center)
+                        .align_content(FlexAlign::Center)
                         .children([
                             styled_label("Device enabled", t.text, t.body_font),
                             switch(app.enabled)
@@ -205,7 +209,9 @@ fn controls(app: &Studio, t: &Theme) -> View<StudioAction> {
                 ),
                 third(card("Read the room", "Arc / animated spinner", t), 280).child(
                     studio_row()
-                        .flex_align(FlexAlign::SpaceAround, FlexAlign::Center)
+                        .justify_content(FlexAlign::SpaceAround)
+                        .align_items(ItemAlign::Center)
+                        .align_content(FlexAlign::Center)
                         .children([
                             arc(0, 100, app.value)
                                 .width(px(136))
@@ -213,7 +219,7 @@ fn controls(app: &Studio, t: &Theme) -> View<StudioAction> {
                                 .arc_color(ORANGE)
                                 .arc_width(12),
                             spinner()
-                                .spinner_anim(1300, 70)
+                                .spinner_animation(1300, 70)
                                 .width(px(46))
                                 .height(px(46)),
                         ]),
@@ -375,8 +381,8 @@ fn layout(app: &Studio, t: &Theme) -> View<StudioAction> {
         .on_value_changed(StudioAction::Tab);
     let tiles = tileview(
         [
-            Tile::new(0, 0, ScrollDir::RIGHT),
-            Tile::new(1, 0, ScrollDir::LEFT),
+            Tile::new(0, 0, ScrollDirection::RIGHT),
+            Tile::new(1, 0, ScrollDirection::LEFT),
         ],
         app.tile,
     )
@@ -459,7 +465,7 @@ fn layout(app: &Studio, t: &Theme) -> View<StudioAction> {
                             .child(styled_label("Side", WHITE, t.body_font)),
                         studio_column().grow(1).gap(12).children(
                             ["Header", "Content", "Footer"].iter().map(|name| {
-                                obj()
+                                container()
                                     .style(full(38).background(t.background).radius(8))
                                     .child(text(name, t).align(Align::Center))
                             }),
@@ -512,7 +518,9 @@ fn media(app: &Studio, t: &Theme) -> View<StudioAction> {
                 third(card("Still & interactive", "Image / image button", t), 264)
                     .child(
                         studio_row()
-                            .flex_align(FlexAlign::SpaceAround, FlexAlign::Center)
+                            .justify_content(FlexAlign::SpaceAround)
+                            .align_items(ItemAlign::Center)
+                            .align_content(FlexAlign::Center)
                             .children([
                                 rs_lvgl_ui::image(sample_image(false)),
                                 image_button(sample_image(false))
@@ -526,9 +534,11 @@ fn media(app: &Studio, t: &Theme) -> View<StudioAction> {
                 third(card("Frame by frame", "Animated image / GIF", t), 264)
                     .child(
                         studio_row()
-                            .flex_align(FlexAlign::SpaceAround, FlexAlign::Center)
+                            .justify_content(FlexAlign::SpaceAround)
+                            .align_items(ItemAlign::Center)
+                            .align_content(FlexAlign::Center)
                             .children([
-                                anim_image([sample_image(false), sample_image(true)], 1400),
+                                animated_image([sample_image(false), sample_image(true)], 1400),
                                 gif(Gif::new(Rc::<[u8]>::from(
                                     &include_bytes!("../assets/status.gif")[..],
                                 ))),
@@ -657,13 +667,13 @@ fn canvas_page(t: &Theme) -> View<StudioAction> {
                     248,
                 )
                 .child(
-                    obj().style(full(110)).scrollable(false).child(
-                        obj()
+                    container().style(full(110)).scrollable(false).child(
+                        container()
                             .width(px(42))
                             .height(px(42))
                             .background(ORANGE)
                             .radius(12)
-                            .align(Align::LeftMid)
+                            .align(Align::CenterLeft)
                             .animate(
                                 Animation::new(AnimationProperty::X, 12, 200, 1400)
                                     .reverse(1400)
@@ -776,9 +786,9 @@ fn composition(app: &Studio, t: &Theme) -> View<StudioAction> {
                     306,
                 )
                 .child(
-                    msgbox("Everything is ready.")
-                        .msgbox_title("Workspace prepared")
-                        .msgbox_buttons(["Got it"])
+                    message_box("Everything is ready.")
+                        .message_box_title("Workspace prepared")
+                        .message_box_buttons(["Got it"])
                         .style(full(140))
                         .on_value_changed(|_| StudioAction::Toast),
                 )

@@ -1,7 +1,7 @@
 //! Style/transition replacement while font resources remain retained.
 
 use super::MountedNode;
-use crate::node::{Part, Selector, State};
+use crate::node::{NativePart, Selector, State};
 use crate::widgets::{self, KindTag};
 use crate::Style;
 use alloc::vec::Vec;
@@ -29,12 +29,12 @@ pub(super) fn update_styles<M: Clone + 'static>(
     }
     if part_styles_changed {
         for part in [
-            Part::Scrollbar,
-            Part::Indicator,
-            Part::Knob,
-            Part::Selected,
-            Part::Items,
-            Part::Cursor,
+            NativePart::Scrollbar,
+            NativePart::Indicator,
+            NativePart::Knob,
+            NativePart::Selected,
+            NativePart::Items,
+            NativePart::Cursor,
         ] {
             widgets::clear_selector_style(mounted.obj, Selector::new(part, State::DEFAULT));
         }
@@ -44,8 +44,8 @@ pub(super) fn update_styles<M: Clone + 'static>(
                 widgets::clear_selector_style(mounted.obj, *selector);
             }
         }
-        for (selector, part_style) in &part_styles {
-            widgets::apply_style_for_selector(mounted.obj, part_style, tag, *selector);
+        for (selector, native_part_style) in &part_styles {
+            widgets::apply_style_for_selector(mounted.obj, native_part_style, tag, *selector);
         }
         mounted.part_styles = part_styles;
     }
