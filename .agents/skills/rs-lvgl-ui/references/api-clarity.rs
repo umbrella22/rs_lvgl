@@ -31,26 +31,39 @@ impl App for Fan {
                 typed::row([])
                     .child(
                         typed::slider(0, 100, binding(self.speed, FanAction::Speed))
-                            .thumb_style(style().radius(8).background(theme.accent))
+                            .height(px(16))
+                            .grow(1)
+                            .thumb_style(style().background(theme.accent))
                             .progress_style(style().background(theme.accent)),
                     )
                     .child(typed::switch(binding(self.enabled, FanAction::Enabled)))
+                    .width(percent(100))
+                    .gap(16)
                     .justify_content(FlexAlign::SpaceBetween)
                     .align_items(ItemAlign::Center)
                     .align_content(FlexAlign::Center)
-                    .padding(12),
+                    .padding(16),
             )
             .child(typed::progress_bar(0, 100, self.speed))
             .child(
-                typed::container()
-                    .width(px(12))
-                    .height(px(12))
-                    .background(theme.accent)
-                    .transform_scale_x(Scale::percent(50))
-                    .transform_rotation(Angle::degrees(45)),
+                typed::container().width(px(64)).height(px(64)).child(
+                    typed::container()
+                        .width(px(24))
+                        .height(px(24))
+                        .align(Align::Center)
+                        .background(theme.accent)
+                        .transform_scale_x(Scale::percent(150))
+                        .transform_scale_y(Scale::percent(150))
+                        .transform_pivot_x(12)
+                        .transform_pivot_y(12)
+                        .transform_rotation(Angle::degrees(45)),
+                ),
             )
             .scroll_direction(ScrollDirection::VERTICAL)
             .width(percent(100))
+            .height(percent(100))
+            .background(theme.background)
+            .text_color(theme.text)
             .padding(16)
             .gap(12)
             .into_view()

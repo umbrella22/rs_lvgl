@@ -16,6 +16,15 @@
   thumb/progress styles for their supported widgets and label text overflow.
 
 
+### Fixed
+
+- Preserve native circular slider/switch thumbs in the API clarity examples.
+  Scale the transform sample equally on both axes around its center and reserve
+  its rotated drawing bounds. Reserve full slider endpoint clearance and fit
+  the standalone skill controls within a 320 × 240 display. Native contour
+  comparisons cover both themes,
+  control sizes, values and states, with deliberate distortion controls.
+
 ## 0.5.0 — 2026-11-06
 
 ### Added

@@ -109,6 +109,12 @@ Scalar AnimationProperty keeps X/Y/Width/Height/Opacity. TransitionProperty can
 still select Rotation/ScaleX/ScaleY because it carries no untyped endpoints.
 Spinner sweep uses whole degrees and keeps its separate u32 control contract.
 
+Proportional scaling sets both `transform_scale_x` and `transform_scale_y` to
+the same `Scale`; setting one axis stretches the original shape. A transform
+changes drawing without enlarging its layout allocation. Reserve a containing
+slot for the rotated bounds and set a centered pivot. The runnable clarity
+recipe uses a 24 px square, two 150% scales, a (12, 12) pivot and a 64 px slot.
+
 ## Independent flex placement and floating
 
 The old `flex_align(main, cross)` wrote native main placement once and used

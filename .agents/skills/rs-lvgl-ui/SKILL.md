@@ -122,6 +122,12 @@ progress_style/progress_state_style on sliders/progress bars. Other native parts
 use NativePart and native_part_style/native_part_state_style. A later style for
 the same part/state replaces the whole prior patch; combine fields in one patch.
 Typed misuse fails capability bounds; erased misuse follows diagnostics/strict.
+Color-only thumb patches preserve the native circular radius. A fixed pixel
+radius changes that shape as the thumb size changes; compare the full native
+outline when customizing geometry. For proportional scaling, set both transform
+axes to the same Scale. Rotation/scaling changes drawn bounds without reserving
+layout space; use a centered pivot and a containing slot that fits all corners,
+as in the clarity recipe.
 
 ## Styles and input
 

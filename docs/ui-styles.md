@@ -106,6 +106,11 @@ Flat modifiers target the main style. `native_part_style`, `state_style` and
 unset fields. This selector-list rule differs from main-style field merging.
 `thumb_style`/`thumb_state_style` select slider/switch thumbs;
 `progress_style`/`progress_state_style` select slider/progress-bar filled regions.
+Color-only thumb patches preserve the native circular radius. A fixed pixel
+radius changes the contour when it is smaller than half the thumb diameter;
+keep the native radius unless the design calls for a different shape. Geometry
+checks compare the complete native contour at matching sizes and states: a round
+thumb and a rounded square can have identical width and height.
 Native states switch without an application render. Removing a selector patch during an
 update restores its base/class values on the existing object. Object-wide
 fields retain their main-style restrictions. A retained `font_resource`

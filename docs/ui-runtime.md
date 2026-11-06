@@ -113,7 +113,7 @@ fn loaded_views(pixels: Rc<[u8]>) -> Result<View<()>, ResourceError> {
     let resource = ImageResource::rgb565(2, 1, 4, pixels)?;
     Ok(row([
         image_resource(resource.clone()),
-        image_resource_scaled(resource, 512), // 256 is native scale 1.0
+        image_resource_scaled(resource, Scale::percent(200)),
     ]))
 }
 ```
