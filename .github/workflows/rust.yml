@@ -85,8 +85,6 @@ jobs:
           for capability in widget-slider widget-textarea widget-chart input-keypad input-gridnav widget-canvas widget-qrcode widget-barcode widget-gif widget-lottie widget-ime-pinyin font-cjk-14 font-cjk-16; do
             cargo check -p rs_lvgl_ui --locked --no-default-features --features "alloc,$capability" --lib
           done
-      - name: Check the public view API
-        run: python3 scripts/check-ui-api.py --locked --artifacts target/ui-api-audit
       - name: Keep images and native diagnostics
         if: always()
         uses: actions/upload-artifact@v7
@@ -97,14 +95,38 @@ jobs:
             target/ui-audit/*.json
             target/ui-audit/images/
             target/studio-audit/
+          if-no-files-found: warn
+          retention-days: 7
+
+  ui-api:
+    name: Public UI API contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install native toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libclang-dev g++ pkg-config
+      - name: Resolve workspace dependencies
+        run: cargo generate-lockfile
+      - name: Check the public view API
+        run: python3 scripts/check-ui-api.py --locked --artifacts target/ui-api-audit
+      - name: Keep public API diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: rs-lvgl-ui-api
+          path: |
             target/ui-api-audit/*.log
             target/ui-api-audit/*.json
             target/ui-api-audit/*.rs
           if-no-files-found: warn
           retention-days: 7
 
-  native-contracts:
-    name: Native configuration and packaged consumers
+  native-configuration:
+    name: Native configuration and recovery
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
@@ -121,6 +143,33 @@ jobs:
         run: cargo generate-lockfile
       - name: Verify configuration and recovery
         run: python3 scripts/check-native-inputs.py --locked --artifacts target/native-input-audit
+      - name: Keep configuration diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: rs-lvgl-native-configuration
+          path: |
+            target/native-input-audit/*.log
+            target/native-input-audit/*.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  native-contracts:
+    name: Layout, skills and packaged consumers
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install native toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libclang-dev g++ pkg-config
+      - name: Resolve workspace dependencies
+        run: cargo generate-lockfile
       - name: Verify independent layout capabilities
         run: python3 scripts/check-layout-config.py --locked --artifacts target/layout-config-audit
       - name: Verify installed skills and downstream examples
@@ -133,8 +182,6 @@ jobs:
         with:
           name: rs-lvgl-native-contracts
           path: |
-            target/native-input-audit/*.log
-            target/native-input-audit/*.json
             target/layout-config-audit/*.log
             target/layout-config-audit/*.json
             target/skill-audit/*.log
