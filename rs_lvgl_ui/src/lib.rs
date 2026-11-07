@@ -98,6 +98,20 @@ pub use constructors::*;
 #[cfg(feature = "components")]
 pub mod components;
 mod custom;
+#[cfg(feature = "widget-chart")]
+mod chart;
+#[cfg(feature = "widget-chart")]
+mod chart_history;
+#[cfg(feature = "widget-chart")]
+pub use chart::{ChartAxes, ChartAxis, ChartCursor, ChartCursorDirection, ChartCursorTarget, ChartData, ChartRange, ChartSeries, ChartSpec, ChartType, ChartUpdateMode, ChartValue};
+#[cfg(feature = "widget-textarea")]
+mod text_options;
+#[cfg(feature = "widget-textarea")]
+pub use text_options::TextareaInputOptions;
+#[cfg(feature = "widget-slider")]
+mod range;
+#[cfg(feature = "widget-slider")]
+pub use range::SliderRange;
 mod diagnostics;
 mod events;
 #[cfg(feature = "update-metrics")]
@@ -143,7 +157,7 @@ pub use custom::{CustomObject, CustomWidget, CustomWidgetKind};
 pub use events::{Event, GestureDirection, InputEvent, PointerEvent, ScrollOffset};
 pub use events::{PostOutcome, QueueOverflow, QueuePolicy, QueueStats};
 pub use node::{
-    table_cell, Align, CalendarDate, ChartSeries, ChartType, Color, EventHandler, FlexAlign, Font,
+    table_cell, Align, CalendarDate, Color, EventHandler, FlexAlign, Font,
     GridAlign, GridCell, GridTrack, Handlers, ImageSource, ItemAlign, Key, NativePart, Node,
     RawImage, RollerMode, ScrollDirection, Size, Span, State, TableCell, TextAlign,
     TextChangedHandler, TextOverflow, Tile, ValueChangedHandler, WidgetKind,
@@ -207,3 +221,6 @@ impl fmt::Display for UiError {
 
 #[cfg(feature = "nightly")]
 impl core::error::Error for UiError {}
+
+#[cfg(feature = "widget-chart")]
+pub use crate::chart_history::{ChartHistory, ChartHistoryError, ChartHistorySnapshot, ChartSample, ChartSampleKind};

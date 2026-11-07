@@ -30,6 +30,9 @@ lifetime rules in detail.
 | --- | --- |
 | [constructors/](../rs_lvgl_ui/src/constructors/mod.rs) | Ordinary functions grouped into layout, controls, data, media and custom views. They construct descriptors without calling LVGL. |
 | [typed/](../rs_lvgl_ui/src/typed/mod.rs) | Sealed widget capability markers and adapters forwarding to ordinary constructors. Common modifiers retain markers until `into_view`. |
+| [range.rs](../rs_lvgl_ui/src/range.rs) / [text_options.rs](../rs_lvgl_ui/src/text_options.rs) | Controlled endpoint values and opaque optional textarea editing settings. Settings reside only in the Textarea descriptor payload. |
+| [chart.rs](../rs_lvgl_ui/src/chart.rs) / [chart_history.rs](../rs_lvgl_ui/src/chart_history.rs) | Owned chart specifications, axes/cursors and pure validation; bounded chronological application data and immutable snapshots with continuity proof. |
+| [custom.rs](../rs_lvgl_ui/src/custom.rs) | Public Props/apply/tick/delete hooks and private type-safe erased dispatch; stable Props backing and failure retention. |
 | [binding.rs](../rs_lvgl_ui/src/binding.rs) | Current model value and action mapper consumed by a typed form constructor; installs the existing event handler directly. |
 | [node/](../rs_lvgl_ui/src/node/mod.rs) | `Node` fields, identity and construction defaults. `kind.rs` defines feature-gated widget descriptions; `types/` defines fonts, images, layout, style selectors and control values. |
 | [node/builders/](../rs_lvgl_ui/src/node/builders/mod.rs) | `style.rs` forwards flat main-style modifiers to the embedded `Style`; `tree.rs` merges reusable patches and selects parts/states. Widget-specific properties, interaction/scroll settings and events remain separate. Typed capability bounds reject wrong widget-specific calls before erasure; erased modifiers retain diagnostic/strict-property behavior. |
@@ -38,6 +41,7 @@ lifetime rules in detail.
 | [app/](../rs_lvgl_ui/src/app/mod.rs) | `App`, `Ui` and statistics. `controller.rs` handles public operations and message batches; `render.rs` validates and reconciles both trees; `input.rs`, `lifecycle.rs` and `guard.rs` handle focus, teardown and reentrancy. |
 | [reconciler/](../rs_lvgl_ui/src/reconciler/mod.rs) | Mounted native state. `mount.rs` and `update.rs` apply tree changes; `children.rs` matches keys and plans moves; `keyboard.rs` resolves/unbinds targets; `styles.rs`, `interaction.rs` and `mounted.rs` handle styles, handlers and custom lifecycle. |
 | [widgets/](../rs_lvgl_ui/src/widgets/mod.rs) | Native adapters. `kind.rs` classifies widgets; `props.rs` projects descriptions and decides structural recreation; `retained.rs` holds stable native buffers/private parts; creation, grid layout, pages and styles have separate modules. |
+| [widgets/chart.rs](../rs_lvgl_ui/src/widgets/chart.rs) | Native chart series/cursor retention, copied arrays, full synchronization and verified append selection. |
 | [widgets/properties/](../rs_lvgl_ui/src/widgets/properties/mod.rs) | Exhaustive property dispatch into base text/buttons, choices, numeric ranges, data/indicators, text, media, message boxes and extensions. `common.rs` shares native text and checked-state writes. |
 | [events/](../rs_lvgl_ui/src/events/mod.rs) | Copied payloads, native value decoding and bounded queue policy. `slot/mod.rs` registers callbacks, `slot/dispatch.rs` maps handlers, and `slot/native.rs` contains C entry points and slot cleanup. |
 | [components/](../rs_lvgl_ui/src/components/mod.rs) | Composite views built from ordinary constructors: panels, lists, navigation, dialogs and toasts. |
@@ -48,7 +52,7 @@ of native adapters. Tree validation rejects unrepresentable units before mutatio
 See the [development migration](ui-api-migration.md) for current source changes.
 
 Smaller focused modules remain at the source root: animation and transitions,
-loaded resources, custom widgets, focus/grid navigation, scrolling, canvas and
+loaded resources, focus/grid navigation, scrolling, canvas and
 graphics, diagnostics, screens, style extensions, symbols and metrics.
 
 ## State and shared operations
@@ -79,7 +83,7 @@ slot's existing feedback suppression, including writes that return a result.
 
 `EventQueue<M>` handles congestion independently from handler registration.
 `HandlerSlot<M>` has a stable address until its native deletion callback runs.
-Numeric/semantic value mappings share one handler slot; text mappings use a
+Numeric/range/semantic value mappings share one handler slot; text mappings use a
 separate slot. Native callbacks copy payloads, invoke the installed mappings and enqueue
 messages; application updates and reconciliation run later through `Ui::drain`.
 Callbacks, observers and mergers retain their non-unwinding/UI-thread contracts.
@@ -112,7 +116,7 @@ Native tests share LVGL global state and run serially. The full UI combination
 and a reduced configuration cover different cfg paths:
 
 ```sh
-cargo test -p rs_lvgl_ui --features showcase,font-cjk-14,rust_timer,diagnostics,strict-properties -- --test-threads=1
+cargo test -p rs_lvgl_ui --features showcase,font-cjk-14,rust_timer,diagnostics,strict-properties,update-metrics -- --test-threads=1
 cargo test -p rs_lvgl_ui --no-default-features --features alloc,components -- --test-threads=1
 python3 scripts/check-ui-api.py
 python3 scripts/check-ui-leaks.py

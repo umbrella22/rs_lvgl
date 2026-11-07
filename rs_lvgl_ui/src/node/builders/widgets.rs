@@ -4,6 +4,88 @@ use crate::node::{CalendarDate, ImageSource, Node, RollerMode, WidgetKind};
 use alloc::string::String;
 
 impl<M, K> Node<M, K> {
+    /// Restrict inserted Unicode scalar values. Omission allows all characters.
+    /// An explicit empty set or embedded NUL rejects before native mutation.
+    /// Authoritative model text is preserved even outside this input filter.
+    #[cfg(feature = "widget-textarea")]
+    pub fn accepted_chars(mut self, chars: impl Into<String>) -> Self
+    where
+        K: crate::typed::Supports<crate::typed::capability::Text>,
+    {
+        self.edit_text_options(|options| options.accepted = Some(chars.into()));
+        self
+    }
+
+    /// Maximum input length in Unicode scalar values; `None` removes the limit.
+    /// This limits editing, without truncating the application's model text.
+    #[cfg(feature = "widget-textarea")]
+    pub fn input_max_length(mut self, maximum: Option<core::num::NonZeroU32>) -> Self
+    where
+        K: crate::typed::Supports<crate::typed::capability::Text>,
+    {
+        self.edit_text_options(|options| options.maximum = maximum);
+        self
+    }
+
+    /// Explicit character cursor, counting Unicode scalars (not bytes/graphemes).
+    /// The position must fit native i32 and lie in `0..=model.chars().count()`.
+    /// `None` leaves native placement to editing and model text assignment.
+    #[cfg(feature = "widget-textarea")]
+    pub fn cursor_position(mut self, position: Option<u32>) -> Self
+    where
+        K: crate::typed::Supports<crate::typed::capability::Text>,
+    {
+        self.edit_text_options(|options| options.cursor = position);
+        self
+    }
+
+    /// Allow pointer clicks to place the cursor. Omission restores `true`.
+    #[cfg(feature = "widget-textarea")]
+    pub fn cursor_click_position(mut self, enabled: bool) -> Self
+    where
+        K: crate::typed::Supports<crate::typed::capability::Text>,
+    {
+        self.edit_text_options(|options| options.click = enabled);
+        self
+    }
+
+    #[cfg(feature = "widget-textarea")]
+    fn edit_text_options(&mut self, edit: impl FnOnce(&mut crate::TextareaInputOptions)) {
+        if let WidgetKind::Textarea { input, .. } = &mut self.kind {
+            edit(input.get_or_insert_with(Default::default));
+        } else {
+            self.record_invalid_property(crate::Property::Text);
+        }
+    }
+
+    /// Wrap row/column children onto additional tracks. Omission restores false.
+    /// This does not change track alignment or child identity.
+    pub fn flex_wrap(mut self, enabled: bool) -> Self
+    where
+        K: crate::typed::Supports<crate::typed::capability::Flex>,
+    {
+        if matches!(self.kind, WidgetKind::Row | WidgetKind::Column) {
+            self.flex_flow.0 = enabled;
+        } else {
+            self.record_invalid_property(crate::Property::Style);
+        }
+        self
+    }
+
+    /// Reverse native Flex child traversal. With wrapping, this also changes
+    /// which children enter each track. Omission restores false.
+    pub fn flex_reverse(mut self, enabled: bool) -> Self
+    where
+        K: crate::typed::Supports<crate::typed::capability::Flex>,
+    {
+        if matches!(self.kind, WidgetKind::Row | WidgetKind::Column) {
+            self.flex_flow.1 = enabled;
+        } else {
+            self.record_invalid_property(crate::Property::Style);
+        }
+        self
+    }
+
     /// Set how a label displays text that exceeds its available space.
     pub fn text_overflow(mut self, overflow: crate::TextOverflow) -> Self
     where

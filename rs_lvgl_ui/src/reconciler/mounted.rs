@@ -8,12 +8,15 @@ use core::ptr::NonNull;
 use rs_lvgl_sys::lv_obj_t;
 
 impl MountedCustom {
-    pub(super) fn update(&mut self, elapsed_ms: u32) -> Result<(), UiError> {
-        self.entry.update(&mut self.object, elapsed_ms)
+    pub(super) fn tick(&mut self, elapsed_ms: u32) -> Result<(), UiError> {
+        self.entry.tick(&mut self.object, elapsed_ms)
     }
 
-    pub(super) fn delete(mut self) {
-        self.entry.delete(&mut self.object);
+    pub(super) fn run_delete_hook(&mut self) {
+        if !self.delete_hook_run {
+            self.delete_hook_run = true;
+            self.entry.delete(&mut self.object);
+        }
     }
 }
 impl<M: Clone + 'static> MountedNode<M> {
@@ -45,10 +48,11 @@ impl<M: Clone + 'static> MountedNode<M> {
     ///
     /// This must run before `lv_obj_delete` on any object that owns this
     /// subtree: LVGL's deletion would otherwise invalidate the handles passed
-    /// to the hooks. Taking the `MountedCustom` out makes a second call a no-op.
+    /// to the hooks. A per-entry flag makes a second call a no-op. The entry and properties
+    /// remain owned until after native deletion callbacks finish.
     pub(crate) fn run_delete_hooks(&mut self) {
-        if let Some(custom) = self.custom.take() {
-            custom.delete();
+        if let Some(custom) = self.custom.as_mut() {
+            custom.run_delete_hook();
         }
         for child in &mut self.children {
             child.run_delete_hooks();
@@ -61,7 +65,7 @@ impl<M: Clone + 'static> MountedNode<M> {
             return Ok(());
         }
         if let Some(custom) = &mut self.custom {
-            custom.update(elapsed_ms)?;
+            custom.tick(elapsed_ms)?;
         }
         for child in &mut self.children {
             child.tick(elapsed_ms)?;
@@ -75,9 +79,9 @@ impl<M: Clone + 'static> Drop for MountedNode<M> {
         // Safety net for early-return paths that drop a partially reconciled
         // subtree (for example an error in a later sibling). Native objects are
         // still alive whenever a `MountedCustom` reaches this point; every
-        // explicit deletion path takes the hook first.
-        if let Some(custom) = self.custom.take() {
-            custom.delete();
+        // explicit deletion path runs the guarded hook first.
+        if let Some(custom) = self.custom.as_mut() {
+            custom.run_delete_hook();
         }
         // Children drop recursively through this same implementation.
     }

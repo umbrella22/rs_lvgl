@@ -1,9 +1,10 @@
 # UI messages, loaded resources and diagnostics
 
-The 0.6.0 runtime provides explicit congestion outcomes, optional diagnostics,
+The 0.7.0 runtime provides explicit congestion outcomes, optional diagnostics,
 loaded resource retention and render feedback. The library requires `alloc`
 and one UI thread. External `NativeObject` implementations must satisfy the
-safety requirements below.
+safety requirements below. Version 0.7.0 also implements
+[range/text controls, charts and custom properties](ui-capability-depth.md).
 
 Views use flat style modifiers, explicit dimension helpers and component-specific
 action types through `App::Action`. The [style and action contracts](ui-styles.md)
@@ -184,6 +185,24 @@ accept owned strings and short-lived `&str`. LVGL continues to copy changed text
 into native storage. Stable child key sequences already in native order reuse
 the mounted child vector; inserts, removals, reorders and external native moves
 use the full matching/reordering path. There is no subtree cache.
+
+## Chart and custom update state
+
+Chart descriptions contain owned samples or immutable bounded history snapshots.
+Native sample arrays contain copies. Last-successful mounted history metadata and
+actual sample overlap select incremental appends; gaps, replacement and remount
+perform a full synchronization. A discarded view does not advance mounted progress.
+Snapshot construction copies the bounded samples and remains part of view cost.
+
+Custom descriptors pair one concrete implementation with boxed Props. Pure
+validation precedes mutation of both view and overlay trees. `apply_props` runs
+on mount and every matching key/type update, including equal properties.
+`Ui::tick` calls the separate animation hook. On failed partial application, old
+and incoming Props remain live while the affected subtree is deleted. The delete
+hook runs once while the native root is live; the widget and Props survive native
+delete callbacks and drop afterwards. Create failure cleans up within the create
+hook. These paths preserve the existing no-unwind and non-reentrant UI rules.
+The [capability guide](ui-capability-depth.md) specifies each hook and recovery path.
 
 ## Diagnostics and strict properties
 

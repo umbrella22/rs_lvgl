@@ -74,38 +74,88 @@ pub(super) fn view(app: &Studio, t: &Theme) -> View<StudioAction> {
 }
 
 #[derive(Default)]
-pub(super) struct Pulse {
+pub(super) struct Gauge {
     elapsed: u32,
 }
-impl CustomWidget for Pulse {
-    fn create(&mut self, parent: &mut rs_lvgl::Obj<'_>) -> Result<CustomObject, UiError> {
-        // SAFETY: the reconciler supplies a live parent. The new direct child
-        // is returned to the reconciler; this widget retains no raw pointer.
-        unsafe {
-            let raw = NonNull::new(rs_lvgl_sys::lv_obj_create(parent.raw().as_ptr()))
-                .ok_or(UiError::Allocation)?;
-            rs_lvgl_sys::lv_obj_set_size(raw.as_ptr(), 52, 52);
-            rs_lvgl_sys::lv_obj_set_style_radius(raw.as_ptr(), 26, 0);
-            rs_lvgl_sys::lv_obj_set_style_border_width(raw.as_ptr(), 0, 0);
-            rs_lvgl_sys::lv_obj_set_style_bg_color(
-                raw.as_ptr(),
-                rs_lvgl_sys::lv_color_t {
-                    red: 26,
-                    green: 145,
-                    blue: 128,
-                },
-                0,
-            );
-            CustomObject::new(parent, raw)
+pub(super) struct GaugeProps {
+    pub value: i32,
+    pub color: Color,
+    pub track: Color,
+}
+impl CustomWidget for Gauge {
+    type Props = GaugeProps;
+    fn validate(props: &GaugeProps) -> Result<(), UiError> {
+        if (0..=100).contains(&props.value) {
+            Ok(())
+        } else {
+            Err(UiError::InvalidProperty)
         }
     }
-    fn update(&mut self, object: &mut CustomObject, elapsed_ms: u32) -> Result<(), UiError> {
+    fn create(&mut self, parent: &mut Obj<'_>, _: &GaugeProps) -> Result<CustomObject, UiError> {
+        // SAFETY: the new direct child is returned to the mounted owner. No
+        // native pointer or application state escapes a hook.
+        unsafe {
+            let root = NonNull::new(rs_lvgl_sys::lv_arc_create(parent.raw().as_ptr()))
+                .ok_or(UiError::Allocation)?;
+            rs_lvgl_sys::lv_obj_set_size(root.as_ptr(), 72, 72);
+            rs_lvgl_sys::lv_arc_set_range(root.as_ptr(), 0, 100);
+            rs_lvgl_sys::lv_arc_set_bg_angles(root.as_ptr(), 135 as _, 405 as _);
+            rs_lvgl_sys::lv_obj_set_style_arc_width(
+                root.as_ptr(),
+                8,
+                rs_lvgl_sys::lv_part_t_LV_PART_MAIN,
+            );
+            rs_lvgl_sys::lv_obj_set_style_arc_width(
+                root.as_ptr(),
+                8,
+                rs_lvgl_sys::lv_part_t_LV_PART_INDICATOR,
+            );
+            rs_lvgl_sys::lv_obj_set_style_opa(
+                root.as_ptr(),
+                0,
+                rs_lvgl_sys::lv_part_t_LV_PART_KNOB,
+            );
+            rs_lvgl_sys::lv_obj_set_clickable(root.as_ptr(), false);
+            CustomObject::new(parent, root)
+        }
+    }
+    fn apply_props(
+        &mut self,
+        object: &mut CustomObject,
+        props: &GaugeProps,
+    ) -> Result<(), UiError> {
+        let color = |c: Color| rs_lvgl_sys::lv_color_t {
+            red: c.r,
+            green: c.g,
+            blue: c.b,
+        };
+        // SAFETY: a live borrowed arc; LVGL copies every numeric/color value.
+        unsafe {
+            rs_lvgl_sys::lv_arc_set_value(object.raw().as_ptr(), props.value);
+            rs_lvgl_sys::lv_obj_set_style_arc_color(
+                object.raw().as_ptr(),
+                color(props.color),
+                rs_lvgl_sys::lv_part_t_LV_PART_INDICATOR,
+            );
+            rs_lvgl_sys::lv_obj_set_style_arc_color(
+                object.raw().as_ptr(),
+                color(props.track),
+                rs_lvgl_sys::lv_part_t_LV_PART_MAIN,
+            );
+        }
+        Ok(())
+    }
+    fn tick(&mut self, object: &mut CustomObject, elapsed_ms: u32) -> Result<(), UiError> {
         self.elapsed = self.elapsed.wrapping_add(elapsed_ms);
         let phase = (self.elapsed % 1600) as f32 / 1600.0 * std::f32::consts::TAU;
-        let opacity = (185.0 + 70.0 * phase.sin()) as u8;
-        // SAFETY: the handle is borrowed for this hook and stays on the UI thread.
+        let opacity = (220.0 + 35.0 * phase.sin()) as u8;
+        // SAFETY: time changes only indicator opacity, independently of model value.
         unsafe {
-            rs_lvgl_sys::lv_obj_set_style_opa(object.raw().as_ptr(), opacity, 0);
+            rs_lvgl_sys::lv_obj_set_style_arc_opa(
+                object.raw().as_ptr(),
+                opacity,
+                rs_lvgl_sys::lv_part_t_LV_PART_INDICATOR,
+            );
         }
         Ok(())
     }

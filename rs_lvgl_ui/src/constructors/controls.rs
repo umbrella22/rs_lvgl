@@ -34,6 +34,14 @@ pub fn button_static<M>(text: &'static str) -> View<M> {
     node
 }
 
+/// A controlled two-ended slider. Invalid order/domain rejects before mutation.
+/// Native signed domain width and keypad-step arithmetic must be representable;
+/// the domain cannot include i32::MIN or i32::MAX.
+#[cfg(feature = "widget-slider")]
+pub fn range_slider<M>(min: i32, max: i32, range: crate::SliderRange) -> View<M> {
+    Node::new(WidgetKind::RangeSlider { min, max, range })
+}
+
 /// A controlled slider with a value in `min..=max`.
 #[cfg(feature = "widget-slider")]
 pub fn slider<M>(min: i32, max: i32, value: i32) -> View<M> {
@@ -70,6 +78,7 @@ pub fn textarea<M>(text: impl Into<String>) -> View<M> {
         placeholder: String::new(),
         one_line: true,
         password: false,
+        input: None,
     })
 }
 

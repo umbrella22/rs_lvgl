@@ -1,57 +1,67 @@
-//! Lifecycle contract for custom widgets.
+//! Property-aware custom widgets and type-safe mounted dispatch.
 //!
-//! A custom widget owns one native LVGL subtree. The reconciler calls
-//! [`CustomWidget::create`] once when the node is mounted, [`CustomWidget::update`]
-//! once per [`crate::Ui::tick`], and [`CustomWidget::delete`] exactly once before
-//! the native object is deleted.
-//!
-//! All three hooks run on the UI thread, inside the `Ui` method that owns the
-//! LVGL access. They receive only their own [`CustomObject`] (or the parent
-//! object during creation). A widget must not reconcile `View` children, mutate
-//! sibling objects, or call back into [`crate::Ui`]; the `Ui` reentrancy guard
-//! rejects such calls.
-//!
-//! The trait is deliberately not generic over the message type. `WidgetKind` is
-//! not generic, so storing a `Box<dyn CustomWidget<M>>` inside it would require
-//! making the whole widget descriptor generic. Application messages enter
-//! through the node's explicit handler (`on_event`, `on_click`, and so on),
-//! which the reconciler registers on the custom object like any typed widget.
+//! Validation is pure. Native creation and every property application run on
+//! the UI thread, independently of tick. The mounted entry owns both its widget
+//! and boxed properties until native deletion; failed updates retain old and
+//! incoming properties through deletion callbacks.
 
+use crate::UiError;
 use alloc::boxed::Box;
-use core::cell::Cell;
-use core::fmt;
-use core::ptr::NonNull;
-
+use core::{
+    any::{Any, TypeId},
+    cell::Cell,
+    fmt,
+    ptr::NonNull,
+};
 use rs_lvgl::{NativeObject, Obj, Widget};
 use rs_lvgl_sys::lv_obj_t;
 
-use crate::UiError;
-
-/// A widget with its own native lifecycle.
+/// One native subtree controlled by application-owned properties.
 ///
-/// Implementations keep their engine state in `self`; the mounted tree retains
-/// the boxed instance until the node is removed. A later `App::view` call may
-/// build another instance, but the reconciler keeps the mounted one unless the
-/// node key or the custom variant changes.
+/// Hooks may mutate only their own subtree, must not delete its root, and must
+/// not reenter Ui. Native callbacks enqueue actions and must not unwind across C.
+/// The Rust widget and its current properties outlive native deletion callbacks.
 pub trait CustomWidget: 'static {
-    /// Create the native object as a direct child of `parent` and return an
-    /// opaque handle to it.
-    ///
-    /// The object must stay alive until the mounted node is deleted. Return an
-    /// error to abort the mount; any native objects created before the error are
-    /// the implementation's responsibility.
-    fn create(&mut self, parent: &mut Obj<'_>) -> Result<CustomObject, UiError>;
+    type Props: 'static;
 
-    /// Advance one tick and optionally invalidate the widget's native subtree.
-    ///
-    /// `elapsed_ms` is the exact value passed to [`crate::Ui::tick`]. Returning
-    /// without calling [`CustomObject::invalidate`] keeps the previous frame.
-    fn update(&mut self, object: &mut CustomObject, elapsed_ms: u32) -> Result<(), UiError>;
+    /// Pure preflight, before either mounted tree changes. Do not read or
+    /// mutate LVGL, external state or a mounted instance here.
+    fn validate(_props: &Self::Props) -> Result<(), UiError>
+    where
+        Self: Sized,
+    {
+        Ok(())
+    }
 
-    /// Release widget state before the native object is deleted.
+    /// Create a live direct child. Any partial construction on Err must be
+    /// deleted by this hook before returning; no delete hook follows Err.
+    /// Initial props are boxed and remain stable through native deletion.
+    fn create(
+        &mut self,
+        parent: &mut Obj<'_>,
+        props: &Self::Props,
+    ) -> Result<CustomObject, UiError>;
+
+    /// Apply current properties on mount and on every compatible reconciliation,
+    /// including equal values, to correct native divergence. No tick is implied.
     ///
-    /// The native object is still alive during this call. It is called exactly
-    /// once per successful `create`.
+    /// On success, native references to previous properties must be retired.
+    /// On Err, old and incoming properties remain alive until native deletion;
+    /// the affected tree is deleted and a later render can retry canonical state.
+    fn apply_props(
+        &mut self,
+        object: &mut CustomObject,
+        props: &Self::Props,
+    ) -> Result<(), UiError>;
+
+    /// Advance time without rebuilding or applying properties.
+    fn tick(&mut self, _object: &mut CustomObject, _elapsed_ms: u32) -> Result<(), UiError> {
+        Ok(())
+    }
+
+    /// Called exactly once for successful creation while the root is live.
+    /// Retire external registrations here; do not delete the root. Rust backing
+    /// remains owned until LVGL finishes deleting the subtree and callbacks.
     fn delete(&mut self, object: &mut CustomObject);
 }
 
@@ -143,97 +153,195 @@ impl fmt::Debug for CustomObject {
     }
 }
 
-/// The factory behind [`crate::raw`].
-///
-/// This is the static escape hatch: it has no update or delete hook and the
-/// native subtree and its callbacks belong to the caller.
-pub struct RawWidget {
+struct RawWidget {
     create: Box<dyn Fn(NonNull<lv_obj_t>) -> Option<NonNull<lv_obj_t>>>,
 }
-
 impl RawWidget {
     pub(crate) fn new(create: Box<dyn Fn(NonNull<lv_obj_t>) -> Option<NonNull<lv_obj_t>>>) -> Self {
         Self { create }
     }
 }
 
-/// Implementation behind [`crate::WidgetKind::Custom`].
-///
-/// The variant decides whether the reconciler treats the node as a static raw
-/// subtree or as a lifecycle widget that [`crate::Ui::tick`] visits.
-pub enum CustomWidgetKind {
-    /// A one-shot opaque subtree created by `crate::raw`.
-    Raw(RawWidget),
-    /// A lifecycle widget created by `crate::custom`.
-    Lifecycle(Box<dyn CustomWidget>),
+trait ErasedWidget {
+    fn implementation_type(&self) -> TypeId;
+    fn validate(&self) -> Result<(), UiError>;
+    fn create(&mut self, parent: &mut Obj<'_>) -> Result<CustomObject, UiError>;
+    fn apply_initial(&mut self, object: &mut CustomObject) -> Result<(), UiError>;
+    fn into_props(self: Box<Self>) -> Box<dyn Any>;
+    fn apply_from(&mut self, object: &mut CustomObject, props: Box<dyn Any>)
+        -> Result<(), UiError>;
+    fn tick(&mut self, object: &mut CustomObject, elapsed_ms: u32) -> Result<(), UiError>;
+    fn delete(&mut self, object: &mut CustomObject);
+}
+struct Entry<W: CustomWidget> {
+    widget: W,
+    props: Box<W::Props>,
+    incoming: Option<Box<W::Props>>,
+}
+impl<W: CustomWidget> ErasedWidget for Entry<W> {
+    fn implementation_type(&self) -> TypeId {
+        TypeId::of::<W>()
+    }
+    fn validate(&self) -> Result<(), UiError> {
+        W::validate(&self.props)
+    }
+    fn create(&mut self, parent: &mut Obj<'_>) -> Result<CustomObject, UiError> {
+        self.widget.create(parent, &self.props)
+    }
+    fn apply_initial(&mut self, object: &mut CustomObject) -> Result<(), UiError> {
+        self.widget.apply_props(object, &self.props)
+    }
+    fn into_props(self: Box<Self>) -> Box<dyn Any> {
+        self.props
+    }
+    fn apply_from(
+        &mut self,
+        object: &mut CustomObject,
+        props: Box<dyn Any>,
+    ) -> Result<(), UiError> {
+        let props = props
+            .downcast::<W::Props>()
+            .map_err(|_| UiError::InvalidProperty)?;
+        self.incoming = Some(props);
+        let result = self.widget.apply_props(
+            object,
+            self.incoming.as_deref().ok_or(UiError::InvalidProperty)?,
+        );
+        if result.is_ok() {
+            self.props = self.incoming.take().ok_or(UiError::InvalidProperty)?;
+        }
+        result
+    }
+    fn tick(&mut self, object: &mut CustomObject, elapsed_ms: u32) -> Result<(), UiError> {
+        self.widget.tick(object, elapsed_ms)
+    }
+    fn delete(&mut self, object: &mut CustomObject) {
+        self.widget.delete(object)
+    }
 }
 
+enum CustomEntry {
+    Raw(RawWidget),
+    Lifecycle(Box<dyn ErasedWidget>),
+}
+
+/// Opaque descriptor payload created by `custom` or unsafe `raw`.
+/// Concrete implementation identity is checked privately using TypeId/Any.
+pub struct CustomWidgetKind {
+    entry: CustomEntry,
+}
 impl CustomWidgetKind {
-    pub(crate) fn raw(widget: RawWidget) -> Self {
-        Self::Raw(widget)
+    pub(crate) fn raw(create: Box<dyn Fn(NonNull<lv_obj_t>) -> Option<NonNull<lv_obj_t>>>) -> Self {
+        Self {
+            entry: CustomEntry::Raw(RawWidget::new(create)),
+        }
     }
-
-    pub(crate) fn lifecycle(widget: impl CustomWidget) -> Self {
-        Self::Lifecycle(Box::new(widget))
+    pub(crate) fn lifecycle<W: CustomWidget>(widget: W, props: W::Props) -> Self {
+        Self {
+            entry: CustomEntry::Lifecycle(Box::new(Entry {
+                widget,
+                props: Box::new(props),
+                incoming: None,
+            })),
+        }
     }
-
     pub(crate) fn is_lifecycle(&self) -> bool {
-        matches!(self, Self::Lifecycle(_))
+        matches!(self.entry, CustomEntry::Lifecycle(_))
     }
-
-    pub(crate) fn same_variant(&self, other: &Self) -> bool {
-        matches!(
-            (self, other),
-            (Self::Raw(_), Self::Raw(_)) | (Self::Lifecycle(_), Self::Lifecycle(_))
-        )
+    pub(crate) fn validate(&self) -> Result<(), UiError> {
+        match &self.entry {
+            CustomEntry::Raw(_) => Ok(()),
+            CustomEntry::Lifecycle(w) => w.validate(),
+        }
     }
-
-    pub(crate) fn create(&mut self, parent: &mut Obj<'_>) -> Result<CustomObject, UiError> {
-        match self {
-            Self::Raw(raw) => {
-                let object = (raw.create)(parent.raw()).ok_or(UiError::Allocation)?;
-                Ok(CustomObject::from_raw_checked(object))
+    pub(crate) fn same_implementation(&self, other: &Self) -> bool {
+        match (&self.entry, &other.entry) {
+            (CustomEntry::Raw(_), CustomEntry::Raw(_)) => true,
+            (CustomEntry::Lifecycle(a), CustomEntry::Lifecycle(b)) => {
+                a.implementation_type() == b.implementation_type()
             }
-            Self::Lifecycle(widget) => {
+            _ => false,
+        }
+    }
+    pub(crate) fn create(&mut self, parent: &mut Obj<'_>) -> Result<CustomObject, UiError> {
+        match &mut self.entry {
+            CustomEntry::Raw(raw) => (raw.create)(parent.raw())
+                .map(CustomObject::from_raw_checked)
+                .ok_or(UiError::Allocation),
+            CustomEntry::Lifecycle(widget) => {
                 let object = widget.create(parent)?;
-                // SAFETY: the handle was just produced by the widget, which
-                // promised in `CustomObject::new` that the object is live.
-                let actual = unsafe { rs_lvgl_sys::lv_obj_get_parent(object.raw.as_ptr()) };
-                if actual != parent.raw().as_ptr() {
+                // SAFETY: CustomObject::new establishes the live direct-child
+                // obligation for successful hooks; this getter checks linkage.
+                if unsafe { rs_lvgl_sys::lv_obj_get_parent(object.raw.as_ptr()) }
+                    != parent.raw().as_ptr()
+                {
                     return Err(UiError::InvalidProperty);
                 }
                 Ok(object)
             }
         }
     }
-
-    pub(crate) fn update(
+    pub(crate) fn apply_initial(&mut self, object: &mut CustomObject) -> Result<(), UiError> {
+        match &mut self.entry {
+            CustomEntry::Raw(_) => Ok(()),
+            CustomEntry::Lifecycle(w) => w.apply_initial(object),
+        }
+    }
+    pub(crate) fn apply_from(
+        &mut self,
+        object: &mut CustomObject,
+        incoming: Self,
+    ) -> Result<(), UiError> {
+        if !self.same_implementation(&incoming) {
+            return Err(UiError::InvalidProperty);
+        }
+        match (&mut self.entry, incoming.entry) {
+            (CustomEntry::Raw(_), CustomEntry::Raw(_)) => Ok(()),
+            (CustomEntry::Lifecycle(old), CustomEntry::Lifecycle(new)) => {
+                old.apply_from(object, new.into_props())
+            }
+            _ => Err(UiError::InvalidProperty),
+        }
+    }
+    pub(crate) fn tick(
         &mut self,
         object: &mut CustomObject,
         elapsed_ms: u32,
     ) -> Result<(), UiError> {
-        match self {
-            Self::Raw(_) => Ok(()),
-            Self::Lifecycle(widget) => widget.update(object, elapsed_ms),
+        match &mut self.entry {
+            CustomEntry::Raw(_) => Ok(()),
+            CustomEntry::Lifecycle(w) => w.tick(object, elapsed_ms),
         }
     }
-
     pub(crate) fn delete(&mut self, object: &mut CustomObject) {
-        if let Self::Lifecycle(widget) = self {
-            widget.delete(object);
+        if let CustomEntry::Lifecycle(w) = &mut self.entry {
+            w.delete(object)
         }
     }
 }
 
-impl<T: CustomWidget + ?Sized> CustomWidget for Box<T> {
-    fn create(&mut self, parent: &mut Obj<'_>) -> Result<CustomObject, UiError> {
-        (**self).create(parent)
+impl<T: CustomWidget> CustomWidget for Box<T> {
+    type Props = T::Props;
+    fn validate(props: &Self::Props) -> Result<(), UiError> {
+        T::validate(props)
     }
-
-    fn update(&mut self, object: &mut CustomObject, elapsed_ms: u32) -> Result<(), UiError> {
-        (**self).update(object, elapsed_ms)
+    fn create(
+        &mut self,
+        parent: &mut Obj<'_>,
+        props: &Self::Props,
+    ) -> Result<CustomObject, UiError> {
+        (**self).create(parent, props)
     }
-
+    fn apply_props(
+        &mut self,
+        object: &mut CustomObject,
+        props: &Self::Props,
+    ) -> Result<(), UiError> {
+        (**self).apply_props(object, props)
+    }
+    fn tick(&mut self, object: &mut CustomObject, elapsed_ms: u32) -> Result<(), UiError> {
+        (**self).tick(object, elapsed_ms)
+    }
     fn delete(&mut self, object: &mut CustomObject) {
         (**self).delete(object)
     }

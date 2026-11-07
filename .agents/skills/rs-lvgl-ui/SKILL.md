@@ -8,8 +8,8 @@ description: Build or modify declarative Rust screens with rs_lvgl_ui, including
 ## Locate the API
 
 Identify the application's Cargo dependency and the actual source checkout. This
-skill targets rs_lvgl_ui 0.6.0, layered over LVGL 9.6. For an older release,
-use the skill from its matching tag. Do not insert 0.6.0 names into an application
+skill targets rs_lvgl_ui 0.7.0, layered over LVGL 9.6. For an older release,
+use the skill from its matching tag. Do not insert 0.7.0 names into an application
 consuming an older API.
 Read the resolved manifests and relevant APIs before assuming a symbol or feature
 exists. Other LVGL wrappers have different APIs. In this source repository, the main
@@ -62,10 +62,10 @@ a memory display does not provide a visible simulator or board driver.
 
 ## Composition and forms
 
-Version 0.6.0 includes lazy children, semantic callbacks, component slots, typed
+Version 0.7.0 includes lazy children, semantic callbacks, component slots, typed
 construction and explicit bindings. The [runnable form](references/form.rs)
 preserves those composition contracts in this checkout. Resolve the actual source
-and declared widget features before choosing development or released names.
+and declared widget features before choosing API names.
 
 - `child_if(condition, || view)` evaluates its FnOnce closure only for true.
   Lists use iterators and stable business keys; functions accept props/state
@@ -96,14 +96,56 @@ Typed erasure adds no allocation. Bindings consume the existing event slot.
 Owned text, capturing handlers, child vectors, map, slots and native storage
 still have costs; measure Rust and LVGL separately for memory claims.
 
-## UI 0.6.0 and migration
+## Controls, charts and custom Props
+
+The [runnable depth recipe](references/capability-depth.rs) uses the current
+breaking API. Enable widget-slider/textarea/chart/arc and alloc for this recipe;
+it also depends directly on matching rs_lvgl and rs_lvgl_sys for native readback.
+Use the matching 0.7.0 packages in a registry consumer.
+
+- Flex uses independent `.flex_wrap(bool)` and `.flex_reverse(bool)`; keys and
+  descriptor child order are preserved. Reserve inner padding at both slider thumbs.
+- Use `range_slider(min,max,SliderRange)` and `.on_range_changed`, or typed range
+  construction with `binding(range, Action::Range)`. Endpoints are controlled;
+  invalid ordering/domain arithmetic rejects without sorting or clamping. The
+  range callback shares the value-handler slot; single sliders use numeric input.
+- Textarea `accepted_chars` configures nonempty, NUL-free editing characters.
+  `input_max_length(Option<NonZeroU32>)` uses scalar count, not UTF-8 bytes or
+  grapheme clusters. `cursor_position(Option<u32>)` uses scalar boundaries;
+  `cursor_click_position(bool)` controls pointer placement. Omission restores
+  unrestricted input/no limit/pointer placement; an omitted cursor leaves native
+  editing placement uncontrolled for unchanged model text. Full model assignment
+  temporarily removes input filters and restores them afterwards. Filters must
+  not truncate authoritative text. Font glyph coverage needs separate checks.
+- Use only `chart(ChartSpec)` / typed::chart. Series have stable IDs, ChartData,
+  independent X/Y axis selection and explicit ChartValue::Missing. Scatter
+  requires XY, other forms Y; Curve needs effective native vector support.
+  Bar rejects missing/unfilled history; Stacked rejects negative samples,
+  mixed Y axes and cumulative overflow. Native extreme geometry arithmetic is
+  not comprehensively audited. No old constructor or series adapter exists.
+- ChartHistory has explicit epoch/capacity/kind/sequence. Snapshot construction
+  copies retained samples; clones share immutable data. Metadata and actual
+  overlap must prove append continuity. Discontinuities, capacity/mode changes
+  and remount recover with full synchronization. A discarded view consumes no
+  progress. Sequence exhaustion requires a new epoch; no reboot persistence.
+- Implement CustomWidget::Props and `custom(widget, props)`. Pure validate runs
+  before native mutation; create/apply_props run on mount. Same concrete type/key
+  applies every incoming Props, even equal values, to the mounted instance; the
+  unused incoming factory drops. A type/key change replaces it. Tick is separate.
+  Successful apply retires old native references; failed partial apply retains
+  both Props through deletion. Delete runs once while the root is live; widget
+  and backing data survive native delete callbacks, then drop. Create error
+  cleans up its own partial subtree. Hooks do not delete the root or reenter Ui;
+  native callbacks must not unwind. Raw pointers retain their unsafe contracts.
+
+## UI names, units and migration
 
 Use container/progress_bar/message_box/animated_image; match typed constructors
 and Container/ProgressBar/MessageBox/AnimatedImage markers. Use ScrollDirection
 and scroll_direction with HORIZONTAL/VERTICAL; TextOverflow with Ellipsis and
 ScrollLoop; Align::TopCenter/BottomCenter/CenterLeft/CenterRight. Old names have
 no aliases in this source. The included [clarity example](references/api-clarity.rs)
-compiles the 0.6.0 API.
+compiles the 0.7.0 API.
 
 Use Scale::percent(50) and Angle::degrees(90) for transforms and image scale.
 Scale::ratio(n, d) is checked and rounds to native 1/256, ties upward;

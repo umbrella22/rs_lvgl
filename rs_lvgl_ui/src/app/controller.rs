@@ -173,7 +173,7 @@ impl<M: Clone + 'static> Ui<M> {
     /// Advance every mounted custom widget by `elapsed_ms`.
     ///
     /// Walks the mounted view, then the overlay, once each, pre-order, and calls
-    /// [`crate::CustomWidget::update`] for each lifecycle custom widget. It does
+    /// [`crate::CustomWidget::tick`] for each lifecycle custom widget. It does
     /// not call `App::view`, reconcile descriptors, process queued messages or
     /// change the mounted tree.
     ///

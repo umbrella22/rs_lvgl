@@ -1,6 +1,6 @@
 //! Property updates for text widgets.
 
-use super::super::Props;
+use super::super::{Props, Retained};
 #[cfg(feature = "widget-textarea")]
 use super::common::textarea_text_is;
 use super::suppress;
@@ -16,6 +16,7 @@ pub(super) fn apply<M: Clone + 'static>(
     new: &Props,
     old: Option<&Props>,
     slot: Option<&HandlerSlot<M>>,
+    retained: &mut Retained,
 ) -> Result<(), UiError> {
     match (new, old) {
         #[cfg(feature = "widget-textarea")]
@@ -25,9 +26,12 @@ pub(super) fn apply<M: Clone + 'static>(
                 placeholder,
                 one_line,
                 password,
+                options,
             },
             old,
         ) => {
+            let defaults = crate::TextareaInputOptions::default();
+            let options = options.as_deref().unwrap_or(&defaults);
             let (old_placeholder, old_one_line, old_password) = match old {
                 Some(Props::Textarea {
                     placeholder,
@@ -37,28 +41,75 @@ pub(super) fn apply<M: Clone + 'static>(
                 }) => (Some(placeholder.as_str()), Some(*one_line), Some(*password)),
                 _ => (None, None, None),
             };
-            // SAFETY: `obj` is a live textarea object.
+            let previous = match retained {
+                Retained::TextInput { accepted } => accepted.as_ref().map(|s| s.as_bytes()),
+                _ => None,
+            };
+            let filter_changed = previous != options.accepted.as_ref().map(|s| s.as_bytes());
+            // Allocate the next backing before native writes. Heap storage remains
+            // stable when its owner moves into the mounted retention slot.
+            let replacement = if filter_changed {
+                options
+                    .accepted
+                    .as_ref()
+                    .map(|s| CString::new(s.as_str()))
+                    .transpose()
+                    .map_err(|_| UiError::InvalidProperty)?
+            } else {
+                None
+            };
+            let accepted_ptr = if filter_changed {
+                replacement.as_ref().map(|s| s.as_ptr())
+            } else {
+                match retained {
+                    Retained::TextInput { accepted } => accepted.as_ref().map(|s| s.as_ptr()),
+                    _ => None,
+                }
+            }
+            .unwrap_or(core::ptr::null());
+            // SAFETY: the object is a live textarea. The static accepted pointer
+            // refers to either the old mounted backing or the replacement above.
+            // Both stay live through every synchronous setter and native event.
             unsafe {
-                if old_one_line != Some(*one_line) {
-                    rs_lvgl_sys::lv_textarea_set_one_line(obj.as_ptr(), *one_line);
-                }
-                if old_password != Some(*password) {
-                    rs_lvgl_sys::lv_textarea_set_password_mode(obj.as_ptr(), *password);
-                }
-                if old_placeholder != Some(placeholder.as_str()) {
-                    if let Ok(text) = CString::new(placeholder.as_str()) {
-                        rs_lvgl_sys::lv_textarea_set_placeholder_text(obj.as_ptr(), text.as_ptr());
+                suppress(slot, || {
+                    let raw = obj.as_ptr();
+                    if old_one_line != Some(*one_line) {
+                        rs_lvgl_sys::lv_textarea_set_one_line(raw, *one_line);
                     }
-                }
-                if !textarea_text_is(obj, text) {
-                    if let Ok(text) = CString::new(text.as_str()) {
-                        // `lv_textarea_set_text` emits VALUE_CHANGED; a view
-                        // update must not feed back into the queue.
-                        suppress(slot, || {
-                            rs_lvgl_sys::lv_textarea_set_text(obj.as_ptr(), text.as_ptr());
-                        });
+                    if old_password != Some(*password) {
+                        rs_lvgl_sys::lv_textarea_set_password_mode(raw, *password);
                     }
-                }
+                    if old_placeholder != Some(placeholder.as_str()) {
+                        let value =
+                            CString::new(placeholder.as_str()).expect("validated placeholder");
+                        rs_lvgl_sys::lv_textarea_set_placeholder_text(raw, value.as_ptr());
+                    }
+                    if !textarea_text_is(obj, text) {
+                        // Native set_text applies editing filters. Disable both
+                        // while restoring canonical model text, including passwords.
+                        rs_lvgl_sys::lv_textarea_set_accepted_chars_static(raw, core::ptr::null());
+                        rs_lvgl_sys::lv_textarea_set_max_length(raw, 0);
+                        let value = CString::new(text.as_str()).expect("validated text");
+                        rs_lvgl_sys::lv_textarea_set_text(raw, value.as_ptr());
+                    }
+                    rs_lvgl_sys::lv_textarea_set_accepted_chars_static(raw, accepted_ptr);
+                    rs_lvgl_sys::lv_textarea_set_max_length(
+                        raw,
+                        options.maximum.map_or(0, |n| n.get()),
+                    );
+                    rs_lvgl_sys::lv_textarea_set_cursor_click_pos(raw, options.click);
+                    if let Some(position) = options.cursor {
+                        rs_lvgl_sys::lv_textarea_set_cursor_pos(raw, position as i32);
+                    }
+                });
+            }
+            if filter_changed {
+                // The native object now points at the replacement. Release only
+                // the old backing; later errors keep this mounted backing alive
+                // until the affected native tree has been deleted.
+                *retained = Retained::TextInput {
+                    accepted: replacement,
+                };
             }
         }
         #[cfg(feature = "widget-span")]

@@ -22,6 +22,8 @@ pub fn binding<T, F>(value: T, map: F) -> Binding<T, F> {
 
 mod private {
     pub trait Sealed {}
+    #[cfg(feature = "widget-slider")]
+    impl Sealed for crate::SliderRange {}
     impl Sealed for i32 {}
     impl Sealed for bool {}
     impl Sealed for alloc::string::String {}
@@ -102,3 +104,32 @@ macro_rules! text_input {
     )*};
 }
 text_input!(String, &str, &String);
+
+/// Accepted range constructor inputs: [`crate::SliderRange`] or its [`binding`].
+#[cfg(feature = "widget-slider")]
+pub trait RangeInput<M>: private::Sealed {
+    #[doc(hidden)]
+    fn into_range_node<K>(self, build: impl FnOnce(crate::SliderRange) -> Node<M, K>) -> Node<M, K>
+    where
+        K: typed::Supports<typed::capability::Range>;
+}
+#[cfg(feature = "widget-slider")]
+impl<M> RangeInput<M> for crate::SliderRange {
+    fn into_range_node<K>(self, build: impl FnOnce(crate::SliderRange) -> Node<M, K>) -> Node<M, K>
+    where
+        K: typed::Supports<typed::capability::Range>,
+    {
+        build(self)
+    }
+}
+#[cfg(feature = "widget-slider")]
+impl<M, F: FnMut(crate::SliderRange) -> M + 'static> RangeInput<M>
+    for Binding<crate::SliderRange, F>
+{
+    fn into_range_node<K>(self, build: impl FnOnce(crate::SliderRange) -> Node<M, K>) -> Node<M, K>
+    where
+        K: typed::Supports<typed::capability::Range>,
+    {
+        build(self.value).on_range_changed(self.map)
+    }
+}

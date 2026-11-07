@@ -13,9 +13,9 @@ use rs_lvgl::{Obj, Widget};
 use rs_lvgl_sys::lv_obj_t;
 
 /// Delete a native object whose mount failed after it was created.
-fn abort_create(custom: Option<MountedCustom>, obj: NonNull<lv_obj_t>) {
-    if let Some(custom) = custom {
-        custom.delete();
+fn abort_create(mut custom: Option<MountedCustom>, obj: NonNull<lv_obj_t>) {
+    if let Some(custom) = custom.as_mut() {
+        custom.run_delete_hook();
     }
     // SAFETY: the object was created by the failing `create` call, the custom
     // delete hook (if any) already ran, and no mounted handle refers to it.
@@ -52,6 +52,7 @@ pub(super) fn create_inner<M: Clone + 'static>(
         key,
         kind,
         style,
+        flex_flow,
         part_styles,
         keyboard_id,
         grid_cell,
@@ -83,11 +84,23 @@ pub(super) fn create_inner<M: Clone + 'static>(
             let mut parent_obj = unsafe { Obj::from_raw(parent) }.ok_or(UiError::Allocation)?;
             let object = entry.create(&mut parent_obj)?;
             let obj = object.raw();
-            custom = Some(MountedCustom { entry, object });
+            custom = Some(MountedCustom {
+                entry,
+                object,
+                delete_hook_run: false,
+            });
             (obj, Parts::default())
         }
         None => widgets::create(tag, parent)?,
     };
+    let initial = match custom.as_mut() {
+        Some(c) => c.entry.apply_initial(&mut c.object),
+        None => Ok(()),
+    };
+    if let Err(error) = initial {
+        abort_create(custom, obj);
+        return Err(error);
+    }
     let lifecycle = custom
         .as_ref()
         .map(|custom| custom.entry.is_lifecycle())
@@ -127,6 +140,7 @@ pub(super) fn create_inner<M: Clone + 'static>(
     if font_resource.is_some() {
         apply_resource_font(obj, &style, font_resource.as_ref());
     }
+    widgets::apply_flex_flow(obj, tag, flex_flow);
     let transitions = if tag != KindTag::Custom {
         crate::animation::install_transitions(obj, &style, &part_styles)
     } else {

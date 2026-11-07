@@ -346,35 +346,40 @@ impl Demo {
         page.push(
             row([
                 card_flex(theme, "chart-visitors", "Unique visitors").child(
-                    chart(
+                    chart(ChartSpec::new(
                         ChartType::Line,
-                        0,
-                        100,
+                        ChartAxes::new(ChartRange::new(0, 100), ChartRange::new(0, 100)),
                         vec![ChartSeries::new(
+                            6,
                             theme.accent,
-                            vec![18, 32, 28, 45, 38, 52, 61, 49, 66, 58, 72, 81],
+                            ChartData::values(vec![18, 32, 28, 45, 38, 52, 61, 49, 66, 58, 72, 81]),
                         )],
-                    )
+                    ))
                     .key(Key::Named("chart-visitors-plot"))
                     .width(percent(100))
                     .height(px(150)),
                 ),
                 card_flex(theme, "chart-revenue", "Monthly revenue").child(
-                    chart(
+                    chart(ChartSpec::new(
                         ChartType::Bar,
-                        0,
-                        100,
+                        ChartAxes::new(ChartRange::new(0, 100), ChartRange::new(0, 100)),
                         vec![
                             ChartSeries::new(
+                                5,
                                 theme.muted,
-                                vec![22, 30, 26, 38, 34, 42, 45, 40, 48, 52, 47, 55],
+                                ChartData::values(vec![
+                                    22, 30, 26, 38, 34, 42, 45, 40, 48, 52, 47, 55,
+                                ]),
                             ),
                             ChartSeries::new(
+                                4,
                                 theme.accent,
-                                vec![30, 38, 35, 48, 44, 55, 60, 52, 64, 68, 62, 74],
+                                ChartData::values(vec![
+                                    30, 38, 35, 48, 44, 55, 60, 52, 64, 68, 62, 74,
+                                ]),
                             ),
                         ],
-                    )
+                    ))
                     .key(Key::Named("chart-revenue-plot"))
                     .width(percent(100))
                     .height(px(150)),
@@ -455,22 +460,27 @@ impl Demo {
                         .text_color(Color::rgb(0x2e, 0xa0, 0x6a)),
                 )
                 .child(
-                    chart(
+                    chart(ChartSpec::new(
                         ChartType::Stacked,
-                        0,
-                        100,
+                        ChartAxes::new(ChartRange::new(0, 100), ChartRange::new(0, 100)),
                         vec![
                             ChartSeries::new(
+                                3,
                                 Color::rgb(0x2e, 0xa0, 0x6a),
-                                vec![20, 32, 28, 40, 35, 44, 38, 48],
+                                ChartData::values(vec![20, 32, 28, 40, 35, 44, 38, 48]),
                             ),
                             ChartSeries::new(
+                                2,
                                 Color::rgb(0x2f, 0x80, 0xed),
-                                vec![18, 24, 22, 30, 28, 34, 31, 38],
+                                ChartData::values(vec![18, 24, 22, 30, 28, 34, 31, 38]),
                             ),
-                            ChartSeries::new(theme.danger, vec![14, 20, 18, 24, 22, 28, 25, 30]),
+                            ChartSeries::new(
+                                1,
+                                theme.danger,
+                                ChartData::values(vec![14, 20, 18, 24, 22, 28, 25, 30]),
+                            ),
                         ],
-                    )
+                    ))
                     .key(Key::Named("summary-chart"))
                     .width(percent(100))
                     .height(px(150)),

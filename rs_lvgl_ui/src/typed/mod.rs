@@ -18,11 +18,13 @@ impl private::Sealed for Erased {}
 /// Internal property capability bounds; applications use the constructors.
 #[doc(hidden)]
 pub mod capability {
+    pub struct Flex;
     pub struct Text;
     pub struct Label;
     pub struct Thumb;
     pub struct Progress;
     pub struct Numeric;
+    pub struct Range;
     pub struct Toggle;
     pub struct Selection;
     pub struct Cell;
@@ -62,9 +64,10 @@ pub mod kind {
         )*};
     }
     kinds! {
-        Container: [Children]; Row: [Children]; Column: [Children]; Grid: [Children];
+        Container: [Children]; Row: [Children, Flex]; Column: [Children, Flex]; Grid: [Children];
         Label: [super::capability::Label]; Button: [];
         #[cfg(feature = "widget-switch")] Switch: [Toggle, Thumb];
+        #[cfg(feature = "widget-slider")] RangeSlider: [Range, Thumb, Progress];
         #[cfg(feature = "widget-slider")] Slider: [Numeric, Thumb, Progress];
         #[cfg(feature = "widget-bar")] ProgressBar: [Numeric, Progress];
         #[cfg(feature = "widget-arc")] Arc: [Numeric];

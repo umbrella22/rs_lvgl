@@ -69,12 +69,14 @@ def main():
         (fixture / "src/bin").mkdir(parents=True, exist_ok=True)
         manifest = fixture / "Cargo.toml"
         manifest.write_text('[package]\nname="skill-consumer"\nversion="0.0.0"\nedition="2021"\n'
-            '[workspace]\n[features]\nform=["rs_lvgl_ui/widget-slider","rs_lvgl_ui/widget-switch","rs_lvgl_ui/widget-textarea"]\nclarity=["form","rs_lvgl_ui/widget-bar"]\n[dependencies]\n'
+            '[workspace]\n[features]\nform=["rs_lvgl_ui/widget-slider","rs_lvgl_ui/widget-switch","rs_lvgl_ui/widget-textarea"]\nclarity=["form","rs_lvgl_ui/widget-bar"]\ndepth=["rs_lvgl_ui/widget-slider","rs_lvgl_ui/widget-textarea","rs_lvgl_ui/widget-chart","rs_lvgl_ui/widget-arc"]\n[dependencies]\n'
             f'rs_lvgl={{path={json.dumps(str(ROOT / "rs_lvgl"))},default-features=false,features=["alloc"]}}\n'
+            f'rs_lvgl_sys={{path={json.dumps(str(ROOT / "rs_lvgl_sys"))}}}\n'
             f'rs_lvgl_ui={{path={json.dumps(str(ROOT / "rs_lvgl_ui"))},default-features=false,features=["alloc"]}}\n')
         shutil.copyfile(install / "rs-lvgl-ui/references/counter.rs", fixture / "src/main.rs")
         shutil.copyfile(install / "rs-lvgl-ui/references/form.rs", fixture / "src/bin/form.rs")
         shutil.copyfile(install / "rs-lvgl-ui/references/api-clarity.rs", fixture / "src/bin/api-clarity.rs")
+        shutil.copyfile(install / "rs-lvgl-ui/references/capability-depth.rs", fixture / "src/bin/capability-depth.rs")
         snippet = re.findall(r"```rust\n(.*?)```", (ROOT / "README.md").read_text(), re.S)[0]
         translated = re.findall(r"```rust\n(.*?)```", (ROOT / "README.zh.md").read_text(), re.S)[0]
         assert snippet == translated, "Chinese and English README examples differ"
@@ -87,6 +89,7 @@ def main():
         run("sample-lifecycle", ["cargo", "run", "--manifest-path", str(manifest), "--bin", "skill-consumer", *flags])
         run("development-form", ["cargo", "run", "--manifest-path", str(manifest), "--bin", "form", "--features", "form", *flags])
         run("development-api-clarity", ["cargo", "run", "--manifest-path", str(manifest), "--bin", "api-clarity", "--features", "clarity", *flags])
+        run("development-capability-depth", ["cargo", "run", "--manifest-path", str(manifest), "--bin", "capability-depth", "--features", "depth", *flags])
         run("readme-example", ["cargo", "run", "--manifest-path", str(manifest), "--bin", "readme", *flags])
     print("Copied skill contents, references, collision handling and examples passed.")
 

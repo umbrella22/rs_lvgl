@@ -2,8 +2,7 @@
 
 use crate::custom::CustomWidgetKind;
 use crate::node::{
-    CalendarDate, ChartSeries, ChartType, Color, GridTrack, ImageSource, RollerMode, Span,
-    TextOverflow, Tile, WidgetKind,
+    CalendarDate, Color, GridTrack, ImageSource, RollerMode, Span, TextOverflow, Tile, WidgetKind,
 };
 use alloc::{borrow::Cow, string::String, vec::Vec};
 
@@ -58,6 +57,12 @@ pub(crate) enum Props {
         text: Cow<'static, str>,
     },
     #[cfg(feature = "widget-slider")]
+    RangeSlider {
+        min: i32,
+        max: i32,
+        range: crate::SliderRange,
+    },
+    #[cfg(feature = "widget-slider")]
     Slider {
         min: i32,
         max: i32,
@@ -89,6 +94,7 @@ pub(crate) enum Props {
         placeholder: String,
         one_line: bool,
         password: bool,
+        options: Option<alloc::boxed::Box<crate::TextareaInputOptions>>,
     },
     #[cfg(feature = "widget-dropdown")]
     Dropdown {
@@ -109,12 +115,7 @@ pub(crate) enum Props {
         major_tick_every: u32,
     },
     #[cfg(feature = "widget-chart")]
-    Chart {
-        chart_type: ChartType,
-        min: i32,
-        max: i32,
-        series: Vec<ChartSeries>,
-    },
+    Chart(alloc::boxed::Box<crate::ChartSpec>),
     #[cfg(feature = "widget-roller")]
     Roller {
         options: Vec<String>,
@@ -273,6 +274,8 @@ pub(crate) fn into_props(kind: WidgetKind) -> (Props, Option<CustomWidgetKind>) 
         },
         WidgetKind::Button { text } => Props::Button { text: text.into() },
         #[cfg(feature = "widget-slider")]
+        WidgetKind::RangeSlider { min, max, range } => Props::RangeSlider { min, max, range },
+        #[cfg(feature = "widget-slider")]
         WidgetKind::Slider { min, max, value } => Props::Slider { min, max, value },
         #[cfg(feature = "widget-bar")]
         WidgetKind::ProgressBar { min, max, value } => Props::ProgressBar { min, max, value },
@@ -288,11 +291,13 @@ pub(crate) fn into_props(kind: WidgetKind) -> (Props, Option<CustomWidgetKind>) 
             placeholder,
             one_line,
             password,
+            input,
         } => Props::Textarea {
             text,
             placeholder,
             one_line,
             password,
+            options: input,
         },
         #[cfg(feature = "widget-dropdown")]
         WidgetKind::Dropdown { options, selected } => Props::Dropdown { options, selected },
@@ -311,17 +316,7 @@ pub(crate) fn into_props(kind: WidgetKind) -> (Props, Option<CustomWidgetKind>) 
             major_tick_every,
         },
         #[cfg(feature = "widget-chart")]
-        WidgetKind::Chart {
-            chart_type,
-            min,
-            max,
-            series,
-        } => Props::Chart {
-            chart_type,
-            min,
-            max,
-            series,
-        },
+        WidgetKind::Chart(spec) => Props::Chart(spec),
         #[cfg(feature = "widget-roller")]
         WidgetKind::Roller {
             options,

@@ -154,10 +154,18 @@ fn diagnostics_identify_nested_paths_and_balance_failures() {
     events.borrow_mut().clear();
     struct Fails;
     impl CustomWidget for Fails {
-        fn create(&mut self, _: &mut Obj<'_>) -> Result<rs_lvgl_ui::CustomObject, UiError> {
+        type Props = ();
+        fn apply_props(&mut self, _: &mut CustomObject, _: &()) -> Result<(), UiError> {
+            Ok(())
+        }
+        fn create(
+            &mut self,
+            _: &mut Obj<'_>,
+            _: &Self::Props,
+        ) -> Result<rs_lvgl_ui::CustomObject, UiError> {
             Err(UiError::Allocation)
         }
-        fn update(&mut self, _: &mut rs_lvgl_ui::CustomObject, _: u32) -> Result<(), UiError> {
+        fn tick(&mut self, _: &mut rs_lvgl_ui::CustomObject, _: u32) -> Result<(), UiError> {
             Ok(())
         }
         fn delete(&mut self, _: &mut rs_lvgl_ui::CustomObject) {
@@ -169,7 +177,7 @@ fn diagnostics_identify_nested_paths_and_balance_failures() {
         type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
-            column([label("valid"), custom(Fails).key(Key::Named("failure"))])
+            column([label("valid"), custom(Fails, ()).key(Key::Named("failure"))])
         }
     }
     assert_eq!(ui.mount(&Failure), Err(UiError::Allocation));

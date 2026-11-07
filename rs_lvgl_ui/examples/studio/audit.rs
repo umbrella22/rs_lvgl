@@ -30,6 +30,13 @@ fn page(pointer: &mut fixture::Pointer, ui: &mut Ui<StudioAction>, app: &mut Stu
     );
     fixture::settle(ui);
 }
+fn assert_inside_card(obj: fixture::Obj) {
+    let [x1, y1, x2, y2] = fixture::rect(obj);
+    let [left, top, right, bottom] = fixture::rect(fixture::parent(obj));
+    assert!(x1 >= left + 10 && y1 >= top + 10 && x2 <= right - 10 && y2 <= bottom - 10,
+        "chart clipped by card: {x1},{y1}..{x2},{y2} in {left},{top}..{right},{bottom}");
+}
+
 fn assert_in_display(obj: fixture::Obj, name: &str) {
     let [x1, y1, x2, y2] = fixture::rect(obj);
     assert!(
@@ -289,4 +296,196 @@ fn slider_knobs_remain_complete_at_both_endpoints_in_both_palettes() {
     drop(ui);
     // SAFETY: this synchronous memory display has no live UI/input users.
     unsafe { display.delete() };
+}
+
+#[test]
+fn depth_controls_use_native_thumb_input_and_preserve_model_text() {
+    let _lock = fixture::LOCK.lock().unwrap();
+    let (display, mut app, mut ui) = mount();
+    let mut pointer = fixture::Pointer::new();
+    page(&mut pointer, &mut ui, &mut app, 9);
+    let slider = fixture::class(fixture::screen(), &raw const fixture::lv_slider_class);
+    let [x1, y1, x2, y2] = fixture::rect(slider);
+    let x = |value| x1 + (x2 - x1) * value / 100;
+    for (from, to, lower) in [(20, 10, true), (70, 90, false)] {
+        pointer.read(x(from), (y1 + y2) / 2, true);
+        pointer.read(x(to), (y1 + y2) / 2, true);
+        pointer.read(x(to), (y1 + y2) / 2, false);
+        ui.drain(&mut app, 128).unwrap();
+        let actual = if lower {
+            app.range.lower
+        } else {
+            app.range.upper
+        };
+        assert!(
+            (actual - to).abs() <= 2,
+            "thumb input: {}..{}",
+            app.range.lower,
+            app.range.upper
+        );
+        assert_eq!(
+            fixture::class(fixture::screen(), &raw const fixture::lv_slider_class),
+            slider
+        );
+    }
+    app.hold = true;
+    ui.update(&app).unwrap();
+    let old = app.range;
+    pointer.read(x(90), (y1 + y2) / 2, true);
+    pointer.read(x(60), (y1 + y2) / 2, true);
+    pointer.read(x(60), (y1 + y2) / 2, false);
+    ui.drain(&mut app, 128).unwrap();
+    assert_eq!(app.range, old);
+    assert_eq!(
+        unsafe { rs_lvgl_sys::lv_slider_get_value(slider) },
+        old.upper
+    );
+    app.hold = false;
+    ui.update(&app).unwrap();
+    let keyboard = fixture::class(fixture::screen(), &raw const fixture::lv_keyboard_class);
+    let field = fixture::class(fixture::screen(), &raw const fixture::lv_textarea_class);
+    assert_eq!(
+        unsafe { rs_lvgl_sys::lv_keyboard_get_textarea(keyboard) },
+        field
+    );
+    for (key_text, expected) in [
+        (b"a".as_slice(), "128"),
+        (b"1#".as_slice(), "128"),
+        (b"1".as_slice(), "1281"),
+    ] {
+        let id = (0..100)
+            .find(|id| unsafe {
+                let p = rs_lvgl_sys::lv_buttonmatrix_get_button_text(keyboard, *id);
+                !p.is_null() && std::ffi::CStr::from_ptr(p).to_bytes() == key_text
+            })
+            .expect("native keyboard key");
+        unsafe {
+            rs_lvgl_sys::lv_buttonmatrix_set_selected_button(keyboard, id);
+            rs_lvgl_sys::lv_obj_send_event(
+                keyboard,
+                rs_lvgl_sys::lv_event_code_t_LV_EVENT_VALUE_CHANGED,
+                core::ptr::null_mut(),
+            );
+        }
+        ui.drain(&mut app, 128).unwrap();
+        assert_eq!(app.depth_text, expected);
+    }
+    click(&mut pointer, &mut ui, &mut app, "Restore text");
+    assert_eq!(app.depth_text, "A中é");
+    assert_eq!(
+        unsafe { std::ffi::CStr::from_ptr(rs_lvgl_sys::lv_textarea_get_text(field)) }
+            .to_str()
+            .unwrap(),
+        app.depth_text
+    );
+    for dark in [false, true] {
+        app.dark = dark;
+        apply_theme(&mut ui, &app);
+        ui.update(&app).unwrap();
+        fixture::settle(&mut ui);
+        // Both knobs participate in the same native knob-part mask. Exercise
+        // the full domain, then restore canonical endpoints after the helper.
+        // SAFETY: this live range slider remains owned by the mounted UI;
+        // the valid endpoint writes retain no Rust data and use no animation.
+        unsafe {
+            rs_lvgl_sys::lv_slider_set_value(slider, 100, false);
+            rs_lvgl_sys::lv_slider_set_start_value(slider, 0, false);
+        }
+        fixture::slider_knob_unclipped(slider, if dark { "depth-dark" } else { "depth-light" });
+        ui.update(&app).unwrap();
+        fixture::capture(
+            fixture::screen(),
+            if dark { "depth-dark" } else { "depth-light" },
+        );
+    }
+    ui.unmount();
+    drop(ui);
+    drop(pointer);
+    unsafe {
+        display.delete();
+    }
+}
+
+#[test]
+fn advanced_chart_input_switches_forms_cursors_and_bounded_history() {
+    let _lock = fixture::LOCK.lock().unwrap();
+    let (display, mut app, mut ui) = mount();
+    let mut pointer = fixture::Pointer::new();
+    page(&mut pointer, &mut ui, &mut app, 10);
+    for dark in [false, true] {
+        app.dark = dark;
+        apply_theme(&mut ui, &app);
+        ui.update(&app).unwrap();
+        fixture::settle(&mut ui);
+        for kind in 0..5 {
+            assert_eq!(app.chart_form, kind);
+            let plot = fixture::class(fixture::screen(), coverage::expected(10)[0].1);
+            let previous = app.chart_point;
+            pointer.click(plot);
+            ui.drain(&mut app, 128).unwrap();
+            assert_eq!(app.chart_point, (previous + 1) % 12);
+            fixture::settle(&mut ui);
+            assert_in_display(plot, "advanced plot");
+            assert_inside_card(plot);
+            let history = fixture::find(fixture::screen(), &|obj| unsafe {
+                obj != plot && rs_lvgl_sys::lv_obj_check_type(obj, coverage::expected(10)[0].1)
+            }).expect("history chart");
+            assert_inside_card(history);
+            fixture::capture(
+                fixture::screen(),
+                &format!(
+                    "studio-chart-{}-{kind}",
+                    if dark { "dark" } else { "light" }
+                ),
+            );
+            click(&mut pointer, &mut ui, &mut app, "Next form");
+        }
+    }
+    let before = app.chart_history.next_sequence();
+    click(&mut pointer, &mut ui, &mut app, "Add sample");
+    assert_eq!(app.chart_history.next_sequence(), before + 1);
+    click(&mut pointer, &mut ui, &mut app, "Burst 16");
+    assert_eq!(app.chart_history.next_sequence(), before + 17);
+    assert_eq!(app.chart_history.len(), 12);
+    let toggle = fixture::class(fixture::screen(), coverage::expected(10)[1].1);
+    pointer.click(toggle);
+    ui.drain(&mut app, 128).unwrap();
+    assert!(app.chart_circular);
+    click(&mut pointer, &mut ui, &mut app, "Clear history");
+    assert!(app.chart_history.is_empty());
+    assert_eq!(app.chart_history.epoch(), 2);
+    click(&mut pointer, &mut ui, &mut app, "Add sample");
+    assert_eq!(app.chart_history.len(), 1);
+    ui.unmount();
+    drop(ui);
+    drop(pointer);
+    unsafe {
+        display.delete();
+    }
+}
+
+#[test]
+fn custom_gauge_receives_action_props_without_replacement_or_tick() {
+    let _lock = fixture::LOCK.lock().unwrap();
+    let (display, mut app, mut ui) = mount();
+    let mut pointer = fixture::Pointer::new();
+    page(&mut pointer, &mut ui, &mut app, 6);
+    let gauge = fixture::class(fixture::screen(), coverage::expected(6)[2].1);
+    assert_inside_card(gauge);
+    let value = app.value;
+    click(&mut pointer, &mut ui, &mut app, "+5");
+    assert_eq!(app.value, value + 5);
+    let current = fixture::class(fixture::screen(), coverage::expected(6)[2].1);
+    assert_eq!(gauge, current, "properties preserve the mounted instance");
+    // SAFETY: the native custom root is an arc alive throughout the assertion.
+    assert_eq!(unsafe { rs_lvgl_sys::lv_arc_get_value(gauge) }, app.value);
+    ui.tick(17).unwrap();
+    assert_eq!(unsafe { rs_lvgl_sys::lv_arc_get_value(gauge) }, app.value, "tick changes no model value");
+    click(&mut pointer, &mut ui, &mut app, "-5");
+    assert_eq!(app.value, value);
+    assert_eq!(unsafe { rs_lvgl_sys::lv_arc_get_value(gauge) }, value);
+    fixture::settle(&mut ui);
+    ui.unmount();
+    drop(ui); drop(pointer);
+    unsafe { display.delete(); }
 }

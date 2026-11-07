@@ -66,6 +66,10 @@ jobs:
         run: cargo generate-lockfile
       - name: Test all UI capabilities
         run: cargo test -p rs_lvgl_ui --locked --features showcase,font-cjk-14,rust_timer -- --test-threads=1
+      - name: Test control, chart and custom property contracts
+        run: cargo test -p rs_lvgl_ui --locked --features showcase,diagnostics,strict-properties,update-metrics --test control_depth --test chart_depth --test custom_props -- --test-threads=1
+      - name: Test diagnostics without strict rejection
+        run: cargo test -p rs_lvgl_ui --locked --features diagnostics -- --test-threads=1
       - name: Test diagnostics and strict property checking
         run: cargo test -p rs_lvgl_ui --locked --features diagnostics,strict-properties -- --test-threads=1
       - name: Test actual views and native SDL journeys
@@ -78,7 +82,7 @@ jobs:
           cargo check -p rs_lvgl_ui --locked --no-default-features --lib
           cargo check -p rs_lvgl_ui --locked --no-default-features --features alloc,no-autoinit --lib
           cargo check -p rs_lvgl_ui --locked --no-default-features --features alloc,diagnostics,strict-properties --lib
-          for capability in input-keypad input-gridnav widget-canvas widget-qrcode widget-barcode widget-gif widget-lottie widget-ime-pinyin font-cjk-14 font-cjk-16; do
+          for capability in widget-slider widget-textarea widget-chart input-keypad input-gridnav widget-canvas widget-qrcode widget-barcode widget-gif widget-lottie widget-ime-pinyin font-cjk-14 font-cjk-16; do
             cargo check -p rs_lvgl_ui --locked --no-default-features --features "alloc,$capability" --lib
           done
       - name: Check the public view API
@@ -121,6 +125,8 @@ jobs:
         run: python3 scripts/check-layout-config.py --locked --artifacts target/layout-config-audit
       - name: Verify installed skills and downstream examples
         run: python3 scripts/check-skills.py --locked --artifacts target/skill-audit
+      - name: Verify unpacked UI packages and native consumer
+        run: python3 scripts/check-ui-package.py --locked --artifacts target/ui-package-audit
       - name: Keep consumer diagnostics
         if: always()
         uses: actions/upload-artifact@v7
@@ -133,6 +139,8 @@ jobs:
             target/layout-config-audit/*.json
             target/skill-audit/*.log
             target/skill-audit/*.json
+            target/ui-package-audit/*.log
+            target/ui-package-audit/*.json
           if-no-files-found: warn
           retention-days: 7
 
@@ -155,6 +163,10 @@ jobs:
         run: |
           python3 scripts/check-ui-costs.py --locked --artifacts target/update-costs/owned
           python3 scripts/check-ui-costs.py --locked --static-text --artifacts target/update-costs/static
+      - name: Verify every representative workload and history case
+        run: |
+          python3 scripts/check-ui-workloads.py --locked --correctness-only --artifacts target/workload-audit
+          python3 scripts/check-ui-history.py --locked --correctness-only --artifacts target/history-audit
       - name: Keep heap diagnostics
         if: always()
         uses: actions/upload-artifact@v7
@@ -167,5 +179,9 @@ jobs:
             target/update-costs/owned/*.json
             target/update-costs/static/*.log
             target/update-costs/static/*.json
+            target/workload-audit/*.log
+            target/workload-audit/*.json
+            target/history-audit/*.log
+            target/history-audit/*.json
           if-no-files-found: warn
           retention-days: 7

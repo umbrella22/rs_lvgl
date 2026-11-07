@@ -81,12 +81,22 @@ pub(super) fn expected(page: usize) -> Vec<(&'static str, *const lv_obj_class_t)
         6 => vec![
             ("canvas", &raw const lv_canvas_class),
             ("arclabel", &raw const lv_arclabel_class),
+            ("custom arc", &raw const lv_arc_class),
         ],
         7 => vec![("msgbox", &raw const lv_msgbox_class)],
         8 => vec![
             ("list", &raw const lv_list_class),
             ("menu", &raw const lv_menu_class),
             ("win", &raw const lv_win_class),
+        ],
+        9 => vec![
+            ("slider", &raw const lv_slider_class),
+            ("textarea", &raw const lv_textarea_class),
+            ("keyboard", &raw const lv_keyboard_class),
+        ],
+        10 => vec![
+            ("chart", &raw const lv_chart_class),
+            ("switch", &raw const lv_switch_class),
         ],
         _ => vec![],
     }

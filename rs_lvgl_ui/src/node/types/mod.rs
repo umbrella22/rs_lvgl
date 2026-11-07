@@ -7,8 +7,8 @@ mod layout;
 mod style;
 
 pub use controls::{
-    table_cell, CalendarDate, ChartSeries, ChartType, RollerMode, ScrollDirection, Span, TableCell,
-    TextOverflow, Tile, ANIMATED_IMAGE_MAX_FRAMES, ANIMATION_REPEAT_INFINITE, SPINBOX_MAX_DIGITS,
+    table_cell, CalendarDate, RollerMode, ScrollDirection, Span, TableCell, TextOverflow, Tile,
+    ANIMATED_IMAGE_MAX_FRAMES, ANIMATION_REPEAT_INFINITE, SPINBOX_MAX_DIGITS,
     TABLE_MAX_CELLS_PER_AXIS,
 };
 pub use font::Font;

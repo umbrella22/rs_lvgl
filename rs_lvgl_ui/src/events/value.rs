@@ -41,6 +41,8 @@ pub(crate) enum ValueSource {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) enum ControlValue {
     Number(i32),
+    #[cfg(feature = "widget-slider")]
+    Range(crate::SliderRange),
     Toggle(bool),
     Selection(Option<u32>),
     Cell(Option<crate::TableCell>),
@@ -51,6 +53,8 @@ impl ControlValue {
     pub(crate) fn legacy(self) -> Option<i32> {
         Some(match self {
             Self::Number(value) => value,
+            #[cfg(feature = "widget-slider")]
+            Self::Range(_) => return None,
             Self::Toggle(value) => i32::from(value),
             Self::Selection(Some(index)) => i32::try_from(index).ok()?,
             Self::Selection(None) | Self::Cell(None) | Self::Date(None) => -1,
@@ -93,7 +97,22 @@ pub(super) fn read_value(
         Some(match source {
             ValueSource::None => ControlValue::Number(0),
             #[cfg(feature = "widget-slider")]
-            ValueSource::Slider => ControlValue::Number(rs_lvgl_sys::lv_slider_get_value(obj)),
+            ValueSource::Slider => {
+                if rs_lvgl_sys::lv_slider_get_mode(obj)
+                    == rs_lvgl_sys::lv_slider_mode_t_LV_SLIDER_MODE_RANGE
+                {
+                    let range = crate::SliderRange::new(
+                        rs_lvgl_sys::lv_slider_get_left_value(obj),
+                        rs_lvgl_sys::lv_slider_get_value(obj),
+                    );
+                    if range.lower > range.upper {
+                        return None;
+                    }
+                    ControlValue::Range(range)
+                } else {
+                    ControlValue::Number(rs_lvgl_sys::lv_slider_get_value(obj))
+                }
+            }
             #[cfg(feature = "widget-bar")]
             ValueSource::ProgressBar => ControlValue::Number(rs_lvgl_sys::lv_bar_get_value(obj)),
             #[cfg(feature = "widget-switch")]

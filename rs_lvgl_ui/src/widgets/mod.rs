@@ -1,5 +1,7 @@
 //! Native widget adapters: projection, creation, properties, layout and styling.
 
+#[cfg(feature = "widget-chart")]
+mod chart;
 mod create;
 mod kind;
 mod layout;
@@ -12,7 +14,7 @@ mod style;
 pub(crate) use create::{create, event_inner_target, remove_main_theme};
 pub use kind::KindTag;
 pub(crate) use kind::{tag, value_source};
-pub(crate) use layout::{apply_grid_cell, grid_descriptors, set_grid_descriptors};
+pub(crate) use layout::{apply_flex_flow, apply_grid_cell, grid_descriptors, set_grid_descriptors};
 #[cfg(feature = "widget-tabview")]
 pub(crate) use pages::{set_tabview_active, set_tabview_titles, tabview_pages};
 #[cfg(feature = "widget-tileview")]

@@ -14,6 +14,11 @@ use rs_lvgl_sys::lv_obj_t;
 // them stable while the vectors grow.
 #[allow(clippy::vec_box)]
 pub(crate) enum Retained {
+    #[cfg(feature = "widget-chart")]
+    Chart(Box<super::chart::ChartState>),
+    /// Stable input filter referenced by the textarea's static native setter.
+    #[cfg(feature = "widget-textarea")]
+    TextInput { accepted: Option<CString> },
     #[cfg(feature = "widget-image")]
     LoadedImage(#[allow(dead_code)] crate::ImageResource),
     #[cfg(feature = "widget-gif")]

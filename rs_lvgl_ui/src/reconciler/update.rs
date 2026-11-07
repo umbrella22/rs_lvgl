@@ -43,7 +43,7 @@ fn update_inner<M: Clone + 'static>(
     let replace = node.key != mounted.key
         || tag != mounted.tag
         || match (&mounted.custom, &node.kind) {
-            (Some(custom), WidgetKind::Custom(entry)) => !custom.entry.same_variant(entry),
+            (Some(custom), WidgetKind::Custom(entry)) => !custom.entry.same_implementation(entry),
             (None, WidgetKind::Custom(_)) => true,
             _ => false,
         }
@@ -60,6 +60,7 @@ fn update_inner<M: Clone + 'static>(
         #[cfg(feature = "widget-image")]
         image_resource,
         style,
+        flex_flow,
         part_styles,
         keyboard_id,
         grid_cell,
@@ -78,9 +79,9 @@ fn update_inner<M: Clone + 'static>(
         grid_navigation,
         ..
     } = node;
-    // A mounted lifecycle widget keeps its instance; the new descriptor's
-    // factory is dropped here.
-    let (mut props, _entry) = widgets::into_props(kind);
+    // A matching custom implementation keeps its mounted instance; the incoming
+    // factory is dropped when its properties transfer through safe type erasure.
+    let (mut props, entry) = widgets::into_props(kind);
     widgets::retain_static_text(&mut props, static_text);
 
     sync_handlers(&mut mounted.slot, mounted.obj, tag, handlers, queue)?;
@@ -161,6 +162,11 @@ fn update_inner<M: Clone + 'static>(
         return Ok(());
     }
 
+    if let (Some(custom), Some(incoming)) = (mounted.custom.as_mut(), entry) {
+        widgets::suppress(slot, || {
+            custom.entry.apply_from(&mut custom.object, incoming)
+        })?;
+    }
     widgets::apply_props(
         mounted.obj,
         mounted.parts,
@@ -175,6 +181,7 @@ fn update_inner<M: Clone + 'static>(
     }
 
     update_styles(mounted, style, part_styles, font_resource);
+    widgets::apply_flex_flow(mounted.obj, tag, flex_flow);
     crate::animation::sync(mounted.obj, &mounted.animations, &animations)?;
     mounted.animations = animations;
     let grid_changed = match (&mounted.props, &props) {

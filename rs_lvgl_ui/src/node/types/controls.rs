@@ -1,7 +1,7 @@
 //! Widget-specific values for controls, data and rich text.
 
 use super::{Color, Font};
-use alloc::{string::String, vec::Vec};
+use alloc::string::String;
 
 /// Label overflow behavior.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -205,39 +205,3 @@ pub const ANIMATION_REPEAT_INFINITE: u32 = rs_lvgl_sys::LV_ANIM_REPEAT_INFINITE;
 /// Largest number of frames an animated image accepts (LVGL stores the
 /// frame count in an `int8_t`).
 pub const ANIMATED_IMAGE_MAX_FRAMES: usize = 127;
-
-/// Chart presentation type.
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub enum ChartType {
-    #[default]
-    Line,
-    Bar,
-    Stacked,
-}
-
-#[cfg(feature = "widget-chart")]
-impl ChartType {
-    pub(crate) fn to_raw(self) -> rs_lvgl_sys::lv_chart_type_t {
-        match self {
-            ChartType::Line => rs_lvgl_sys::lv_chart_type_t_LV_CHART_TYPE_LINE,
-            ChartType::Bar => rs_lvgl_sys::lv_chart_type_t_LV_CHART_TYPE_BAR,
-            ChartType::Stacked => rs_lvgl_sys::lv_chart_type_t_LV_CHART_TYPE_STACKED,
-        }
-    }
-}
-
-/// One chart series: a color and one value per point.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ChartSeries {
-    pub color: Color,
-    pub values: Vec<i32>,
-}
-
-impl ChartSeries {
-    pub fn new(color: Color, values: impl Into<Vec<i32>>) -> Self {
-        Self {
-            color,
-            values: values.into(),
-        }
-    }
-}

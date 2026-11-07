@@ -16,7 +16,7 @@ import time
 import zlib
 
 ROOT = Path(__file__).resolve().parents[1]
-NAMES = ["overview", "controls", "input", "data", "layout", "media", "canvas", "composition", "native"]
+NAMES = ["overview", "controls", "input", "data", "layout", "media", "canvas", "composition", "native", "depth", "charts"]
 
 
 def png_from_ppm(path):
@@ -63,7 +63,8 @@ def main():
     if result.returncode:
         raise RuntimeError(f"native studio tests failed ({result.returncode}): {log}\n{log.read_text()[-4000:]}")
     images = {}
-    for key, name in [(str(i), name) for i, name in enumerate(NAMES)] + [("dark", "dark")]:
+    for key, name in ([(str(i), name) for i, name in enumerate(NAMES)] + [("dark", "dark")]
+                      + [(f"chart-{palette}-{kind}",f"chart-{palette}-{kind}") for palette in ("light","dark") for kind in range(5)]):
         data = png_from_ppm(artifacts / "native" / f"studio-{key}.ppm")
         path = output / f"studio-{name}.png"
         path.write_bytes(data)

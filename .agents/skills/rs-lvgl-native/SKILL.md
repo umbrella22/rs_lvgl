@@ -1,6 +1,6 @@
 ---
 name: rs-lvgl-native
-description: Integrate or diagnose rs_lvgl_sys 0.6.0 with application lv_conf.h, custom C sources and fonts, feature projection and native rebuilds. Use for this vendored LVGL 9.6 provider, not as an external prebuilt LVGL or lightvgl-sys integration recipe.
+description: Integrate or diagnose rs_lvgl_sys 0.7.0 with application lv_conf.h, custom C sources and fonts, feature projection and native rebuilds. Use for this vendored LVGL 9.6 provider, not as an external prebuilt LVGL or lightvgl-sys integration recipe.
 ---
 
 # LVGL Rust Native Integration
@@ -8,7 +8,7 @@ description: Integrate or diagnose rs_lvgl_sys 0.6.0 with application lv_conf.h,
 ## Identify the provider
 
 Locate the resolved `rs_lvgl_sys` source and Cargo feature graph. This skill targets
-the rs_lvgl 0.6.0 vendored LVGL 9.6 provider in `umbrella22/rs_lvgl`; other crates with
+the rs_lvgl 0.7.0 vendored LVGL 9.6 provider in `umbrella22/rs_lvgl`; other crates with
 similar names have different configuration and ABI contracts. The source inputs
 are `rs_lvgl_sys/build.rs`, `build_support/inputs.rs`, `vendor/include-9.6/lv_conf.h`
 and `shims/`. Generated `bindings.rs` belongs to `OUT_DIR` and is not an edit target.
@@ -59,7 +59,7 @@ monitor zeros do not establish leak freedom.
 For host diagnostics, download the matching CLI ZIP or Inspector from [EmbedScope Releases](https://github.com/umbrella22/EmbedScope/releases/latest). Add the CLI directory to PATH. Cargo installation is an alternative when Rust is already installed.
 
 Use default `escope-lvgl` with an application `TreeSource` to expose the application's
-rs_lvgl 0.6.0 objects without linking another LVGL provider. Before enabling a
+rs_lvgl 0.7.0 objects without linking another LVGL provider. Before enabling a
 native SDK adapter, inspect its resolved Rust dependencies and unify its provider
 and source with the application's. Matching version text does not unify path and
 registry sources. Release diagnostic resources before UI-thread teardown.

@@ -34,14 +34,14 @@ pub use controls::pinyin_keyboard;
 pub use controls::progress_bar;
 #[cfg(feature = "widget-roller")]
 pub use controls::roller;
-#[cfg(feature = "widget-slider")]
-pub use controls::slider;
 #[cfg(feature = "widget-spinbox")]
 pub use controls::spinbox;
 #[cfg(feature = "widget-switch")]
 pub use controls::switch;
 #[cfg(feature = "widget-textarea")]
 pub use controls::textarea;
+#[cfg(feature = "widget-slider")]
+pub use controls::{range_slider, slider};
 pub use custom::custom;
 pub use custom::raw;
 #[cfg(feature = "widget-arclabel")]

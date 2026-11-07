@@ -1,13 +1,14 @@
 # rs_lvgl_ui
 
-Version 0.6.0 uses unified UI names, explicit transform units, independent flex
-alignment and semantic widget parts. Follow the
-[migration guide](../docs/ui-api-migration.md) when upgrading from 0.5.0.
+Version 0.7.0 adds controlled range/text editing, chart descriptors/history and
+custom properties with breaking chart/custom signatures. Follow the
+[migration guide](../docs/ui-api-migration.md) when upgrading from 0.6.0 and the
+[capability guide](../docs/ui-capability-depth.md) for the new APIs.
 
-The [browser studio](https://umbrella22.github.io/rs_lvgl_website/en/studio.html) runs all nine component categories in WebAssembly. It shares these Rust views with the desktop studio; see [build instructions](https://github.com/umbrella22/rs_lvgl_website).
+The [browser studio](https://umbrella22.github.io/rs_lvgl_website/en/studio.html) is built from a separately pinned website checkout. The native Studio in this source has eleven pages; deployment of its new depth pages to the website is separate. See the [site build instructions](https://github.com/umbrella22/rs_lvgl_website).
 
 
-A declarative Rust UI layer for LVGL 9.6. Version 0.6.0 provides lazy composition,
+A declarative Rust UI layer for LVGL 9.6. Version 0.7.0 provides lazy composition,
 semantic events, typed construction and explicit form bindings. See the
 [composition guide](../docs/ui-composition.md) for conversion boundaries,
 controlled-input behavior and runnable examples.
@@ -52,7 +53,7 @@ native configuration limits.
 | `leak-check` | no | Isolated host lifecycle harness; run through `scripts/check-ui-leaks.py` with its BUILTIN allocator configuration. |
 | `diagnostics` | no | Structured node paths, stages and property identifiers through an optional sink. |
 | `strict-properties` | no | Reject dedicated modifiers applied to the wrong widget kind, before native mutation. |
-| `update-metrics` | no | Native label-text setter counter for update experiments. Other native setters are not counted. |
+| `update-metrics` | no | Label-text writes, chart sample appends/full writes and full-sync counters. Draws, allocator calls and other setters are not counted. |
 | `cost-static-text` | no | Acceptance-only static-text comparison mode; includes `update-metrics`. |
 | `no-autoinit` | no | Forwards `lvgl/unsafe_no_autoinit`; target platforms call `rs_lvgl::init()` themselves. |
 | `components` | yes | The `rs_lvgl_ui::components` module. Uses only the core widgets. |
@@ -76,7 +77,7 @@ widgets are not compiled at all. The defaults keep the full set.
 ```toml
 [dependencies]
 [dependencies.rs_lvgl_ui]
-version = "0.6.0"
+version = "0.7.0"
 default-features = false
 features = [
     "alloc", "components", "widget-slider", "widget-switch", "font-montserrat-20",
@@ -116,7 +117,7 @@ that are shared by several widgets; the full set keeps every lint.
 
 ## Quick start
 
-This example also works with the published 0.6.0 packages.
+This example also works with the published 0.7.0 packages.
 
 Use ordinary function constructors, `App::Action` and flat style modifiers.
 The [style and action guide](../docs/ui-styles.md) defines initialization,
@@ -223,7 +224,7 @@ Child order and identity are separate. Stable `Key::Named` or `Key::Id` values
 identify dynamic children across inserts, removals and reorders. An array index
 used as a key follows the position, so it does not identify a reordered item.
 
-Development source also supports `.child_if(show, || view)` for lazy optional
+Use `.child_if(show, || view)` for lazy optional
 children. Use `typed::...` to retain widget-specific compile-time checks through
 styles and map; single children accept typed nodes and mixed arrays convert each
 item with `.into_view()`. See [composition and forms](../docs/ui-composition.md).
@@ -283,7 +284,7 @@ item with `.into_view()`. See [composition and forms](../docs/ui-composition.md)
   events. `on_bubbled_event` explicitly observes descendant events.
 - Handlers do not change LVGL flags. Use `View::clickable(bool)` and
   `View::scrollable(bool)` to override the class defaults.
-- Interactive values are controlled: slider, bar, arc, switch, checkbox,
+- Interactive values are controlled: slider, range endpoints, bar, arc, switch, checkbox,
   dropdown, roller, spinbox, textarea text and the active tab are compared
   with the native widget on every render, so the native widget always shows
   the value from `view`. A user change that the application ignores or clamps
@@ -311,6 +312,8 @@ item with `.into_view()`. See [composition and forms](../docs/ui-composition.md)
 - `Style::floating(true)` takes a widget out of its parent's layout and
   scrolling; `Style::align` and `Style::offset(x, y)` then place it relative
   to the parent. Use it for badges, floating action buttons and backdrops.
+- `flex_wrap(bool)` and `flex_reverse(bool)` independently select native Flex
+  wrapping and reverse placement without changing child keys or descriptor order.
 - `justify_content(FlexAlign)` places row/column children along the flow.
   `align_items(ItemAlign)` places children within their line, while
   `align_content(FlexAlign)` places lines within the container, including a single
@@ -344,7 +347,7 @@ item with `.into_view()`. See [composition and forms](../docs/ui-composition.md)
   `ImageSource::from_raw` descriptor path remain available; the raw variant
   wraps an opaque `RawImage`, so it can only be built through `from_raw`.
 - Widgets: `container`, `row`, `column`, `grid`, `tabview`, `label`, `button`,
-  `slider`, `progress_bar`, `switch`, `image`, `checkbox`, `textarea`, `dropdown`,
+  `slider`, `range_slider`, `progress_bar`, `switch`, `image`, `checkbox`, `textarea`, `dropdown`,
   `arc`, `scale`, `chart`, `keyboard`, `roller`, `spinbox`, `spinner`, `led`,
   `line`, `button_matrix`, `table`, `tileview`, `message_box`, `calendar`, `spans`,
   `image_button`, `animated_image` and `arc_label`, plus `raw`/`custom` escape
@@ -702,59 +705,58 @@ implementation. The factory is `unsafe`; it must return a live direct child of
 the supplied parent that LVGL deletes with the mounted subtree. A raw node has
 no update hook and is never visited by `Ui::tick`.
 
+## Control and chart depth
+
+Use `range_slider`/`SliderRange`, textarea editing modifiers and `chart(ChartSpec)`
+for the extended native paths. Charts support stable series, independent axes,
+five presentations, cursors and immutable bounded history. The
+[capability guide](../docs/ui-capability-depth.md) specifies validation, native
+copying, history continuity, recovery, text units and construction costs.
+
 ## Custom widget lifecycle
 
-`custom` mounts a widget that owns one native subtree and has a lifecycle:
+`custom(widget, props)` mounts one native subtree. The `CustomWidget` associated
+`Props` carries current application inputs; it is separate from animation time.
 
 ```rust
 pub trait CustomWidget: 'static {
-    fn create(&mut self, parent: &mut Obj<'_>) -> Result<CustomObject, UiError>;
-    fn update(&mut self, object: &mut CustomObject, elapsed_ms: u32) -> Result<(), UiError>;
+    type Props: 'static;
+    fn validate(props: &Self::Props) -> Result<(), UiError>
+        where Self: Sized { Ok(()) }
+    fn create(&mut self, parent: &mut Obj<'_>, props: &Self::Props)
+        -> Result<CustomObject, UiError>;
+    fn apply_props(&mut self, object: &mut CustomObject, props: &Self::Props)
+        -> Result<(), UiError>;
+    fn tick(&mut self, object: &mut CustomObject, elapsed_ms: u32)
+        -> Result<(), UiError> { Ok(()) }
     fn delete(&mut self, object: &mut CustomObject);
-}
-
-pub fn custom<M>(widget: impl CustomWidget) -> View<M>;
-
-impl<M: Clone + 'static> Ui<M> {
-    pub fn tick(&mut self, elapsed_ms: u32) -> Result<(), UiError>;
 }
 ```
 
-`CustomObject` is an opaque handle to the mounted native object. `container()` returns
-a lifetime-bound `Obj` view, `raw()` exposes the pointer for native calls, and
-`invalidate()` marks the subtree dirty and counts the invalidation. A no-op
-frame returns from `update` without invalidating; LVGL then keeps the previous
-frame.
+Validation is pure and precedes native mutation. Mount calls `create` and then
+`apply_props`. The same key and concrete widget type retain the mounted instance
+and receive every incoming Props value, including equal values. The unused new
+widget instance drops. Key or concrete type changes replace the subtree.
+`Ui::tick` invokes only `tick`; it does not rebuild views or apply properties.
+A tick error stops the walk with the tree mounted.
 
-Lifecycle rules:
+`CustomObject::obj()` returns a hook-scoped borrowed Obj, `raw()` exposes its
+native pointer, and `invalidate()` requests drawing. Hooks run on one UI thread,
+mutate only their subtree and must not delete its root or reenter Ui. Native
+callbacks enqueue messages through explicit node handlers and must not unwind.
+A create error must clean up its own partial objects and has no delete hook.
 
-- `create` runs once when the node mounts. It must return a handle built with
-  the unsafe `CustomObject::new` for a direct child of the supplied parent; the
-  reconciler re-checks the parent and fails the mount with `InvalidProperty`
-  otherwise. The handle must not be duplicated or retained: the native object
-  is deleted right after `delete` returns.
-- `Ui::tick` walks the mounted tree once, pre-order, and calls `update` for each
-  custom widget, skipping subtrees without lifecycle widgets. It does not call `App::view`, reconcile descriptors or process
-  messages. A tick error stops the walk; the tree stays mounted.
-- `delete` runs exactly once before the native object is deleted: on key or kind
-  change, subtree removal, reconcile rollback and `Ui::unmount`.
-- All three hooks run on the UI task inside the calling `Ui` method. They may
-  mutate only their own native subtree. Reentrant `tick`, `mount`, `drain`,
-  `update` and `post` calls return `UiError::Reentrant`; a nested
-  `timer_handler` returns `0`.
-- The mounted tree retains the widget instance. A new `custom` value from
-  a later `App::view` is used only when the node key or custom variant changes;
-  otherwise it is dropped. Keep shared application state in an `Rc`/`RefCell`
-  that both the widget and the app can see, or change the key to swap
-  implementations.
-- Messages from native callbacks enter through the node's explicit handler
-  (`on_event`, `on_click`, ...), which the reconciler registers on the custom
-  root object. Widgets never reconcile children or mutate siblings.
+Properties are separately boxed at stable addresses. A successful property apply
+must retire native references to previous properties. A partial failure retains
+both old and incoming properties until deletion. `delete` runs exactly once for
+successful creation while the native root is live; widget and backing data remain
+live through native deletion callbacks and drop afterwards. This also applies to
+initial apply failure, later-sibling failure and unmount. Release external
+registrations in the hook without releasing backing still referenced by C.
 
-The trait is not generic over the message type. `WidgetKind` is not generic, so
-`CustomWidget<M>` would have forced a generic widget descriptor across the
-crate. The explicit node handler provides the same message path without that
-refactor.
+See the [custom property contract](../docs/ui-capability-depth.md#custom-properties-animation-and-deletion)
+and [runnable depth recipe](../.agents/skills/rs-lvgl-ui/references/capability-depth.rs).
+There is no old one-argument constructor or time-based `update` hook.
 
 ## API contracts
 
@@ -896,7 +898,7 @@ lists widget coverage and interactions.
 
 Run `cargo run -p rs_lvgl_ui --example studio --features showcase` for the complete
 component studio. [Coverage and rendering](https://github.com/umbrella22/rs_lvgl/blob/main/docs/component-studio.md) lists its
-nine categories and native acceptance checks.
+eleven native pages and their acceptance checks.
 
 ## Source organization
 

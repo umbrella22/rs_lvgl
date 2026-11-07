@@ -291,6 +291,7 @@ def main():
             '[features]\nslider=["rs_lvgl_ui/widget-slider"]\n'
             'controls=["rs_lvgl_ui/widget-slider","rs_lvgl_ui/widget-switch","rs_lvgl_ui/widget-checkbox","rs_lvgl_ui/widget-textarea"]\n'
             'all-widgets=["rs_lvgl_ui/widgets-all"]\n'
+            'charts=["rs_lvgl_ui/widget-chart"]\n'
             'image=["rs_lvgl_ui/widget-image"]\n'
             'diagnostics=["rs_lvgl_ui/diagnostics"]\n'
             'strict=["rs_lvgl_ui/strict-properties"]\n')
@@ -314,9 +315,48 @@ def main():
               errors=("E0200",), symbols=("NativeObject",))
         check("external-unsafe-impl", BORROWED_NATIVE_OBJECT)
         check("core-no-std", CORE)
+        check("custom-props-no-std", (ROOT / "rs_lvgl_ui/tests/api/custom.rs").read_text())
+        check("custom-removed-tick-spelling", (ROOT / "rs_lvgl_ui/tests/api/custom.rs").read_text().replace("fn tick(", "fn update("), errors=("E0407",), symbols=("update", "CustomWidget"))
+        check("custom-props-required", (ROOT / "rs_lvgl_ui/tests/api/custom.rs").read_text().replace("type Props = GaugeProps;", ""), errors=("E0046",), symbols=("Props",))
+        check("custom-removed-one-argument", (ROOT / "rs_lvgl_ui/tests/api/custom.rs").read_text().replace("custom(Gauge, GaugeProps { value: 55 })", "custom(Gauge)"), errors=("E0061",), symbols=("custom",))
+        check("custom-wrong-props", (ROOT / "rs_lvgl_ui/tests/api/custom.rs").read_text().replace("custom(Gauge, GaugeProps { value: 55 })", "custom(Gauge, 55u8)"), errors=("E0308",), symbols=("GaugeProps",))
+        check("custom-no-parallel-api", '#![no_std]\nuse rs_lvgl_ui::{PropsWidget, custom_with_props};', errors=("E0432",), symbols=("PropsWidget", "custom_with_props"))
         check("typed-core-composition", TYPED_CORE)
+        check("chart-no-std", (ROOT / "rs_lvgl_ui/tests/api/chart.rs").read_text(), features=("charts",))
+        check("chart-removed-overload", '#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn bad(){let _=chart::<()>(ChartType::Line,0,100,[]);}',features=("charts",),errors=("E0061",),symbols=("chart",))
+        check("chart-removed-series-values", '#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn bad(s:ChartSeries){let _=s.values;}',features=("charts",),errors=("E0609",),symbols=("values",))
+        for name in ("chart", "ChartSpec", "ChartSeries", "ChartHistory", "ChartCursor"):
+            check("chart-disabled-"+name, '#![no_std]\nuse rs_lvgl_ui::'+name+';',errors=("E0432",),symbols=(name,))
+        check("chart-no-parallel-api", '#![no_std]\nuse rs_lvgl_ui::chart_with;',features=("charts",),errors=("E0432",),symbols=("chart_with",))
+        check("flex-flow-no-std", '#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn screen() -> View<()> { typed::row::<()>([]).flex_wrap(true).map(|()| ()).flex_reverse(true).into_view() }\npub fn column_flow() -> View<()> { column::<()>([]).flex_wrap(true).flex_reverse(false) }')
+        for name, expression in (("label", 'typed::label::<()>("x").flex_wrap(true)'),
+                                 ("grid", 'typed::grid::<()>([], [], []).flex_reverse(true)')):
+            check("flex-flow-reject-" + name, '#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn bad() { let _ = ' + expression + '; }',
+                  errors=("E0277",), symbols=("Supports", "Flex"))
+
         check("typed-controls-composition", TYPED_CONTROLS, features=("controls",))
         check("binding-no-std", BINDINGS, features=("controls",))
+        check("range-slider-no-std", '#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn screen() -> View<SliderRange> { typed::range_slider(-100, 100, binding(SliderRange::new(-20, 40), |range| range)).map(|range| range).on_range_changed(|range| range).into_view() }\npub fn root() -> View<()> { rs_lvgl_ui::range_slider(0, 100, rs_lvgl_ui::SliderRange { lower: 0, upper: 100 }) }', features=("controls",))
+        check("range-slider-mapper-type", '#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn bad() { let _ = typed::range_slider::<()>(0, 100, binding(SliderRange::new(20, 40), |_: i32| ())); }',
+              features=("controls",), errors=("E0631",), symbols=("RangeInput",))
+        check("range-slider-wrong-widget", '#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn bad() { let _ = typed::slider::<()>(0, 100, 20).on_range_changed(|_| ()); }',
+              features=("controls",), errors=("E0277",), symbols=("Supports", "Range"))
+        check("range-slider-numeric-handler", '#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn bad() { let _ = typed::range_slider::<()>(0, 100, SliderRange::new(20, 40)).on_value_changed(|_| ()); }',
+              features=("controls",), errors=("E0277",), symbols=("Supports", "Numeric"))
+        for name in ("range_slider", "SliderRange"):
+            check("range-disabled-" + name, '#![no_std]\nuse rs_lvgl_ui::' + name + ';',
+                  errors=("E0432",), symbols=(name,))
+
+        check("text-options-no-std", '#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn field() -> View<()> { typed::textarea("中é").accepted_chars("中é").input_max_length(core::num::NonZeroU32::new(2)).cursor_position(Some(1)).map(|()| ()).cursor_click_position(false).into_view() }', features=("controls",))
+        input_payload = '#![no_std]\nextern crate alloc;\nuse rs_lvgl_ui::{WidgetKind, TextareaInputOptions};\npub fn descriptor() -> WidgetKind { let input: TextareaInputOptions = Default::default(); WidgetKind::Textarea { text: alloc::string::String::new(), placeholder: alloc::string::String::new(), one_line: true, password: false, input: Some(alloc::boxed::Box::new(input)), } }'
+        check("textarea-input-payload", input_payload, features=("controls",))
+        check("textarea-removed-field-layout", input_payload.replace("input: Some(alloc::boxed::Box::new(input)),", ""),
+              features=("controls",), errors=("E0063",), symbols=("input", "Textarea"))
+        check("textarea-input-payload-disabled", '#![no_std]\nuse rs_lvgl_ui::TextareaInputOptions;',
+              errors=("E0432",), symbols=("TextareaInputOptions",))
+        check("text-options-wrong-widget", '#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn bad() { let _ = typed::slider::<()>(0, 100, 0).accepted_chars("abc"); }', features=("controls",), errors=("E0277",), symbols=("Supports", "Text"))
+        check("text-options-zero-explicit", '#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn bad() { let _ = typed::textarea::<()>("").input_max_length(Some(0)); }', features=("controls",), errors=("E0308",), symbols=("NonZero",))
+        check("text-options-disabled", '#![no_std]\nuse rs_lvgl_ui::prelude::*;\npub fn bad() { let _ = label::<()>("").accepted_chars("abc"); }', errors=("E0599",), symbols=("accepted_chars",))
         check("typed-optional-properties", TYPED_OPTIONAL, features=("all-widgets",))
         for name, expression, error, symbols in (
             ("numeric-value", 'typed::slider::<()>(0, 100, binding(false, |_: bool| ()))', "E0277", ("NumericInput",)),

@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.7.0 — 2026-11-07
+
+### Breaking changes
+
+- Replace chart construction with `chart(ChartSpec)` and stable `ChartSeries`
+  descriptors for axes, presentations, cursors and owned samples/history. Remove
+  the old constructor signature and series field layout without adapters.
+- Replace custom widgets with associated `Props`, pure validation and distinct
+  `apply_props`/`tick` hooks; use `custom(widget, props)`. Retain widget/Props backing
+  through native deletion, including partial failure.
+- Add an opaque optional input-settings field to the Textarea descriptor variant.
+  Manual enum consumers must migrate; builders configure the payload.
+
+### Added
+
+- Add independent Flex wrapping/reversal, controlled two-ended sliders and typed
+  range bindings/events. Add textarea input filters, optional character limits,
+  scalar cursor positions and pointer-placement controls while preserving complete
+  authoritative model assignment.
+- Add bounded immutable chart snapshots with overlap-verified appends and full
+  recovery after discontinuity/remount, five chart forms and independent axes.
+- Add native Control depth and Chart depth Studio pages, a property-driven custom
+  gauge, external API controls and unpacked-package native consumer validation.
+- Add representative host workload/history experiments and complete routine CI
+  correctness modes with corruption, clock and allocation controls.
+
+### Changed
+
+- Store optional textarea editing settings only in the Textarea payload. Comparable
+  host fixtures recover eight bytes per View descriptor without extra allocations.
+  This is a storage measurement, not a device frame-rate claim. Default features
+  and native provider inputs remain unchanged. All four crates advance to 0.7.0;
+  see the [migration guide](docs/ui-api-migration.md).
+
 ## 0.6.0 — 2026-11-06
 
 ### Breaking changes

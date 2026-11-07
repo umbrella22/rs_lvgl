@@ -15,6 +15,30 @@ pub(super) fn apply<M: Clone + 'static>(
 ) -> Result<(), UiError> {
     match (new, old) {
         #[cfg(feature = "widget-slider")]
+        (Props::RangeSlider { min, max, range }, old) => {
+            let domain_changed = !matches!(old, Some(Props::RangeSlider { min: a, max: b, .. }) if a == min && b == max);
+            // SAFETY: the shared Slider tag guarantees the native class. W0
+            // proves this order removes old endpoint dependencies. Preflight
+            // validated the complete canonical pair; no sorting/clamping occurs.
+            unsafe {
+                use rs_lvgl_sys as sys;
+                let raw = obj.as_ptr();
+                if domain_changed
+                    || sys::lv_slider_get_mode(raw) != sys::lv_slider_mode_t_LV_SLIDER_MODE_RANGE
+                    || sys::lv_slider_get_left_value(raw) != range.lower
+                    || sys::lv_slider_get_value(raw) != range.upper
+                {
+                    suppress(slot, || {
+                        sys::lv_slider_set_mode(raw, sys::lv_slider_mode_t_LV_SLIDER_MODE_NORMAL);
+                        sys::lv_slider_set_range(raw, *min, *max);
+                        sys::lv_slider_set_value(raw, range.upper, false);
+                        sys::lv_slider_set_mode(raw, sys::lv_slider_mode_t_LV_SLIDER_MODE_RANGE);
+                        sys::lv_slider_set_start_value(raw, range.lower, false);
+                    });
+                }
+            }
+        }
+        #[cfg(feature = "widget-slider")]
         (Props::Slider { min, max, value }, old) => {
             let range_changed = match old {
                 Some(Props::Slider {
@@ -26,6 +50,14 @@ pub(super) fn apply<M: Clone + 'static>(
             };
             // SAFETY: `obj` is a live slider object.
             unsafe {
+                if rs_lvgl_sys::lv_slider_get_mode(obj.as_ptr())
+                    != rs_lvgl_sys::lv_slider_mode_t_LV_SLIDER_MODE_NORMAL
+                {
+                    rs_lvgl_sys::lv_slider_set_mode(
+                        obj.as_ptr(),
+                        rs_lvgl_sys::lv_slider_mode_t_LV_SLIDER_MODE_NORMAL,
+                    );
+                }
                 if range_changed {
                     rs_lvgl_sys::lv_slider_set_range(obj.as_ptr(), *min, *max);
                 }

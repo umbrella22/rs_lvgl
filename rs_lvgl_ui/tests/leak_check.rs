@@ -251,10 +251,14 @@ fn loaded_font(dropped: Rc<Cell<bool>>) -> FontResource {
 
 struct FailingResourceWidget;
 impl CustomWidget for FailingResourceWidget {
-    fn create(&mut self, _: &mut Obj<'_>) -> Result<CustomObject, UiError> {
+    type Props = ();
+    fn apply_props(&mut self, _: &mut CustomObject, _: &()) -> Result<(), UiError> {
+        Ok(())
+    }
+    fn create(&mut self, _: &mut Obj<'_>, _: &Self::Props) -> Result<CustomObject, UiError> {
         Err(UiError::Allocation)
     }
-    fn update(&mut self, _: &mut CustomObject, _: u32) -> Result<(), UiError> {
+    fn tick(&mut self, _: &mut CustomObject, _: u32) -> Result<(), UiError> {
         Ok(())
     }
     fn delete(&mut self, _: &mut CustomObject) {
@@ -278,7 +282,7 @@ impl App for ResourcePage {
             image().key(Key::Id(1)),
             image().key(Key::Id(2)),
             if self.fail {
-                custom(FailingResourceWidget)
+                custom(FailingResourceWidget, ())
             } else {
                 label_static("valid")
             }
@@ -447,6 +451,9 @@ fn workload(case: &str) {
         }
         let mut ui = Ui::new(display, Theme::dark()).unwrap();
         match case {
+            "editing-depth" => editing_workload(&mut ui),
+            "chart-depth" => chart_workload(&mut ui),
+            "custom-props" => custom_props_workload(&mut ui),
             "loaded-resources" => resource_workload(&mut ui),
             "composition" => composition_workload(&mut ui),
             "callbacks" => {
@@ -639,6 +646,9 @@ fn both_heaps_balance_across_resource_lifecycles() {
         "rollback",
         "loaded-resources",
         "composition",
+        "editing-depth",
+        "chart-depth",
+        "custom-props",
     ] {
         child(case, None);
     }
@@ -690,4 +700,226 @@ fn leak_subprocess() {
     // SAFETY: every measured lifecycle returned without live objects or callbacks.
     unsafe { rs_lvgl::deinit() };
     println!("LEAK_BALANCED {case}: 64 cycles; baseline {before:?}");
+}
+
+struct EditingPage {
+    pass: usize,
+    fail: bool,
+}
+impl App for EditingPage {
+    type Action = String;
+    fn update(&mut self, _: String) {}
+    fn view(&self, _: &Theme) -> View<String> {
+        let mut field = typed::textarea(binding("A中é", |s: &str| s.to_owned()))
+            .password(self.pass % 2 == 0)
+            .cursor_position(Some(2));
+        if self.pass % 3 != 0 {
+            field = field.accepted_chars(format!("0123{}", self.pass));
+        }
+        column([
+            field.key(Key::Id(1)).into_view(),
+            range_slider(
+                -100,
+                100,
+                SliderRange::new(-(self.pass as i32), self.pass as i32),
+            )
+            .on_range_changed(|v| format!("{}..{}", v.lower, v.upper))
+            .key(Key::Id(2)),
+            if self.fail {
+                custom(FailingResourceWidget, ())
+            } else {
+                label_static("valid")
+            }
+            .key(Key::Id(3)),
+        ])
+    }
+}
+fn editing_workload(ui: &mut Ui<String>) {
+    let mut app = EditingPage {
+        pass: 1,
+        fail: false,
+    };
+    ui.mount(&app).unwrap();
+    for pass in 2..10 {
+        app.pass = pass;
+        ui.update(&app).unwrap();
+        drop(ui.snapshot().unwrap());
+    }
+    app.fail = true;
+    assert_eq!(ui.update(&app), Err(UiError::Allocation));
+    assert_eq!(
+        ui.stats().mounted_nodes,
+        0,
+        "later-sibling failure retires retained input buffers"
+    );
+    app.fail = false;
+    ui.mount(&app).unwrap();
+    ui.unmount();
+}
+
+struct HistoryPage {
+    history: ChartHistory,
+    mode: ChartUpdateMode,
+    fail: bool,
+}
+impl App for HistoryPage {
+    type Action = String;
+    fn update(&mut self, _: String) {}
+    fn view(&self, _: &Theme) -> View<String> {
+        let mut spec = ChartSpec::new(
+            ChartType::Line,
+            ChartAxes::new(ChartRange::new(0, 100), ChartRange::new(0, 100)),
+            vec![ChartSeries::new(
+                1,
+                Color::rgb(200, 80, 30),
+                ChartData::History(self.history.snapshot()),
+            )],
+        );
+        spec.update_mode = self.mode;
+        spec.cursors.push(ChartCursor::new(
+            1,
+            Color::rgb(30, 200, 80),
+            ChartCursorDirection::Both,
+            ChartCursorTarget::Point {
+                series: 1,
+                index: 0,
+            },
+        ));
+        column([
+            chart(spec).key(Key::Id(1)),
+            if self.fail {
+                unsafe { raw(|_| None) }
+            } else {
+                label("valid")
+            }
+            .key(Key::Id(2)),
+        ])
+    }
+}
+fn chart_workload(ui: &mut Ui<String>) {
+    use core::num::NonZeroU32;
+    let mut app = HistoryPage {
+        history: ChartHistory::new(1, NonZeroU32::new(8).unwrap(), ChartSampleKind::Y),
+        mode: ChartUpdateMode::Shift,
+        fail: false,
+    };
+    ui.mount(&app).unwrap();
+    for batch in [1, 4, 16] {
+        for value in 0..batch {
+            app.history.push_y(value).unwrap();
+        }
+        ui.update(&app).unwrap();
+        drop(ui.snapshot().unwrap());
+    }
+    app.mode = ChartUpdateMode::Circular;
+    app.history.set_capacity(NonZeroU32::new(4).unwrap());
+    ui.update(&app).unwrap();
+    app.fail = true;
+    assert_eq!(ui.update(&app), Err(UiError::Allocation));
+    assert_eq!(ui.stats().mounted_nodes, 0);
+    app.fail = false;
+    ui.mount(&app).unwrap();
+    ui.unmount();
+    // The dedicated BUILTIN heap cannot satisfy this native allocation. The
+    // empty canonical snapshot itself allocates no capacity-sized Rust buffer.
+    app.history = ChartHistory::new(
+        2,
+        NonZeroU32::new(1_000_000_000).unwrap(),
+        ChartSampleKind::Y,
+    );
+    assert_eq!(ui.mount(&app), Err(UiError::Allocation));
+    assert_eq!(ui.stats().mounted_nodes, 0);
+    app.history = ChartHistory::new(3, NonZeroU32::new(4).unwrap(), ChartSampleKind::Y);
+    app.history.push_y(20).unwrap();
+    ui.mount(&app).unwrap();
+    ui.unmount();
+}
+
+struct HeapCustom;
+struct HeapProps {
+    text: std::ffi::CString,
+    fail: bool,
+}
+impl CustomWidget for HeapCustom {
+    type Props = HeapProps;
+    fn create(&mut self, parent: &mut Obj<'_>, _: &HeapProps) -> Result<CustomObject, UiError> {
+        // SAFETY: return a new native label owned by the mounted subtree.
+        unsafe {
+            CustomObject::new(
+                parent,
+                NonNull::new(rs_lvgl_sys::lv_label_create(parent.raw().as_ptr()))
+                    .ok_or(UiError::Allocation)?,
+            )
+        }
+    }
+    fn apply_props(&mut self, object: &mut CustomObject, props: &HeapProps) -> Result<(), UiError> {
+        // SAFETY: boxed props are retained through replacement and native deletion.
+        unsafe {
+            rs_lvgl_sys::lv_label_set_text_static(
+                object.raw().as_ptr(),
+                props.text.as_ptr().cast(),
+            );
+        }
+        if props.fail {
+            Err(UiError::InvalidProperty)
+        } else {
+            Ok(())
+        }
+    }
+    fn delete(&mut self, _: &mut CustomObject) {}
+}
+struct HeapPage {
+    value: u32,
+    fail: bool,
+    sibling: bool,
+}
+impl App for HeapPage {
+    type Action = String;
+    fn update(&mut self, _: String) {}
+    fn view(&self, _: &Theme) -> View<String> {
+        column([
+            custom(
+                HeapCustom,
+                HeapProps {
+                    text: std::ffi::CString::new(format!("native {}", self.value)).unwrap(),
+                    fail: self.fail,
+                },
+            )
+            .key(Key::Id(1)),
+            if self.sibling {
+                custom(FailingResourceWidget, ())
+            } else {
+                label("ready")
+            }
+            .key(Key::Id(2)),
+        ])
+    }
+}
+fn custom_props_workload(ui: &mut Ui<String>) {
+    let mut app = HeapPage {
+        value: 0,
+        fail: false,
+        sibling: false,
+    };
+    ui.mount(&app).unwrap();
+    for value in 1..9 {
+        app.value = value;
+        ui.update(&app).unwrap();
+        ui.update(&app).unwrap();
+        ui.tick(16).unwrap();
+    }
+    app.fail = true;
+    assert_eq!(ui.update(&app), Err(UiError::InvalidProperty));
+    app.fail = false;
+    ui.update(&app).unwrap();
+    app.sibling = true;
+    assert_eq!(ui.update(&app), Err(UiError::Allocation));
+    app.sibling = false;
+    ui.update(&app).unwrap();
+    ui.unmount();
+    ui.mount(&app).unwrap();
+    ui.unmount();
+    app.fail = true;
+    assert_eq!(ui.mount(&app), Err(UiError::InvalidProperty));
+    ui.unmount();
 }

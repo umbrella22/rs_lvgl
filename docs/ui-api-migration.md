@@ -1,4 +1,39 @@
-# UI 0.6.0 migration
+# UI API migration
+
+## 0.7.0 migration from 0.6.0
+
+Version 0.7.0 introduces the following breaking changes. Update rs_lvgl_ui and
+any direct rs_lvgl/rs_lvgl_sys dependencies to 0.7.0 together. Chart and custom
+widgets expose one interface each; migrate callers to these signatures.
+
+| 0.6.0 | 0.7.0 |
+| --- | --- |
+| `chart(chart_type, min, max, Vec<ChartSeries>)` | `chart(ChartSpec)`; also `typed::chart(ChartSpec)` |
+| `ChartSeries { color, values }` | `ChartSeries::new(stable_id, color, ChartData::values(values))` in the spec |
+| Chart min/max arguments | `ChartAxes` containing primary/secondary X/Y `ChartRange` values |
+| `custom(widget)` | `custom(widget, props)` with `W::Props` |
+| `CustomWidget::create(parent)` | `create(parent, &Props)` plus associated `type Props` |
+| `CustomWidget::update(object, elapsed_ms)` | `apply_props(object, &Props)` for model input; `tick(object, elapsed_ms)` for time |
+| Manual `WidgetKind::Textarea` literal | Include `input: Option<Box<TextareaInputOptions>>`; use modifiers to configure the opaque settings |
+
+Migrate chart series with stable IDs that identify the same logical signal across
+views. A basic Y chart uses `ChartType::Line`, `ChartData::values` and the previous
+Y range; choose an explicit X range even when the presentation uses sample slots.
+Scatter uses XY data. `ChartValue::Missing` is the explicit native gap.
+History snapshots recover discontinuities from canonical application data.
+
+Implement custom pure validation and property application, even if Props is `()`.
+Move elapsed-time animation into `tick`; replace shared-state/key-change refresh
+workarounds with explicit Props. Equal properties are applied to the mounted
+instance; changing the concrete type or key replaces it. Deletion retains widget
+and property backing until native callbacks finish. There are no chart/custom
+aliases, alternate constructor names or adapters for the old signatures.
+
+See [controls, chart history and custom properties](ui-capability-depth.md) for
+compilable construction examples, representation limits and failure behavior.
+Default features and the native provider remain unchanged.
+
+## Released 0.6.0 migration from 0.5.0
 
 Version 0.6.0 introduces breaking UI changes relative to 0.5.0. Update the
 dependency and migrate the affected names, units, layouts and widget parts:
@@ -136,7 +171,8 @@ fn centered_row() -> View<()> {
 line; ItemAlign accepts Start/Center/End only. `align_content` maps native track
 placement, including a single line. Both FlexAlign properties additionally accept
 SpaceEvenly/SpaceAround/SpaceBetween. Each field merges and clears independently;
-unset restores Start. No CSS stretch/wrapping behavior is implied. If an old
+unset restores Start. No CSS stretch behavior is implied. Version 0.7.0 adds explicit
+`flex_wrap(bool)` and `flex_reverse(bool)` controls. If an old
 cross value used a distribution variant, LVGL treated item placement as Start;
 use ItemAlign::Start and retain that FlexAlign value for align_content.
 

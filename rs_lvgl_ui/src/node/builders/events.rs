@@ -16,6 +16,24 @@ impl<M, K> Node<M, K> {
         self
     }
 
+    /// Copy both native slider endpoints into one action. Replaces the shared
+    /// value handler; click, text and generic event slots remain independent.
+    #[cfg(feature = "widget-slider")]
+    pub fn on_range_changed<F>(mut self, mut map: F) -> Self
+    where
+        K: crate::typed::Supports<crate::typed::capability::Range>,
+        F: FnMut(crate::SliderRange) -> M + 'static,
+    {
+        if !matches!(self.kind, crate::WidgetKind::RangeSlider { .. }) {
+            self.record_invalid_property(crate::Property::Range);
+        }
+        self.handlers.value_changed = Some(Box::new(move |value| match value {
+            crate::events::ControlValue::Range(range) => Some(map(range)),
+            _ => None,
+        }));
+        self
+    }
+
     /// Map a value-changed event to a message.
     ///
     /// The value is read from the native widget after the change: the value

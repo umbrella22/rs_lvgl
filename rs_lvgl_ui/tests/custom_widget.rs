@@ -41,7 +41,11 @@ struct TestWidget {
 }
 
 impl CustomWidget for TestWidget {
-    fn create(&mut self, parent: &mut Obj<'_>) -> Result<CustomObject, UiError> {
+    type Props = ();
+    fn apply_props(&mut self, _: &mut CustomObject, _: &()) -> Result<(), UiError> {
+        Ok(())
+    }
+    fn create(&mut self, parent: &mut Obj<'_>, _: &Self::Props) -> Result<CustomObject, UiError> {
         self.counters.create.set(self.counters.creates() + 1);
         self.counters.created_ids.borrow_mut().push(self.id);
         // SAFETY: `parent` is a live object for the duration of the call.
@@ -52,7 +56,7 @@ impl CustomWidget for TestWidget {
         unsafe { CustomObject::new(parent, raw) }
     }
 
-    fn update(&mut self, object: &mut CustomObject, elapsed_ms: u32) -> Result<(), UiError> {
+    fn tick(&mut self, object: &mut CustomObject, elapsed_ms: u32) -> Result<(), UiError> {
         self.counters.update.set(self.counters.updates() + 1);
         self.counters.last_elapsed.set(elapsed_ms);
         if self.invalidate {
@@ -106,11 +110,14 @@ impl App for TestApp {
 
     fn view(&self, _: &Theme) -> View<()> {
         column([]).children(self.ids.iter().map(|id| {
-            custom(TestWidget {
-                id: *id,
-                counters: self.counters.clone(),
-                invalidate: self.invalidate,
-            })
+            custom(
+                TestWidget {
+                    id: *id,
+                    counters: self.counters.clone(),
+                    invalidate: self.invalidate,
+                },
+                (),
+            )
             .key(Key::Id(*id))
         }))
     }
@@ -229,11 +236,14 @@ fn kind_change_deletes_custom_widget_exactly_once() {
 
         fn view(&self, _: &Theme) -> View<()> {
             let child = if self.custom {
-                custom(TestWidget {
-                    id: 1,
-                    counters: self.counters.clone(),
-                    invalidate: false,
-                })
+                custom(
+                    TestWidget {
+                        id: 1,
+                        counters: self.counters.clone(),
+                        invalidate: false,
+                    },
+                    (),
+                )
             } else {
                 label("plain")
             };
@@ -408,13 +418,13 @@ fn custom_node_explicit_handler_posts_messages() {
         }
 
         fn view(&self, _: &Theme) -> View<u32> {
-            // Boxed trait-object form, as in the plan sketch.
-            let widget: Box<dyn CustomWidget> = Box::new(TestWidget {
+            // A boxed concrete implementation retains its associated property type.
+            let widget: Box<TestWidget> = Box::new(TestWidget {
                 id: 1,
                 counters: Counters::default(),
                 invalidate: false,
             });
-            column([]).child(custom(widget).key(Key::Id(1)).on_click(9))
+            column([]).child(custom(widget, ()).key(Key::Id(1)).on_click(9))
         }
     }
 

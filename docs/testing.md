@@ -1,6 +1,6 @@
 # Host validation
 
-The [WebAssembly acceptance script](https://github.com/umbrella22/rs_lvgl_website/blob/main/scripts/check-wasm.mjs) executes the compiled Rust/LVGL module, checks all nine categories, input, animation, independent instances and teardown/reinitialization. Run these website checks from a recursively initialized [rs_lvgl_website](https://github.com/umbrella22/rs_lvgl_website) checkout: build with `npm run wasm:build`, then run `npm run check-wasm -- --three-passes`. The [website build guide](https://github.com/umbrella22/rs_lvgl_website#build-from-a-clean-checkout) lists toolchains and dependency preparation. These checks complement visible browser acceptance; they do not validate hardware.
+The [WebAssembly acceptance script](https://github.com/umbrella22/rs_lvgl_website/blob/main/scripts/check-wasm.mjs) executes the compiled Rust/LVGL module, checks the categories in its pinned source, input, animation, independent instances and teardown/reinitialization. Run these website checks from a recursively initialized [rs_lvgl_website](https://github.com/umbrella22/rs_lvgl_website) checkout: build with `npm run wasm:build`, then run `npm run check-wasm -- --three-passes`. The [website build guide](https://github.com/umbrella22/rs_lvgl_website#build-from-a-clean-checkout) lists toolchains and dependency preparation. These checks complement visible browser acceptance; they do not validate hardware.
 
 
 The workspace compiles vendored LVGL 9.6. Tests sharing its native global state run
@@ -17,7 +17,9 @@ cargo check -p rs_lvgl_ui --examples --features showcase,rust_timer
 cargo check -p rs_lvgl --no-default-features --lib
 cargo test -p rs_lvgl --no-default-features --features lvgl_alloc,rust_timer -- --test-threads=1
 cargo test -p rs_lvgl_ui --features showcase,font-cjk-14,rust_timer -- --test-threads=1
+cargo test -p rs_lvgl_ui --features diagnostics -- --test-threads=1
 cargo test -p rs_lvgl_ui --features diagnostics,strict-properties -- --test-threads=1
+cargo test -p rs_lvgl_ui --features showcase,diagnostics,strict-properties,update-metrics --test control_depth --test chart_depth --test custom_props -- --test-threads=1
 cargo check -p rs_lvgl_ui --no-default-features --features alloc,diagnostics,strict-properties --lib
 cargo test -p rs_lvgl_ui --no-default-features --features alloc,components -- --test-threads=1
 python3 scripts/check-ui-api.py --artifacts target/ui-api-audit
@@ -51,7 +53,9 @@ It also checks safe `NativeObject` implementation rejection, an external adapter
 delegating to a borrowed `Obj`, loaded-font unsafe transfer, loaded-image feature
 gates, static/short-borrowed text compatibility, typed capability preservation
 through styles/map, explicit heterogeneous conversion, binding input/mapper types
-and the new `no_std` APIs.
+and the new `no_std` APIs. Development controls include range binding/handler types,
+textarea input payload migration, chart axes/history/cursors and custom Props,
+plus intentional failure of the removed chart/custom signatures.
 
 On macOS, the native linker may need the SDL2 library search path explicitly:
 
@@ -90,6 +94,22 @@ The interruption fixture needs POSIX process groups and terminates only its own
 compiler process group. Windows interruption acceptance is not implemented. Font
 symbol linking is tested; the fixture font descriptor is not a glyph-rendering test.
 
+The UI package runner separately packages and extracts all four workspace crates:
+
+```sh
+python3 scripts/check-ui-package.py --locked --offline --artifacts target/ui-package-audit
+```
+
+An isolated consumer resolves exact versions through patches solely to those
+extracted archives, checks Cargo metadata against every extracted manifest and
+builds fresh native outputs. Native readback verifies range values, authoritative
+UTF-8 textarea text, chart history and same-instance custom Props with exactly-once
+deletion. Archive/content, lock, executable and native artifact hashes bind the
+receipt. `cargo package --no-verify` creates the archives; the isolated build/run
+provides consumer evidence. No registry publication occurs. Existing UI manifest
+example targets located outside that crate are omitted by Cargo's packaging rules;
+the representative consumer verifies the packaged library path.
+
 ## Strict heap accounting
 
 ```sh
@@ -121,6 +141,10 @@ cover:
 - Loaded image sharing, static replacement, inherited fonts, native destructor
   before backing-data destruction, later-sibling creation/update failure and retry.
 - Native event observer capture replacement and release.
+- Editing filters/cursor/password updates and complete text correction.
+- Chart history append/recovery, cursor retirement and native allocation failure.
+- Custom Props replacement, equal-value correction, failed partial/initial applies,
+  later-sibling failure, backing-data deletion order and remount.
 
 The software renderer retains up to four radius-mask cache entries across displays.
 Replacing entries can change their allocated size without increasing block count.
@@ -187,7 +211,10 @@ The Rust meter reports cumulative allocation calls/requested bytes, live-byte
 delta and maximum extra live bytes above the per-update baseline. Native metrics
 report live bytes before/after and high-water **since LVGL initialization**, not
 per-update native peak or native allocation-call counts. `update-metrics` counts
-only native label-text setter calls. Host test-profile elapsed time is recorded
+native label-text writes and chart sample append/full-write/full-sync operations.
+One XY pair counts as one sample; draws, allocator calls and other setters are
+unavailable. The original representative workload exposes only label writes; the
+separate history fixture asserts chart counters. Host test-profile elapsed time is recorded
 without a device-performance threshold. Neither leak balance nor a reduced
 allocation count establishes physical memory-budget or board-render acceptance.
 
@@ -195,6 +222,35 @@ The full keyed matching/reorder tests remain required alongside the stable-order
 path: matching key sequences cannot assume native order after raw/custom moves.
 See [runtime contracts](ui-runtime.md) for render-skip obligations and resource
 configuration limits.
+
+## Representative updates and bounded history
+
+```sh
+# Development statistical acceptance; one native process at a time, no concurrent builds.
+python3 scripts/check-ui-workloads.py --locked --offline --artifacts target/ui-workloads
+python3 scripts/check-ui-history.py --locked --offline --artifacts target/ui-history
+# Routine correctness checks retain all scenarios and corruption/clock controls.
+python3 scripts/check-ui-workloads.py --locked --offline --correctness-only --artifacts target/ui-workloads-check
+python3 scripts/check-ui-history.py --locked --offline --correctness-only --artifacts target/ui-history-check
+```
+
+The workload runner verifies 53 settings/list/chart scenarios. The history runner
+compares full vectors and immutable history snapshots over 16 cases per strategy:
+1/4 series, capacity 128/1024, batch 1/16 and Shift/Circular. Both use independent
+native sample/pixel oracles and intentional corruption controls. Snapshot copying
+is included in construction. Debug allocator instrumentation is separate from
+release timing; phase clocks have explicit on/off controls. Full measurements use
+20 isolated AB/BA pairs and report raw samples, medians, p95 and paired bootstrap
+intervals. Comparison requires matching fixture/provider/configuration/tool/lock
+identities; an explicitly audited API-only fixture port is the sole exception.
+`--compare` uses `--fixture-port` only for that source migration.
+
+`--correctness-only` runs every case and negative control, both release strategies
+and all clock checks with one pair. It reports no statistical summaries or paired
+confidence intervals and cannot serve as a comparison baseline. CI selects this
+mode once per complete runner. The default remains the full 20-pair experiment.
+Host memory-display rendering excludes device transfer; these distributions do
+not certify board timing, frame rate or a deployed RAM budget.
 
 ## Example and native display checks
 

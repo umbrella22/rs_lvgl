@@ -1,6 +1,6 @@
 //! Constructors for data views.
 
-use crate::node::{ChartSeries, ChartType, Color, Node, Span, WidgetKind};
+use crate::node::{Color, Node, Span, WidgetKind};
 use crate::View;
 use alloc::{string::String, vec::Vec};
 
@@ -108,16 +108,8 @@ pub fn arc_label<M>(
     })
 }
 
-/// A chart with one or more series.
-///
-/// All series must have the same number of points. The primary Y axis is
-/// fixed to `min..=max`.
+/// A chart with owned data, explicit axes, stable series identities and cursors.
 #[cfg(feature = "widget-chart")]
-pub fn chart<M>(chart_type: ChartType, min: i32, max: i32, series: Vec<ChartSeries>) -> View<M> {
-    Node::new(WidgetKind::Chart {
-        chart_type,
-        min,
-        max,
-        series,
-    })
+pub fn chart<M>(spec: crate::ChartSpec) -> View<M> {
+    Node::new(WidgetKind::Chart(alloc::boxed::Box::new(spec)))
 }

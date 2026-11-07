@@ -1104,16 +1104,19 @@ fn invalid_new_widget_properties_are_rejected() {
                 2 => column([]).child(scale(0, 100, 1, 1)),
                 3 => column([]).child(textarea("ok").on_text_changed(|_| ())),
                 4 => column([]).child(label("x").on_text_changed(|_| ())),
-                5 => column([]).child(chart(ChartType::Line, 0, 100, Vec::new())),
-                _ => column([]).child(chart(
+                5 => column([]).child(chart(ChartSpec::new(
                     ChartType::Line,
-                    0,
-                    100,
+                    ChartAxes::new(ChartRange::new(0, 100), ChartRange::new(0, 100)),
+                    vec![ChartSeries::new(0, theme_color(), ChartData::values([]))],
+                ))),
+                _ => column([]).child(chart(ChartSpec::new(
+                    ChartType::Line,
+                    ChartAxes::new(ChartRange::new(0, 100), ChartRange::new(0, 100)),
                     vec![
-                        ChartSeries::new(theme_color(), vec![1, 2]),
-                        ChartSeries::new(theme_color(), vec![1]),
+                        ChartSeries::new(4, theme_color(), ChartData::values(vec![1, 2])),
+                        ChartSeries::new(3, theme_color(), ChartData::values(vec![1])),
                     ],
-                )),
+                ))),
             }
         }
     }
@@ -1146,18 +1149,30 @@ fn chart_type_values_and_series_update_in_place() {
         type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, theme: &Theme) -> View<()> {
-            let mut series = vec![ChartSeries::new(theme.accent, self.values.clone())];
+            let mut series = vec![ChartSeries::new(
+                2,
+                theme.accent,
+                ChartData::values(self.values.clone()),
+            )];
             if self.second_series {
-                series.push(ChartSeries::new(theme.muted, self.values.clone()));
+                series.push(ChartSeries::new(
+                    1,
+                    theme.muted,
+                    ChartData::values(self.values.clone()),
+                ));
             }
             column([]).child(
-                chart(self.chart_type, 0, 100, series)
-                    .key(Key::Named("chart"))
-                    .style(
-                        Style::default()
-                            .width(Size::Percent(100))
-                            .height(Size::Px(120)),
-                    ),
+                chart(ChartSpec::new(
+                    self.chart_type,
+                    ChartAxes::new(ChartRange::new(0, 100), ChartRange::new(0, 100)),
+                    series,
+                ))
+                .key(Key::Named("chart"))
+                .style(
+                    Style::default()
+                        .width(Size::Percent(100))
+                        .height(Size::Px(120)),
+                ),
             )
         }
     }

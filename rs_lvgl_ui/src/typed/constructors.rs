@@ -3,7 +3,7 @@ use super::kind;
 use crate::binding::{NumericInput, TextInput, ToggleInput};
 use crate::prelude::*;
 use crate::Node;
-use alloc::{string::String, vec::Vec};
+use alloc::string::String;
 
 /// Typed version of [`crate::container`].
 pub fn container<M>() -> Node<M, kind::Container> {
@@ -62,6 +62,16 @@ pub fn label_static<M>(text: &'static str) -> Node<M, kind::Label> {
 /// Typed version of [`crate::button_static`].
 pub fn button_static<M>(text: &'static str) -> Node<M, kind::Button> {
     crate::button_static(text).cast_kind()
+}
+
+#[cfg(feature = "widget-slider")]
+/// Typed version of [`crate::range_slider`], accepting a range value or binding.
+pub fn range_slider<M>(
+    min: i32,
+    max: i32,
+    range: impl crate::binding::RangeInput<M>,
+) -> Node<M, kind::RangeSlider> {
+    range.into_range_node(|range| crate::range_slider(min, max, range).cast_kind())
 }
 
 #[cfg(feature = "widget-slider")]
@@ -223,13 +233,8 @@ pub fn arc_label<M>(
 
 #[cfg(feature = "widget-chart")]
 /// Typed version of [`crate::chart`].
-pub fn chart<M>(
-    chart_type: ChartType,
-    min: i32,
-    max: i32,
-    series: Vec<ChartSeries>,
-) -> Node<M, kind::Chart> {
-    crate::chart(chart_type, min, max, series).cast_kind()
+pub fn chart<M>(spec: crate::ChartSpec) -> Node<M, kind::Chart> {
+    crate::chart(spec).cast_kind()
 }
 
 #[cfg(feature = "widget-image")]

@@ -1,8 +1,7 @@
 //! Typed widget descriptions and feature-gated properties.
 
 use super::{
-    CalendarDate, ChartSeries, ChartType, Color, Font, GridTrack, ImageSource, RollerMode, Span,
-    TextOverflow, Tile,
+    CalendarDate, Color, Font, GridTrack, ImageSource, RollerMode, Span, TextOverflow, Tile,
 };
 use crate::custom::CustomWidgetKind;
 use alloc::{string::String, vec::Vec};
@@ -60,6 +59,12 @@ pub enum WidgetKind {
         text: String,
     },
     #[cfg(feature = "widget-slider")]
+    RangeSlider {
+        min: i32,
+        max: i32,
+        range: crate::SliderRange,
+    },
+    #[cfg(feature = "widget-slider")]
     Slider {
         min: i32,
         max: i32,
@@ -92,6 +97,7 @@ pub enum WidgetKind {
         placeholder: String,
         one_line: bool,
         password: bool,
+        input: Option<alloc::boxed::Box<crate::TextareaInputOptions>>,
     },
     #[cfg(feature = "widget-dropdown")]
     Dropdown {
@@ -114,14 +120,7 @@ pub enum WidgetKind {
         major_tick_every: u32,
     },
     #[cfg(feature = "widget-chart")]
-    Chart {
-        chart_type: ChartType,
-        /// Primary Y-axis minimum.
-        min: i32,
-        /// Primary Y-axis maximum.
-        max: i32,
-        series: Vec<ChartSeries>,
-    },
+    Chart(alloc::boxed::Box<crate::ChartSpec>),
     /// A keyboard bound to the textarea registered with `keyboard_id`.
     #[cfg(feature = "widget-keyboard")]
     Keyboard {

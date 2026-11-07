@@ -42,3 +42,32 @@ pub(crate) fn apply_grid_cell(obj: NonNull<lv_obj_t>, cell: GridCell) {
         );
     }
 }
+
+/// Apply independent row/column flow flags without changing native identity.
+pub(crate) fn apply_flex_flow(
+    obj: NonNull<lv_obj_t>,
+    tag: super::KindTag,
+    (wrap, reverse): (bool, bool),
+) {
+    use rs_lvgl_sys as sys;
+    let flow = match (tag, wrap, reverse) {
+        (super::KindTag::Row, false, false) => sys::lv_flex_flow_t_LV_FLEX_FLOW_ROW,
+        (super::KindTag::Row, true, false) => sys::lv_flex_flow_t_LV_FLEX_FLOW_ROW_WRAP,
+        (super::KindTag::Row, false, true) => sys::lv_flex_flow_t_LV_FLEX_FLOW_ROW_REVERSE,
+        (super::KindTag::Row, true, true) => sys::lv_flex_flow_t_LV_FLEX_FLOW_ROW_WRAP_REVERSE,
+        (super::KindTag::Column, false, false) => sys::lv_flex_flow_t_LV_FLEX_FLOW_COLUMN,
+        (super::KindTag::Column, true, false) => sys::lv_flex_flow_t_LV_FLEX_FLOW_COLUMN_WRAP,
+        (super::KindTag::Column, false, true) => sys::lv_flex_flow_t_LV_FLEX_FLOW_COLUMN_REVERSE,
+        (super::KindTag::Column, true, true) => {
+            sys::lv_flex_flow_t_LV_FLEX_FLOW_COLUMN_WRAP_REVERSE
+        }
+        _ => return,
+    };
+    // SAFETY: the reconciler supplies its live row/column native object. These
+    // scalar style values retain no Rust pointers; equal flow avoids a layout write.
+    unsafe {
+        if sys::lv_obj_get_style_flex_flow(obj.as_ptr(), sys::lv_part_t_LV_PART_MAIN) != flow {
+            sys::lv_obj_set_flex_flow(obj.as_ptr(), flow);
+        }
+    }
+}

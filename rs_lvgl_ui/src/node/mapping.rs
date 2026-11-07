@@ -34,6 +34,7 @@ impl<M, K> Node<M, K> {
             key: self.key,
             kind: self.kind,
             style: self.style,
+            flex_flow: self.flex_flow,
             part_styles: self.part_styles,
             keyboard_id: self.keyboard_id,
             grid_cell: self.grid_cell,

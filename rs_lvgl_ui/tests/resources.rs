@@ -164,10 +164,14 @@ fn partial_creation_and_update_failures_release_loaded_resources() {
     let display = init();
     struct Fails;
     impl CustomWidget for Fails {
-        fn create(&mut self, _: &mut Obj<'_>) -> Result<CustomObject, UiError> {
+        type Props = ();
+        fn apply_props(&mut self, _: &mut CustomObject, _: &()) -> Result<(), UiError> {
+            Ok(())
+        }
+        fn create(&mut self, _: &mut Obj<'_>, _: &Self::Props) -> Result<CustomObject, UiError> {
             Err(UiError::Allocation)
         }
-        fn update(&mut self, _: &mut CustomObject, _: u32) -> Result<(), UiError> {
+        fn tick(&mut self, _: &mut CustomObject, _: u32) -> Result<(), UiError> {
             Ok(())
         }
         fn delete(&mut self, _: &mut CustomObject) {
@@ -186,7 +190,7 @@ fn partial_creation_and_update_failures_release_loaded_resources() {
             column([
                 image_resource(self.image.clone()).key(Key::Id(1)),
                 if self.fail {
-                    custom(Fails).key(Key::Id(2))
+                    custom(Fails, ()).key(Key::Id(2))
                 } else {
                     label("valid").key(Key::Id(2))
                 },

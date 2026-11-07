@@ -39,6 +39,7 @@ pub(crate) struct Counters {
 pub(crate) struct MountedCustom {
     entry: CustomWidgetKind,
     object: CustomObject,
+    delete_hook_run: bool,
 }
 
 pub(crate) struct MountedNode<M: Clone + 'static> {

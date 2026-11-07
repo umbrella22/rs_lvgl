@@ -12,10 +12,10 @@ pub use handlers::{EventHandler, Handlers, TextChangedHandler, ValueChangedHandl
 pub use kind::WidgetKind;
 pub(crate) use types::Selector;
 pub use types::{
-    table_cell, Align, CalendarDate, ChartSeries, ChartType, Color, FlexAlign, Font, GridAlign,
-    GridCell, GridTrack, ImageSource, ItemAlign, NativePart, RawImage, RollerMode, ScrollDirection,
-    Size, Span, State, TableCell, TextAlign, TextOverflow, Tile, ANIMATED_IMAGE_MAX_FRAMES,
-    ANIMATION_REPEAT_INFINITE, SPINBOX_MAX_DIGITS, TABLE_MAX_CELLS_PER_AXIS,
+    table_cell, Align, CalendarDate, Color, FlexAlign, Font, GridAlign, GridCell, GridTrack,
+    ImageSource, ItemAlign, NativePart, RawImage, RollerMode, ScrollDirection, Size, Span, State,
+    TableCell, TextAlign, TextOverflow, Tile, ANIMATED_IMAGE_MAX_FRAMES, ANIMATION_REPEAT_INFINITE,
+    SPINBOX_MAX_DIGITS, TABLE_MAX_CELLS_PER_AXIS,
 };
 pub(crate) use validation::validate;
 
@@ -51,6 +51,7 @@ pub struct Node<M, K = crate::typed::Erased> {
     pub(crate) key: Key,
     pub(crate) kind: WidgetKind,
     pub(crate) style: Style,
+    pub(crate) flex_flow: (bool, bool),
     pub(crate) part_styles: Vec<(Selector, Style)>,
     pub(crate) keyboard_id: Option<u64>,
     pub(crate) grid_cell: Option<GridCell>,
@@ -103,6 +104,7 @@ impl<M, K> Node<M, K> {
             key: Key::Auto,
             kind,
             style,
+            flex_flow: (false, false),
             part_styles: Vec::new(),
             keyboard_id: None,
             grid_cell: None,
@@ -140,6 +142,7 @@ impl<M, K> Node<M, K> {
             key: self.key,
             kind: self.kind,
             style: self.style,
+            flex_flow: self.flex_flow,
             part_styles: self.part_styles,
             keyboard_id: self.keyboard_id,
             grid_cell: self.grid_cell,

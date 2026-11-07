@@ -12,7 +12,6 @@ mod choices;
 mod common;
 #[cfg(any(
     feature = "widget-scale",
-    feature = "widget-chart",
     feature = "widget-table",
     feature = "widget-calendar",
     feature = "widget-spinner",
@@ -83,7 +82,7 @@ pub(crate) fn apply_props<M: Clone + 'static>(
         Props::Label { .. } => base::apply(obj, new, old, parts),
         Props::Button { .. } => base::apply(obj, new, old, parts),
         #[cfg(feature = "widget-slider")]
-        Props::Slider { .. } => ranges::apply(obj, new, old, slot),
+        Props::Slider { .. } | Props::RangeSlider { .. } => ranges::apply(obj, new, old, slot),
         #[cfg(feature = "widget-bar")]
         Props::ProgressBar { .. } => ranges::apply(obj, new, old, slot),
         #[cfg(feature = "widget-arc")]
@@ -103,7 +102,7 @@ pub(crate) fn apply_props<M: Clone + 'static>(
         #[cfg(feature = "widget-scale")]
         Props::Scale { .. } => data::apply(obj, new, old, retained),
         #[cfg(feature = "widget-chart")]
-        Props::Chart { .. } => data::apply(obj, new, old, retained),
+        Props::Chart(spec) => super::chart::apply(obj, spec, match old { Some(Props::Chart(spec)) => Some(spec), _ => None }, retained),
         #[cfg(feature = "widget-table")]
         Props::Table { .. } => data::apply(obj, new, old, retained),
         #[cfg(feature = "widget-calendar")]
@@ -135,11 +134,11 @@ pub(crate) fn apply_props<M: Clone + 'static>(
         #[cfg(feature = "widget-canvas")]
         Props::Canvas { .. } => extensions::apply(obj, new, old, parts, retained),
         #[cfg(feature = "widget-textarea")]
-        Props::Textarea { .. } => text::apply(obj, new, old, slot),
+        Props::Textarea { .. } => text::apply(obj, new, old, slot, retained),
         #[cfg(feature = "widget-span")]
-        Props::Spans { .. } => text::apply(obj, new, old, slot),
+        Props::Spans { .. } => text::apply(obj, new, old, slot, retained),
         #[cfg(feature = "widget-arclabel")]
-        Props::ArcLabel { .. } => text::apply(obj, new, old, slot),
+        Props::ArcLabel { .. } => text::apply(obj, new, old, slot, retained),
     }
 }
 

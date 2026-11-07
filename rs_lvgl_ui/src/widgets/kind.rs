@@ -130,7 +130,7 @@ pub(crate) fn tag(kind: &WidgetKind) -> KindTag {
         WidgetKind::Label { .. } => KindTag::Label,
         WidgetKind::Button { .. } => KindTag::Button,
         #[cfg(feature = "widget-slider")]
-        WidgetKind::Slider { .. } => KindTag::Slider,
+        WidgetKind::Slider { .. } | WidgetKind::RangeSlider { .. } => KindTag::Slider,
         #[cfg(feature = "widget-bar")]
         WidgetKind::ProgressBar { .. } => KindTag::ProgressBar,
         #[cfg(feature = "widget-switch")]
@@ -148,7 +148,7 @@ pub(crate) fn tag(kind: &WidgetKind) -> KindTag {
         #[cfg(feature = "widget-scale")]
         WidgetKind::Scale { .. } => KindTag::Scale,
         #[cfg(feature = "widget-chart")]
-        WidgetKind::Chart { .. } => KindTag::Chart,
+        WidgetKind::Chart(_) => KindTag::Chart,
         #[cfg(feature = "widget-roller")]
         WidgetKind::Roller { .. } => KindTag::Roller,
         #[cfg(feature = "widget-spinbox")]

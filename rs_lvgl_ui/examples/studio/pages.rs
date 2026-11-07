@@ -15,8 +15,10 @@ pub(super) fn view(app: &Studio, theme: &Theme) -> View<StudioAction> {
         3 => data(theme),
         4 => layout(app, theme),
         5 => media(app, theme),
-        6 => canvas_page(theme),
+        6 => canvas_page(app, theme),
         7 => composition(app, theme),
+        9 => super::depth::view(app, theme),
+        10 => super::charts::view(app, theme),
         _ => super::native::view(app, theme),
     }
 }
@@ -37,15 +39,22 @@ fn metric(value: &str, title: &str, color: Color, theme: &Theme) -> View<StudioA
         .child(text(title, theme))
 }
 fn signal_chart(height: i16) -> View<StudioAction> {
-    rs_lvgl_ui::chart(
+    rs_lvgl_ui::chart(ChartSpec::new(
         ChartType::Line,
-        0,
-        100,
+        ChartAxes::new(ChartRange::new(0, 100), ChartRange::new(0, 100)),
         vec![
-            ChartSeries::new(ORANGE, vec![20, 33, 27, 56, 43, 70, 62, 79, 68, 84, 74, 92]),
-            ChartSeries::new(TEAL, vec![12, 18, 16, 26, 21, 40, 34, 48, 39, 55, 48, 64]),
+            ChartSeries::new(
+                2,
+                ORANGE,
+                ChartData::values(vec![20, 33, 27, 56, 43, 70, 62, 79, 68, 84, 74, 92]),
+            ),
+            ChartSeries::new(
+                1,
+                TEAL,
+                ChartData::values(vec![12, 18, 16, 26, 21, 40, 34, 48, 39, 55, 48, 64]),
+            ),
         ],
-    )
+    ))
     .style(
         full(height)
             .background_opacity(0)
@@ -587,7 +596,7 @@ fn media(app: &Studio, t: &Theme) -> View<StudioAction> {
         )
 }
 
-fn canvas_page(t: &Theme) -> View<StudioAction> {
+fn canvas_page(app: &Studio, t: &Theme) -> View<StudioAction> {
     let mut frame = Canvas::new(940, 205).background(INK, 255);
     for x in (20..940).step_by(40) {
         frame = frame.draw(DrawCommand::Line {
@@ -683,11 +692,18 @@ fn canvas_page(t: &Theme) -> View<StudioAction> {
                     ),
                 ),
                 third(
-                    card("Custom lifecycle", "Rust widget / tick / cleanup", t),
+                    card("Custom properties", "Props / tick / cleanup", t),
                     248,
                 )
-                .child(custom(super::native::Pulse::default()))
-                .child(action_button("Try a toast", StudioAction::Toast, t)),
+                .gap(8)
+                .child(custom(super::native::Gauge::default(), super::native::GaugeProps {
+                    value: app.value, color: TEAL, track: t.background,
+                }).key(Key::Named("custom-gauge")))
+                .child(row([
+                    action_button("-5", StudioAction::Step(-5), t),
+                    text(&format!("{}%", app.value), t),
+                    action_button("+5", StudioAction::Step(5), t),
+                ]).gap(10).align_items(ItemAlign::Center)),
             ]),
         )
 }

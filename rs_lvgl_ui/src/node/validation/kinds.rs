@@ -94,8 +94,14 @@ pub(super) fn validate_kind<M>(node: &Node<M>) -> Result<(), UiError> {
         }
         #[cfg(feature = "widget-textarea")]
         WidgetKind::Textarea {
-            text, placeholder, ..
+            text,
+            placeholder,
+            input,
+            ..
         } => {
+            if let Some(options) = input {
+                options.validate(text)?;
+            }
             if text.as_bytes().contains(&0) || placeholder.as_bytes().contains(&0) {
                 return Err(UiError::InvalidProperty);
             }
@@ -124,20 +130,9 @@ pub(super) fn validate_kind<M>(node: &Node<M>) -> Result<(), UiError> {
             }
         }
         #[cfg(feature = "widget-chart")]
-        WidgetKind::Chart {
-            chart_type: _,
-            min,
-            max,
-            series,
-        } => {
-            if min > max || series.is_empty() {
-                return Err(UiError::InvalidProperty);
-            }
-            let points = series[0].values.len();
-            if points == 0 || series.iter().any(|series| series.values.len() != points) {
-                return Err(UiError::InvalidProperty);
-            }
-        }
+        WidgetKind::Chart(spec) => spec.validate()?,
+        #[cfg(feature = "widget-slider")]
+        WidgetKind::RangeSlider { min, max, range } => range.validate_native(*min, *max)?,
         #[cfg(feature = "widget-slider")]
         WidgetKind::Slider { min, max, value } => validate_range(*min, *max, *value)?,
         #[cfg(feature = "widget-bar")]
@@ -332,6 +327,7 @@ pub(super) fn validate_kind<M>(node: &Node<M>) -> Result<(), UiError> {
         #[cfg(feature = "widget-keyboard")]
         WidgetKind::Keyboard { .. } => {}
         WidgetKind::Custom(custom) => {
+            custom.validate()?;
             // `crate::raw` owns its native callbacks; lifecycle widgets may use
             // the typed handler because the reconciler registers it on the
             // custom root object.

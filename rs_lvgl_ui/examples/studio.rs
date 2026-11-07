@@ -14,6 +14,10 @@ use std::{
     time::{Duration, Instant},
 };
 
+#[path = "studio/charts.rs"]
+mod charts;
+#[path = "studio/depth.rs"]
+mod depth;
 #[path = "studio/native.rs"]
 mod native;
 #[path = "studio/pages.rs"]
@@ -33,7 +37,7 @@ const ORANGE: Color = Color::rgb(225, 88, 47);
 const TEAL: Color = Color::rgb(26, 145, 128);
 const BLUE: Color = Color::rgb(91, 117, 218);
 const WHITE: Color = Color::rgb(255, 255, 255);
-const PAGES: [(&str, &str, &str); 9] = [
+const PAGES: [(&str, &str, &str); 11] = [
     (
         "Overview",
         "Make it yours.",
@@ -79,6 +83,16 @@ const PAGES: [(&str, &str, &str); 9] = [
         "A door to the native engine.",
         "List, menu and window samples through the raw native extension point.",
     ),
+    (
+        "Control depth",
+        "Make room for detail.",
+        "Two endpoints, input rules and flexible tracks. Try each control.",
+    ),
+    (
+        "Chart depth",
+        "Keep the signal moving.",
+        "Presentation, axes, point cursors and bounded history in one model.",
+    ),
 ];
 
 #[derive(Clone, Debug)]
@@ -86,6 +100,17 @@ enum StudioAction {
     Page(usize),
     Theme,
     Value(i32),
+    Range(SliderRange),
+    DepthText(String),
+    Hold(bool),
+    Wrap(bool),
+    Reverse(bool),
+    RestoreText,
+    ChartForm,
+    ChartNext,
+    ChartAppend(u32),
+    ChartClear,
+    ChartCircular(bool),
     Enabled(bool),
     Checked(bool),
     Select(i32),
@@ -110,6 +135,15 @@ struct Studio {
     page: usize,
     dark: bool,
     value: i32,
+    range: SliderRange,
+    depth_text: String,
+    chart_form: usize,
+    chart_point: u32,
+    chart_history: ChartHistory,
+    chart_circular: bool,
+    hold: bool,
+    wrap: bool,
+    reverse: bool,
     enabled: bool,
     checked: bool,
     selected: u32,
@@ -132,6 +166,15 @@ impl Default for Studio {
             page: 0,
             dark: false,
             value: 64,
+            range: SliderRange::new(20, 70),
+            depth_text: "128".into(),
+            chart_form: 0,
+            chart_point: 2,
+            chart_history: charts::history(),
+            chart_circular: false,
+            hold: false,
+            wrap: true,
+            reverse: false,
             enabled: true,
             checked: true,
             selected: 1,
@@ -163,6 +206,42 @@ impl App for Studio {
             StudioAction::Value(value) => {
                 self.value = value;
                 self.status = format!("Output set to {value}%");
+            }
+            StudioAction::Range(value) => {
+                if !self.hold {
+                    self.range = value;
+                }
+                self.status = format!(
+                    "Range input {}..{} / model {}..{}",
+                    value.lower, value.upper, self.range.lower, self.range.upper
+                );
+            }
+            StudioAction::DepthText(value) => {
+                if !self.hold {
+                    self.depth_text = value;
+                }
+                self.status = format!("Text model: {}", self.depth_text);
+            }
+            StudioAction::Hold(value) => self.hold = value,
+            StudioAction::Wrap(value) => self.wrap = value,
+            StudioAction::Reverse(value) => self.reverse = value,
+            StudioAction::RestoreText => self.depth_text = "A中é".into(),
+            StudioAction::ChartForm => self.chart_form = (self.chart_form + 1) % 5,
+            StudioAction::ChartNext => self.chart_point = (self.chart_point + 1) % 12,
+            StudioAction::ChartCircular(value) => self.chart_circular = value,
+            StudioAction::ChartAppend(count) => {
+                for _ in 0..count {
+                    let sequence = self.chart_history.next_sequence();
+                    self.chart_history
+                        .push_y(((sequence * 17 + 23) % 81 + 10) as i32)
+                        .unwrap();
+                }
+                self.status = format!("Signal advanced to {}", self.chart_history.next_sequence());
+            }
+            StudioAction::ChartClear => {
+                self.chart_history
+                    .clear(self.chart_history.epoch() + 1)
+                    .unwrap();
             }
             StudioAction::Enabled(value) => self.enabled = value,
             StudioAction::Checked(value) => self.checked = value,
@@ -236,7 +315,7 @@ impl App for Studio {
                 )
                 .key(Key::Named(name))
                 .width(percent(100))
-                .height(px(46))
+                .height(px(42))
                 .padding_left(12)
                 .background(if self.page == i { ORANGE } else { INK })
                 .text_color(if self.page == i {

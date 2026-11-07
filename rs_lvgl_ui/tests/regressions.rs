@@ -448,7 +448,11 @@ struct WrongParent {
 }
 
 impl CustomWidget for WrongParent {
-    fn create(&mut self, parent: &mut Obj<'_>) -> Result<CustomObject, UiError> {
+    type Props = ();
+    fn apply_props(&mut self, _: &mut CustomObject, _: &()) -> Result<(), UiError> {
+        Ok(())
+    }
+    fn create(&mut self, parent: &mut Obj<'_>, _: &Self::Props) -> Result<CustomObject, UiError> {
         // SAFETY: `parent` is live; both objects are created as its subtree.
         unsafe {
             let wrapper = rs_lvgl_sys::lv_obj_create(parent.raw().as_ptr());
@@ -461,7 +465,7 @@ impl CustomWidget for WrongParent {
         }
     }
 
-    fn update(&mut self, _: &mut CustomObject, _: u32) -> Result<(), UiError> {
+    fn tick(&mut self, _: &mut CustomObject, _: u32) -> Result<(), UiError> {
         Ok(())
     }
 
@@ -481,9 +485,12 @@ fn lifecycle_widget_must_return_a_direct_child() {
         type Action = ();
         fn update(&mut self, _: ()) {}
         fn view(&self, _: &Theme) -> View<()> {
-            column([]).child(custom(WrongParent {
-                deleted: self.0.clone(),
-            }))
+            column([]).child(custom(
+                WrongParent {
+                    deleted: self.0.clone(),
+                },
+                (),
+            ))
         }
     }
     let result = ui.mount(&CustomApp(deleted.clone()));
