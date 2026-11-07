@@ -43,12 +43,16 @@ def main():
     def save():
         (out / "results.json").write_text(json.dumps(report, indent=2) + "\n")
 
-    def run(name, command, cwd=ROOT, overrides=None, marker=None):
+    def run(name, command, cwd=ROOT, overrides=None, marker=None, capture_stdout=False):
         log = out / (name + ".log")
         start = time.time()
         with log.open("w") as stream:
             result = subprocess.run(command, cwd=cwd, env=env | (overrides or {}),
-                                    stdout=stream, stderr=subprocess.STDOUT, timeout=900)
+                                    stdout=subprocess.PIPE if capture_stdout else stream,
+                                    stderr=stream if capture_stdout else subprocess.STDOUT,
+                                    text=True, timeout=900)
+            if capture_stdout:
+                stream.write(result.stdout)
         content = log.read_text(errors="replace")
         passed = result.returncode == 0 and (marker is None or marker in content)
         report["commands"].append({"name": name, "command": command, "cwd": str(cwd),
@@ -57,7 +61,7 @@ def main():
         save()
         if not passed:
             raise RuntimeError(f"{name}: see {log}\n{content[-6000:]}")
-        return content
+        return result.stdout if capture_stdout else content
 
     run("package-workspace", ["cargo", "package", "--workspace", "--allow-dirty", "--no-verify", "--exclude-lockfile", *flags])
     extracted = {}
@@ -99,8 +103,10 @@ def main():
     native_env = {"CARGO_TARGET_DIR": str(build)}
     resolve_flags = ["--offline"] if args.offline else []
     run("resolve-consumer", ["cargo", "generate-lockfile", *resolve_flags], cwd=consumer, overrides=native_env)
+    # Cargo may download target-specific packages to stderr during metadata.
+    # Retain those diagnostics in the log while parsing only its JSON stdout.
     metadata = json.loads(run("consumer-metadata", ["cargo", "metadata", "--format-version=1", *flags],
-                              cwd=consumer, overrides=native_env))
+                              cwd=consumer, overrides=native_env, capture_stdout=True))
     resolved = {}
     for name in CRATES:
         matches = [p for p in metadata["packages"] if p["name"] == name]
