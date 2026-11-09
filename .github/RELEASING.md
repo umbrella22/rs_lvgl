@@ -19,7 +19,7 @@ can be configured on each crate after that release.
 
 1. Update all four package versions and their internal dependency versions.
 2. Run the normal CI and `python3 scripts/release.py verify --allow-dirty`.
-   Verification needs Python 3.12+, Cargo 1.99.1, a C/C++ compiler and libclang.
+   Verification needs Python 3.12+, Cargo stable, a C/C++ compiler and libclang.
    Generate the ignored workspace lockfile first if it is absent.
 3. Commit and push to `main`. Wait for CI and package verification to pass.
 4. Create the matching annotated tag and push it, for example:

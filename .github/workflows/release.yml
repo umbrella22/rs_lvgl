@@ -40,7 +40,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.14'
-      - uses: dtolnay/rust-toolchain@1.99.1
+      - uses: dtolnay/rust-toolchain@stable
       - name: Install native toolchain
         run: |
           sudo apt-get update
@@ -86,7 +86,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.14'
-      - uses: dtolnay/rust-toolchain@1.99.1
+      - uses: dtolnay/rust-toolchain@stable
       - name: Check publication credential or completed release
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGOTOKEN }}
