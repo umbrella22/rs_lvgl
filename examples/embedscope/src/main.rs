@@ -18,7 +18,7 @@ struct Counter(u32);
 
 impl App for Counter {
     // This independent example uses published 0.3.1, whose App still names its
-    // associated type Msg. The unreleased workspace API uses Action instead.
+    // associated type Msg. The current workspace API uses Action instead.
     type Msg = CounterAction;
 
     fn update(&mut self, _: CounterAction) {

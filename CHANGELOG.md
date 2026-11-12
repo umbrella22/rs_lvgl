@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.8.0 — 2026-11-12
 
 ### Added
 
@@ -15,11 +15,33 @@
   buffers. Existing declarative Canvas remains ARGB8888.
 - Add a memory-display example, native/compile-fail contract checks, padded-stride
   fixtures and display/image/Canvas workloads in the dual-heap acceptance suite.
+- Add `timer_handler()`, which runs LVGL's ready timers like `task_handler()` and
+  returns the milliseconds until the next one is due, with `NO_TIMER_READY` for
+  the case where every timer is paused.
+
+### Fixed
+
+- Keep the `rust_timer` clock advancing past about 49.7 days of uptime.
+  `timer::update_clock` now wraps elapsed milliseconds with LVGL's `u32` tick
+  instead of returning an error once they exceed `u32::MAX`, which stopped the
+  native tick.
+- Carry the sub-millisecond part of each `tick_inc` period into the next call.
+  It was dropped, so loops reporting measured elapsed time ran the LVGL clock
+  slow, and periods below one millisecond never advanced it.
+- Allocate `DrawBuffer` directly in its heap block. Unoptimized builds first
+  built the whole buffer on the caller's stack, which overflowed small stacks
+  during `Display::register` and `register_raw`.
 
 ### Compatibility
 
+- `tick_inc` now requires 32-bit atomic load and store on the target, and
+  expects a single tick source because the carried remainder is not updated
+  with a compare-and-swap.
+- `timer::update_clock` keeps its `Result<(), TryFromIntError>` signature but no
+  longer returns an error. Callers that used the error to detect uptime beyond
+  `u32::MAX` milliseconds must track that themselves.
 - `ImageSource` gains a `Rgb888` variant; external exhaustive matches must cover it
-  at the next release boundary. Static-image layouts with unrepresentable native
+  when upgrading to 0.8.0. Static-image layouts with unrepresentable native
   stride are rejected before mutation. Existing display registration, native
   defaults and handle-drop/native-delete behavior are preserved.
 - Automatic pacing, panel VRR and display safe-area layout remain research only.

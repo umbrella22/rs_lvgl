@@ -7,8 +7,16 @@ pub(crate) struct Box<T>(NonNull<T>);
 
 impl<T> Box<T> {
     pub fn new(value: T) -> Self {
+        let inner = Self::allocate();
+        // SAFETY: `allocate` returns an aligned, exclusively owned block for `T`.
+        unsafe { inner.as_ptr().write(value) };
+        Self(inner)
+    }
+
+    // The block is uninitialized; the caller initializes it before use as `T`.
+    fn allocate() -> NonNull<T> {
         let size = mem::size_of::<T>();
-        let inner = unsafe {
+        unsafe {
             let ptr = rs_lvgl_sys::lv_malloc(size as cty::size_t) as *mut T;
 
             assert_eq!(
@@ -17,16 +25,10 @@ impl<T> Box<T> {
                 "Memory address not aligned!"
             );
 
-            NonNull::new(ptr)
-                .map(|p| {
-                    p.as_ptr().write(value);
-                    p
-                })
-                .unwrap_or_else(|| {
-                    panic!("Could not allocate memory {} bytes: {:?}", size, mem_info());
-                })
-        };
-        Self(inner)
+            NonNull::new(ptr).unwrap_or_else(|| {
+                panic!("Could not allocate memory {} bytes: {:?}", size, mem_info());
+            })
+        }
     }
 
     pub fn into_raw(self) -> *mut T {
@@ -46,9 +48,15 @@ impl<T> Box<T> {
             })
         })
     }
+}
 
-    pub fn pin(value: T) -> Pin<Self> {
-        unsafe { Pin::new_unchecked(Box::new(value)) }
+impl<T, const N: usize> Box<[mem::MaybeUninit<T>; N]> {
+    /// Allocate an uninitialized array in LVGL memory without first building
+    /// it on the caller's stack.
+    pub fn pin_uninit() -> Pin<Self> {
+        // SAFETY: an array of `MaybeUninit` has no initialization invariant, so
+        // the fresh block is already a valid value. The pointer never moves.
+        unsafe { Pin::new_unchecked(Self(Self::allocate())) }
     }
 }
 

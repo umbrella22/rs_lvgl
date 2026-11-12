@@ -1,9 +1,9 @@
 # rs_lvgl
 
-Version 0.7.0 adds controlled range sliders, textarea editing options, chart
-descriptors/history and property-aware custom widgets. Chart and custom-widget
-construction use breaking signatures. See the [migration guide](docs/ui-api-migration.md)
-when upgrading from 0.6.0.
+Version 0.8.0 adds configurable RGB888/RGB565 display buffers, render modes,
+invalidation alignment and independent display/input periods. It also improves
+tick precision, long-uptime clock behavior and large draw-buffer allocation.
+See the [migration guide](docs/ui-api-migration.md) when upgrading from 0.7.0.
 
 **English** · [简体中文](https://github.com/umbrella22/rs_lvgl/blob/main/README.zh.md)
 
@@ -58,8 +58,8 @@ Add the crates.io dependencies to your project:
 
 ```toml
 [dependencies]
-rs_lvgl = { version = "0.7.0", default-features = false, features = ["alloc"] }
-rs_lvgl_ui = "0.7.0"
+rs_lvgl = { version = "0.8.0", default-features = false, features = ["alloc"] }
+rs_lvgl_ui = "0.8.0"
 ```
 
 `rs_lvgl` and `rs_lvgl_ui` support `no_std`. Embedded applications using the UI
@@ -74,7 +74,7 @@ An `App` holds your state. Its `view` builds a `View<CounterAction>` with ordina
 functions; input sends messages
 to `update`. `Ui` applies those changes to the LVGL widgets.
 
-The following screen uses the 0.7.0 API. `CounterAction` is the counter's own
+The following screen uses the 0.8.0 API. `CounterAction` is the counter's own
 action enum; `type Action = CounterAction` connects it to the framework.
 State stays in `Counter`, and `update` implements each action.
 
@@ -118,7 +118,7 @@ for layouts, styling, and events.
 
 ## Composition and forms
 
-Version 0.7.0 provides lazy children, semantic events, component slots,
+Version 0.8.0 provides lazy children, semantic events, component slots,
 `typed::...` construction and explicit form bindings. The
 [composition guide](docs/ui-composition.md) covers typed conversion, controlled
 input and reusable content. Ordinary root/prelude constructors remain available.
@@ -129,7 +129,7 @@ Disable the default feature set to select the widgets and fonts you need:
 
 ```toml
 [dependencies.rs_lvgl_ui]
-version = "0.7.0"
+version = "0.8.0"
 default-features = false
 features = [
     "alloc", "components", "widget-slider", "widget-switch", "font-montserrat-16"
@@ -142,7 +142,7 @@ See [feature selection](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_
 
 ## Documentation
 
-The development [display guide](docs/display.md) covers RGB888 byte buffers,
+The [display guide](docs/display.md) covers RGB888 byte buffers,
 render modes, asynchronous flush contracts and device-specific scheduling periods.
 
 For optional remote UI inspection, see the [EmbedScope application example](examples/embedscope/README.md)
@@ -160,7 +160,7 @@ The guides and GitHub Pages deployment are maintained in [rs_lvgl_website](https
 
 ## AI coding assistants
 
-The included `rs-lvgl-ui` and `rs-lvgl-native` skills target rs_lvgl 0.7.0, with runnable
+The included `rs-lvgl-ui` and `rs-lvgl-native` skills target rs_lvgl 0.8.0, with runnable
 examples and integration guidance for coding assistants. Install them with:
 
 ```sh

@@ -1,5 +1,28 @@
 # UI API migration
 
+## 0.8.0 migration from 0.7.0
+
+Update `rs_lvgl_ui`, `rs_lvgl`, and any direct `rs_lvgl_sys`/`rs_lvgl_codegen`
+dependencies to 0.8.0 together. The native provider remains vendored LVGL 9.6.
+
+| Area | Action for 0.8.0 |
+| --- | --- |
+| Exhaustive `ImageSource` matches | Handle the added `Rgb888` variant. RGB888 static/shared sources and Canvas buffers validate native dimensions, stride and storage before mutation. |
+| Target atomics | Provide native 32-bit atomic load/store for `tick_inc`, now also used without the `rust_timer` feature. |
+| Tick source | Call `tick_inc` from one source. Its carried fractional millisecond uses separate atomic load/store, so concurrent writers can lose a fraction. Choose either incremental ticks or a custom clock callback. |
+| Absolute uptime | `timer::update_clock` keeps `Result<(), TryFromIntError>` and now always returns `Ok(())`; it reduces elapsed milliseconds modulo 2^32. Track absolute uptime independently if it matters to the application. |
+| Main loop | `task_handler()` remains valid. Use `timer_handler()` to obtain the next native timer deadline, and handle `NO_TIMER_READY` while still waking for input and newly readied work. |
+| Large draw buffers | `DrawBuffer` allocates directly on the heap, including unoptimized builds; allocator ownership and native deletion obligations are preserved. |
+
+`DisplayBuilder` adds explicit RGB888/RGB565/swapped byte buffers, PARTIAL/DIRECT/
+FULL modes, single/double buffering, stride and invalidation granularity. Existing
+`Display::register` remains synchronous RGB888 and `register_raw` follows the native
+format. No fixed frame rate, automatic pacing, panel VRR or safe-area layout is
+introduced. Choose periods from the device's measured budget.
+
+See [configurable displays](display.md) for initialization, per-flush metadata,
+unsafe asynchronous completion, retained image/Canvas storage and cleanup.
+
 ## 0.7.0 migration from 0.6.0
 
 Version 0.7.0 introduces the following breaking changes. Update rs_lvgl_ui and

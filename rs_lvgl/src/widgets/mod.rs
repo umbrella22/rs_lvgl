@@ -13,11 +13,11 @@ pub use self::slider::{SliderMode, SliderOrientation};
 mod arc;
 #[cfg(lv_use_bar)]
 mod bar;
+#[cfg(lv_use_canvas)]
+mod canvas_buffer;
 #[cfg(lv_use_keyboard)]
 mod keyboard;
 mod label;
-#[cfg(lv_use_canvas)]
-mod canvas_buffer;
 #[cfg(lv_use_canvas)]
 pub use canvas_buffer::CanvasBuffer;
 #[cfg(lv_use_slider)]

@@ -1,7 +1,8 @@
 # rs_lvgl
 
-0.7.0 增加受控双端滑块、文本编辑选项、图表描述与历史快照，以及带属性的自定义控件。
-图表和自定义控件采用破坏性接口升级。从 0.6.0 升级时请参阅[迁移指南](docs/ui-api-migration.md)。
+0.8.0 增加可配置的 RGB888/RGB565 显示缓冲区、渲染模式、无效区域对齐，以及独立的显示与输入周期。
+同时改进 tick 精度、长时间运行的时钟回绕和大绘图缓冲区的堆分配。
+从 0.7.0 升级时请参阅[迁移指南](docs/ui-api-migration.md)。
 
 [English](https://github.com/umbrella22/rs_lvgl/blob/main/README.md) · **简体中文**
 
@@ -51,8 +52,8 @@ cargo run -p rs_lvgl_ui --example studio --features showcase
 
 ```toml
 [dependencies]
-rs_lvgl = { version = "0.7.0", default-features = false, features = ["alloc"] }
-rs_lvgl_ui = "0.7.0"
+rs_lvgl = { version = "0.8.0", default-features = false, features = ["alloc"] }
+rs_lvgl_ui = "0.8.0"
 ```
 
 `rs_lvgl` 和 `rs_lvgl_ui` 支持 `no_std`。在嵌入式设备上使用 UI 层时，
@@ -65,7 +66,7 @@ rs_lvgl_ui = "0.7.0"
 
 `App` 保存应用状态，`view` 用普通函数构建 `View<CounterAction>`，输入通过消息交给 `update` 处理。
 
-下面的示例使用 0.7.0 API。`CounterAction` 是计数器自己的操作枚举，
+下面的示例使用 0.8.0 API。`CounterAction` 是计数器自己的操作枚举，
 `type Action = CounterAction` 将它关联到框架；状态保存在 `Counter`，操作逻辑写在 `update` 中。
 `Ui` 负责将变化应用到 LVGL 控件。
 
@@ -108,7 +109,7 @@ impl App for Counter {
 
 ## 组合与表单
 
-0.7.0 提供惰性条件组合、语义事件、组件插槽、`typed::...` 构造和显式表单绑定。
+0.8.0 提供惰性条件组合、语义事件、组件插槽、`typed::...` 构造和显式表单绑定。
 [组合与表单指南](docs/ui-composition.md)包含类型转换、受控输入和内容复用的写法。
 原有的根模块和 prelude 普通构造函数仍然可用。
 
@@ -118,7 +119,7 @@ impl App for Counter {
 
 ```toml
 [dependencies.rs_lvgl_ui]
-version = "0.7.0"
+version = "0.8.0"
 default-features = false
 features = [
     "alloc", "components", "widget-slider", "widget-switch", "font-montserrat-16"
@@ -130,6 +131,8 @@ features = [
 完整列表见[控件选择](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_ui/README.md#choosing-widgets)。
 
 ## 文档
+
+[显示接入指南](docs/display.md)说明 RGB888 字节缓冲区、渲染模式、异步刷新契约和设备自行选择的软件周期。
 
 需要远程检查 UI 时，可参考 [EmbedScope 接入示例](examples/embedscope/README.md)和[调试指南](https://umbrella22.github.io/rs_lvgl_website/guide/embedscope.html)。
 调试由应用显式启用；release 优化不会关闭已经选择的 feature。库的默认配置不会启动诊断接口。
@@ -144,7 +147,7 @@ features = [
 
 ## AI 编程助手
 
-仓库提供 `rs-lvgl-ui` 和 `rs-lvgl-native` 两个 skill，对应 rs_lvgl 0.7.0，包含可运行示例和集成说明。
+仓库提供 `rs-lvgl-ui` 和 `rs-lvgl-native` 两个 skill，对应 rs_lvgl 0.8.0，包含可运行示例和集成说明。
 安装命令：
 
 ```sh

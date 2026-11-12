@@ -15,11 +15,11 @@ mod alignment;
 mod buffer;
 mod builder;
 mod timing;
+pub(crate) use buffer::BufferLayout;
 pub use buffer::{BufferInfo, ColorFormat, DisplayConfigError, PixelBuffer};
 pub use builder::{DisplayBuffers, DisplayBuilder, FlushInfo, RenderMode};
 pub use timing::PeriodError;
-pub(crate) use buffer::BufferLayout;
-pub(crate) use timing::{set_input_period, input_period};
+pub(crate) use timing::{input_period, set_input_period};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum DisplayError {
@@ -167,7 +167,13 @@ pub struct DrawBuffer<const N: usize> {
 
 impl<const N: usize> Default for DrawBuffer<N> {
     fn default() -> Self {
-        let buf = Box::pin([MaybeUninit::uninit(); N]);
+        // Allocate in place. Building `[MaybeUninit; N]` as a value first puts
+        // the whole buffer on the caller's stack in unoptimized builds.
+        #[cfg(feature = "lvgl_alloc")]
+        // SAFETY: an array of `MaybeUninit` has no initialization invariant.
+        let buf = Box::into_pin(unsafe { Box::new_uninit().assume_init() });
+        #[cfg(not(feature = "lvgl_alloc"))]
+        let buf = Box::pin_uninit();
         Self {
             _refresh_buffer: buf,
         }
@@ -383,6 +389,19 @@ impl From<CoreError> for DisplayError {
 mod tests {
     use super::*;
     use crate::tests;
+
+    #[test]
+    fn draw_buffer_allocation_does_not_use_buffer_sized_stack() {
+        // 768 KiB of pixels allocated from a thread with a 128 KiB stack.
+        const PIXELS: usize = 256 * 1024;
+        tests::initialize_test(false);
+        std::thread::Builder::new()
+            .stack_size(128 * 1024)
+            .spawn(|| drop(DrawBuffer::<PIXELS>::default()))
+            .unwrap()
+            .join()
+            .unwrap();
+    }
 
     #[test]
     fn refresh_decoding_ignores_padding_and_unused_capacity() {

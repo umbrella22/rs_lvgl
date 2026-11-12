@@ -2,7 +2,7 @@
 
 The [UI skill](../.agents/skills/rs-lvgl-ui/SKILL.md) and
 [native integration skill](../.agents/skills/rs-lvgl-native/SKILL.md) target
-version 0.7.0. Resolve the application's actual dependency and source before
+version 0.8.0. Resolve the application's actual dependency and source before
 choosing APIs. Each folder is self-contained: its references resolve inside
 the copied skill, while source navigation starts from the target application's
 actual dependency. The skills do not assume their installed location is the

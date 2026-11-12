@@ -8,8 +8,8 @@ description: Build or modify declarative Rust screens with rs_lvgl_ui, including
 ## Locate the API
 
 Identify the application's Cargo dependency and the actual source checkout. This
-skill targets rs_lvgl_ui 0.7.0, layered over LVGL 9.6. For an older release,
-use the skill from its matching tag. Do not insert 0.7.0 names into an application
+skill targets rs_lvgl_ui 0.8.0, layered over LVGL 9.6. For an older release,
+use the skill from its matching tag. Do not insert 0.8.0 names into an application
 consuming an older API.
 Read the resolved manifests and relevant APIs before assuming a symbol or feature
 exists. Other LVGL wrappers have different APIs. In this source repository, the main
@@ -62,7 +62,7 @@ a memory display does not provide a visible simulator or board driver.
 
 ## Composition and forms
 
-Version 0.7.0 includes lazy children, semantic callbacks, component slots, typed
+Version 0.8.0 includes lazy children, semantic callbacks, component slots, typed
 construction and explicit bindings. The [runnable form](references/form.rs)
 preserves those composition contracts in this checkout. Resolve the actual source
 and declared widget features before choosing API names.
@@ -101,7 +101,7 @@ still have costs; measure Rust and LVGL separately for memory claims.
 The [runnable depth recipe](references/capability-depth.rs) uses the current
 breaking API. Enable widget-slider/textarea/chart/arc and alloc for this recipe;
 it also depends directly on matching rs_lvgl and rs_lvgl_sys for native readback.
-Use the matching 0.7.0 packages in a registry consumer.
+Use the matching 0.8.0 packages in a registry consumer.
 
 - Flex uses independent `.flex_wrap(bool)` and `.flex_reverse(bool)`; keys and
   descriptor child order are preserved. Reserve inner padding at both slider thumbs.
@@ -145,7 +145,7 @@ and Container/ProgressBar/MessageBox/AnimatedImage markers. Use ScrollDirection
 and scroll_direction with HORIZONTAL/VERTICAL; TextOverflow with Ellipsis and
 ScrollLoop; Align::TopCenter/BottomCenter/CenterLeft/CenterRight. Old names have
 no aliases in this source. The included [clarity example](references/api-clarity.rs)
-compiles the 0.7.0 API.
+compiles the 0.8.0 API.
 
 Use Scale::percent(50) and Angle::degrees(90) for transforms and image scale.
 Scale::ratio(n, d) is checked and rounds to native 1/256, ties upward;

@@ -1,6 +1,6 @@
 # Configurable displays and RGB888
 
-The development API registers displays with initialized byte buffers, an explicit
+The 0.8.0 API registers displays with initialized byte buffers, an explicit
 native color format and a render mode. Device integrations select buffering and
 software periods from their bandwidth, rendering time and memory budget. No fixed
 frame rate is guaranteed. Existing `Display::register` remains synchronous RGB888
@@ -274,43 +274,46 @@ suite for retained display/Canvas/image resources. These checks do not certify a
 physical panel, DMA engine, actual frame rate, scan-rate control or safe-area UX.
 
 New `ImageSource::Rgb888` requires external exhaustive matches to handle the new
-variant at the next release boundary. Oversized static-image strides that cannot
-fit the native header are rejected before mutation. No default native configuration,
-crate version or existing constructor/destructor semantics are changed here.
+variant when upgrading to 0.8.0. Oversized static-image strides that cannot
+fit the native header are rejected before mutation. The default native configuration and existing constructor/destructor semantics
+are preserved.
 
-### Local development consumers
+### Released dependencies
 
-The new display interfaces are unreleased changes on top of
-`7f9e229d37b500a121da2e1a7480c42bb922b85d`. All four crate manifests still say
-0.7.0. That base commit and the published 0.7.0 crates do not contain these new
-Rust interfaces; selecting that base Git revision alone cannot enable them. The
-local delivery branch is `codex/display-invalidation-alignment`; pin its verified
-delivery commit or use the matching checkout. Matching version strings do not
-identify the source containing these interfaces.
-
-A sibling consumer workspace can select the local crates at its workspace root:
+The typed display, timing, RGB888 image and Canvas interfaces are available in
+0.8.0. Select matching crates from crates.io:
 
 ```toml
-[patch.crates-io]
-rs_lvgl = { path = "../lv_binding_rust/rs_lvgl" }
-rs_lvgl_sys = { path = "../lv_binding_rust/rs_lvgl_sys" }
-rs_lvgl_ui = { path = "../lv_binding_rust/rs_lvgl_ui" }
-rs_lvgl_codegen = { path = "../lv_binding_rust/rs_lvgl_codegen" }
+[dependencies]
+rs_lvgl = { version = "0.8.0", default-features = false, features = ["alloc"] }
+rs_lvgl_ui = "0.8.0"
 ```
 
+Update any direct `rs_lvgl_sys` or `rs_lvgl_codegen` dependencies to 0.8.0 as well.
 Resolve the consumer lockfile deliberately and inspect normal/build dependency
 sources, effective application `lv_conf.h`, target bindgen and the final linked
-provider. Keep one vendored LVGL provider; matching version text is insufficient.
-`rs_lvgl_sys` is both a normal and build dependency of `rs_lvgl`.
+provider. Keep one vendored LVGL provider. `rs_lvgl_sys` is both a normal and build
+dependency of `rs_lvgl`; a matching version string alone does not establish ABI
+compatibility with an application-supplied binary.
 
-An existing published-0.7.0 raw port can continue with native
-`lv_display_set_color_format`, `lv_display_set_buffers_with_stride`, flush/wait
-callbacks and per-flush active draw-buffer metadata. Native RGB888 rendering is
-already present there. Input periods use `lv_indev_get_read_timer` plus
-`lv_timer_set_period`; display periods use `lv_display_get_refr_timer`. The new
-typed setters/readback and RGB888 image constructors require the local changes.
-Do not call the new `lv_rs_timer_get_period` shim against an older native provider.
-Native `LV_EVENT_INVALIDATE_AREA` is also available in published 0.7.0 for a raw
-port that later needs invalidation alignment. The typed builder setting adds
-validation, native row-probe handling and retained event lifecycle. Current
-PARTIAL-shadow consumers can adopt it separately from the device's RGB888 update.
+An existing 0.7.0 raw port already has native RGB888 rendering, stride-aware
+buffers, display/input timers and `LV_EVENT_INVALIDATE_AREA`. The typed builder,
+period readback, `lv_rs_timer_get_period` shim and RGB888 image constructors in
+this guide require 0.8.0. Do not call the new shim against an older native provider.
+Existing `Display::register`/`register_raw` integrations can adopt the builder
+separately from changing their device's pixel-transfer path.
+
+### Timer-loop migration
+
+`timer_handler()` runs ready native timers and returns milliseconds until the
+next timer is due. `NO_TIMER_READY` means all native timers are paused. A platform
+loop must also wake for input or work that readies a timer. The return value is a
+software scheduling hint; it does not change the physical panel's scan rate.
+`task_handler()` preserves the same behavior while discarding that hint.
+
+`tick_inc` carries fractional milliseconds across calls and requires 32-bit atomic
+load/store plus a single tick source. Do not feed a custom tick callback and
+`tick_inc` as competing clocks. With `rust_timer`, `update_clock` wraps at the
+native `u32` millisecond boundary and always returns `Ok(())`; applications must
+track absolute uptime themselves. See the [migration guide](ui-api-migration.md)
+for compatibility details. Automatic pacing and safe-area layout remain research.

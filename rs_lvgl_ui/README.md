@@ -1,6 +1,6 @@
 # rs_lvgl_ui
 
-Version 0.7.0 adds controlled range/text editing, chart descriptors/history and
+Version 0.8.0 adds controlled range/text editing, chart descriptors/history and
 custom properties with breaking chart/custom signatures. Follow the
 [migration guide](../docs/ui-api-migration.md) when upgrading from 0.6.0 and the
 [capability guide](../docs/ui-capability-depth.md) for the new APIs.
@@ -8,7 +8,7 @@ custom properties with breaking chart/custom signatures. Follow the
 The [browser studio](https://umbrella22.github.io/rs_lvgl_website/en/studio.html) is built from a separately pinned website checkout. The native Studio in this source has eleven pages; deployment of its new depth pages to the website is separate. See the [site build instructions](https://github.com/umbrella22/rs_lvgl_website).
 
 
-A declarative Rust UI layer for LVGL 9.6. Version 0.7.0 provides lazy composition,
+A declarative Rust UI layer for LVGL 9.6. Version 0.8.0 provides lazy composition,
 semantic events, typed construction and explicit form bindings. See the
 [composition guide](../docs/ui-composition.md) for conversion boundaries,
 controlled-input behavior and runnable examples.
@@ -77,7 +77,7 @@ widgets are not compiled at all. The defaults keep the full set.
 ```toml
 [dependencies]
 [dependencies.rs_lvgl_ui]
-version = "0.7.0"
+version = "0.8.0"
 default-features = false
 features = [
     "alloc", "components", "widget-slider", "widget-switch", "font-montserrat-20",
@@ -117,7 +117,7 @@ that are shared by several widgets; the full set keeps every lint.
 
 ## Quick start
 
-This example also works with the published 0.7.0 packages.
+This example also works with the published 0.8.0 packages.
 
 Use ordinary function constructors, `App::Action` and flat style modifiers.
 The [style and action guide](../docs/ui-styles.md) defines initialization,

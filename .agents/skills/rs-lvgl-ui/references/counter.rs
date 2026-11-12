@@ -1,5 +1,5 @@
-//! Memory-display example for rs_lvgl and rs_lvgl_ui 0.7.0.
-//! Dependencies: rs_lvgl 0.7.0 (alloc), rs_lvgl_ui 0.7.0 (alloc).
+//! Memory-display example for rs_lvgl and rs_lvgl_ui 0.8.0.
+//! Dependencies: rs_lvgl 0.8.0 (alloc), rs_lvgl_ui 0.8.0 (alloc).
 //! No SDL or optional widget is needed.
 use rs_lvgl_ui::prelude::*;
 
