@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Add opt-in RGB888/RGB565/swapped byte-buffer display registration, independent
+  render mode/buffer count, validated native alignment/stride/capacity, flush
+  metadata and an explicit unsafe asynchronous backend/wait contract.
+- Add device-selected invalidation column/row granularity before native drawing
+  and DIRECT buffer synchronization, including clipped edge groups and checked
+  PARTIAL row capacity.
+- Add runtime display and concrete input period settings with native readback,
+  static/shared RGB888 image sources and retained native RGB888/RGB565 Canvas
+  buffers. Existing declarative Canvas remains ARGB8888.
+- Add a memory-display example, native/compile-fail contract checks, padded-stride
+  fixtures and display/image/Canvas workloads in the dual-heap acceptance suite.
+
+### Compatibility
+
+- `ImageSource` gains a `Rgb888` variant; external exhaustive matches must cover it
+  at the next release boundary. Static-image layouts with unrepresentable native
+  stride are rejected before mutation. Existing display registration, native
+  defaults and handle-drop/native-delete behavior are preserved.
+- Automatic pacing, panel VRR and display safe-area layout remain research only.
+
 ## 0.7.0 — 2026-11-07
 
 ### Breaking changes

@@ -1,6 +1,12 @@
 /* Currently a pure include point for the vendored LVGL build; place any
  * additional C shims the Rust side needs here. */
 #include "rs_lvgl_sys.h"
+#include "src/misc/lv_timer_private.h"
+
+uint32_t lv_rs_timer_get_period(const lv_timer_t *timer)
+{
+    return timer->period;
+}
 
 uint32_t lv_rs_loaded_resource_support(void)
 {

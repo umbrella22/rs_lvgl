@@ -451,6 +451,45 @@ fn workload(case: &str) {
         }
         let mut ui = Ui::new(display, Theme::dark()).unwrap();
         match case {
+            "display-adaptation" => {
+                use rs_lvgl::{CanvasBuffer, ColorFormat, DisplayBuffers, DisplayBuilder, PixelBuffer, RenderMode};
+                let captured = vec![0u8; 79];
+                let configured = DisplayBuilder::new(16, 16)
+                    .render_mode(RenderMode::Direct).stride(64)
+                    .invalidation_alignment(4, 2)
+                    .buffers(DisplayBuffers::Double {
+                        front: PixelBuffer::Owned(vec![0; 1024].into_boxed_slice()),
+                        back: PixelBuffer::Owned(vec![0; 1024].into_boxed_slice()),
+                    }).build(move |_| { std::hint::black_box(&captured); }).unwrap();
+                for format in [ColorFormat::Rgb888, ColorFormat::Rgb565, ColorFormat::Rgb888] {
+                    let mut canvas = rs_lvgl::widgets::Canvas::new().unwrap();
+                    for _ in 0..3 {
+                        canvas.attach_buffer(CanvasBuffer::new(7, 5, format, Some(32),
+                            PixelBuffer::Owned(vec![0; 160].into_boxed_slice())).unwrap()).unwrap();
+                    }
+                    unsafe { rs_lvgl_sys::lv_obj_delete(canvas.raw().as_ptr()); }
+                }
+                unsafe { rs_lvgl_sys::lv_refr_now(configured.raw().as_ptr()); configured.delete(); }
+            }
+            "rgb888-images" => {
+                struct Picture;
+                impl App for Picture {
+                    type Action = String;
+                    fn update(&mut self, _: String) {}
+                    fn view(&self, _: &Theme) -> View<String> {
+                        image(ImageSource::rgb888(1, 1, &[0, 0, 255]))
+                    }
+                }
+                ui.mount(&Picture).unwrap();
+                drop(ui.snapshot().unwrap());
+                ui.unmount();
+                let pixels: Rc<[u8]> = Rc::from(&[0u8, 255, 0, 0][..]);
+                let loaded = ImageResource::rgb888(1, 1, 4, pixels).unwrap();
+                let app = ResourcePage { image: Some(loaded), font: None, fail: false };
+                ui.mount(&app).unwrap();
+                drop(ui.snapshot().unwrap());
+                ui.unmount();
+            }
             "editing-depth" => editing_workload(&mut ui),
             "chart-depth" => chart_workload(&mut ui),
             "custom-props" => custom_props_workload(&mut ui),
@@ -632,6 +671,8 @@ fn both_heaps_balance_across_resource_lifecycles() {
     observable_allocator();
     for case in [
         "display",
+        "display-adaptation",
+        "rgb888-images",
         "callbacks",
         "styles",
         "focus",

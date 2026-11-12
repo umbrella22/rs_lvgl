@@ -342,18 +342,8 @@ pub(super) fn validate_kind<M>(node: &Node<M>) -> Result<(), UiError> {
 fn validate_image_source(source: &ImageSource) -> Result<(), UiError> {
     match source {
         ImageSource::Raw(raw) if raw.as_ptr().is_null() => Err(UiError::InvalidProperty),
-        ImageSource::Rgb565 {
-            width,
-            height,
-            data,
-        } => {
-            let expected = (*width as usize)
-                .checked_mul(*height as usize)
-                .and_then(|pixels| pixels.checked_mul(2));
-            if *width == 0 || *height == 0 || expected != Some(data.len()) {
-                return Err(UiError::InvalidProperty);
-            }
-            Ok(())
+        source if source.is_pixels() => {
+            if source.valid_pixels() { Ok(()) } else { Err(UiError::InvalidProperty) }
         }
         _ => Ok(()),
     }

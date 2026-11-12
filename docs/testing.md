@@ -23,6 +23,9 @@ cargo test -p rs_lvgl_ui --features showcase,diagnostics,strict-properties,updat
 cargo check -p rs_lvgl_ui --no-default-features --features alloc,diagnostics,strict-properties --lib
 cargo test -p rs_lvgl_ui --no-default-features --features alloc,components -- --test-threads=1
 python3 scripts/check-ui-api.py --artifacts target/ui-api-audit
+python3 scripts/check-display-contracts.py --locked --artifacts target/display-contracts
+# Development acceptance on unchanged inputs:
+python3 scripts/check-display-contracts.py --locked --repeat-lifecycle 3 --artifacts target/display-contracts
 ```
 
 `Cargo.lock` is ignored. Local receipts record its digest; `--locked --offline`
@@ -30,6 +33,17 @@ requires an existing resolved lockfile and cached dependencies. CI first resolve
 dependencies, then uses `--locked` for subsequent checks. `--all-features` is not a
 supported replacement for the matrix: some features require nightly or external
 application hooks.
+
+The [display checks](display.md) execute RGB888/RGB565/swapped pixel oracles across
+all three render modes and both buffer counts, asynchronous completion, deletion,
+logical invalidation granularity, clipped edge groups, native DIRECT sync regions,
+period readback, RGB888 images and preserved ARGB Canvas behavior. They repeat
+resource lifecycles when requested, exercise an 8-byte native stride/alignment
+configuration, and compile positive/negative external `no_std` consumers. Calls
+to native-byte access and flush completion without `unsafe` are rejected.
+The dual-heap runner also covers the new retained display, Canvas and RGB888 image
+resources. These are host contracts; physical DMA, FPS, panel VRR and safe areas
+require separate device or UI acceptance.
 
 The `rs_lvgl` workflow accepts `main` and `codex/**` pushes, PRs targeting
 `main`, and manual dispatch. Workspace builds run on Ubuntu 24.04 and macOS 15. UI,

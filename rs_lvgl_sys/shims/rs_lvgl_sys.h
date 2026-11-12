@@ -13,6 +13,9 @@ extern "C" {
  * This reports the effective compiled header, including application headers. */
 uint32_t lv_rs_loaded_resource_support(void);
 
+/* Read the period of a live timer in this pinned native provider. */
+uint32_t lv_rs_timer_get_period(const lv_timer_t *timer);
+
 #if LV_USE_BARCODE
 /* Returns the encoded pixel width, or zero for invalid/unrepresentable data. */
 uint32_t lv_rs_barcode_width(const char *data, lv_barcode_encoding_t encoding, uint16_t scale);

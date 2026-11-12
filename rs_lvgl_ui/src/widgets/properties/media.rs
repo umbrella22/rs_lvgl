@@ -24,12 +24,12 @@ pub(super) fn apply(
             };
             let source_changed = old_source != Some(*source);
             // SAFETY: `obj` is a live image object. `retained` keeps a
-            // generated RGB565 descriptor alive for as long as the mounted
+            // generated pixel descriptor alive for as long as the mounted
             // node exists; raw descriptors are the caller's responsibility.
             unsafe {
                 let rebuild = source_changed
                     || (!matches!(retained, Retained::Image(_))
-                        && matches!(source, ImageSource::Rgb565 { .. }));
+                        && source.is_pixels());
                 if rebuild {
                     let new_descriptor = source.descriptor();
                     let pointer = source.ptr(new_descriptor.as_deref());
@@ -73,7 +73,7 @@ pub(super) fn apply(
             } || (!matches!(retained, Retained::Images(_))
                 && core::iter::once(released)
                     .chain(pressed)
-                    .any(|source| matches!(source, ImageSource::Rgb565 { .. })));
+                    .any(|source| source.is_pixels()));
             if changed {
                 let (descriptors, pointers) =
                     image_pointers(core::iter::once(*released).chain(*pressed));

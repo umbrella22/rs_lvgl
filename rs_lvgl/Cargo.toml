@@ -13,12 +13,17 @@ build = "build.rs"
 
 [dependencies]
 rs_lvgl_sys = { version = "0.7.0", path = "../rs_lvgl_sys" }
+
 cty = "0.2.2"
 embedded-graphics = { version = "0.8.0", optional = true }
 cstr_core = { version = "0.2.6", default-features = false, features = ["alloc"] }
 bitflags = "2.6"
 paste = "1.0"
 ctor = "0.2"
+
+[[example]]
+name = "byte_display"
+required-features = ["alloc"]
 
 [features]
 default = ["embedded_graphics", "drivers"]

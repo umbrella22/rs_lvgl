@@ -11,6 +11,16 @@ use core::pin::Pin;
 use core::ptr::NonNull;
 use core::{ptr, result};
 
+mod alignment;
+mod buffer;
+mod builder;
+mod timing;
+pub use buffer::{BufferInfo, ColorFormat, DisplayConfigError, PixelBuffer};
+pub use builder::{DisplayBuffers, DisplayBuilder, FlushInfo, RenderMode};
+pub use timing::PeriodError;
+pub(crate) use buffer::BufferLayout;
+pub(crate) use timing::{set_input_period, input_period};
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum DisplayError {
     NotAvailable,
@@ -262,6 +272,7 @@ unsafe extern "C" fn drop_display_state<F, const N: usize>(event: *mut rs_lvgl_s
     unsafe { drop(Box::from_raw(state as *mut DisplayState<F, N>)) };
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Area {
     pub x1: i32,
     pub x2: i32,

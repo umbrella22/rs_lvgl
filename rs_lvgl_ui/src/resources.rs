@@ -58,7 +58,7 @@ struct ImageData {
     _pixels: Rc<[u8]>,
 }
 
-/// A stable RGB565 descriptor and shared immutable pixels. Clones share the
+/// A stable native pixel descriptor and shared immutable pixels. Clones share the
 /// allocation; a mounted node retains a clone independently of App::view.
 #[cfg(feature = "widget-image")]
 #[derive(Clone)]
@@ -75,9 +75,25 @@ impl ImageResource {
         stride: u32,
         pixels: Rc<[u8]>,
     ) -> Result<Self, ResourceError> {
-        if !resource_support().supported() || rs_lvgl_sys::LV_DRAW_SW_SUPPORT_RGB565 == 0 {
+        if rs_lvgl_sys::LV_DRAW_SW_SUPPORT_RGB565 == 0 {
             return Err(ResourceError::UnsupportedConfiguration);
         }
+        Self::from_pixels(width, height, stride, pixels, rs_lvgl::ColorFormat::Rgb565)
+    }
+
+    /// Accept native RGB888 bytes (B,G,R) with an explicit byte stride.
+    /// Pixels and the stable descriptor are shared across clones and native users.
+    pub fn rgb888(width: u16, height: u16, stride: u32, pixels: Rc<[u8]>) -> Result<Self, ResourceError> {
+        if rs_lvgl_sys::LV_DRAW_SW_SUPPORT_RGB888 == 0 {
+            return Err(ResourceError::UnsupportedConfiguration);
+        }
+        Self::from_pixels(width, height, stride, pixels, rs_lvgl::ColorFormat::Rgb888)
+    }
+
+    fn from_pixels(width: u16, height: u16, stride: u32, pixels: Rc<[u8]>, format: rs_lvgl::ColorFormat)
+        -> Result<Self, ResourceError>
+    {
+        if !resource_support().supported() { return Err(ResourceError::UnsupportedConfiguration); }
         let bytes = (stride as usize)
             .checked_mul(height as usize)
             .ok_or(ResourceError::InvalidLayout)?;
@@ -85,9 +101,9 @@ impl ImageResource {
         let row_alignment = rs_lvgl_sys::LV_DRAW_BUF_STRIDE_ALIGN as u32;
         if width == 0
             || height == 0
-            || stride < u32::from(width) * 2
+            || stride < u32::from(width) * format.bytes_per_pixel() as u32
             || stride > u16::MAX as u32
-            || stride % 2 != 0
+            || (format == rs_lvgl::ColorFormat::Rgb565 && stride % 2 != 0)
             || row_alignment == 0
             || stride % row_alignment != 0
             || alignment == 0
@@ -103,7 +119,7 @@ impl ImageResource {
             .set_magic(rs_lvgl_sys::LV_IMAGE_HEADER_MAGIC);
         descriptor
             .header
-            .set_cf(rs_lvgl_sys::lv_color_format_t_LV_COLOR_FORMAT_RGB565);
+            .set_cf(format.to_raw());
         descriptor.header.set_w(u32::from(width));
         descriptor.header.set_h(u32::from(height));
         descriptor.header.set_stride(stride);

@@ -268,6 +268,10 @@ name = "canvas"
 required-features = ["widget-canvas"]
 
 [[test]]
+name = "display_images"
+required-features = ["widget-image", "widget-canvas"]
+
+[[test]]
 name = "extensions"
 required-features = ["widget-qrcode", "widget-barcode", "widget-gif", "widget-lottie", "widget-ime-pinyin", "font-cjk-14", "font-cjk-16"]
 

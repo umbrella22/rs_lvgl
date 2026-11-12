@@ -142,6 +142,9 @@ See [feature selection](https://github.com/umbrella22/rs_lvgl/blob/main/rs_lvgl_
 
 ## Documentation
 
+The development [display guide](docs/display.md) covers RGB888 byte buffers,
+render modes, asynchronous flush contracts and device-specific scheduling periods.
+
 For optional remote UI inspection, see the [EmbedScope application example](examples/embedscope/README.md)
 and [debugging guide](https://umbrella22.github.io/rs_lvgl_website/en/guide/embedscope.html).
 The application explicitly selects diagnostics; release optimization does not turn

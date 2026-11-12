@@ -81,6 +81,8 @@ pub mod font;
 pub mod input_device;
 pub mod misc;
 pub mod widgets;
+#[cfg(lv_use_canvas)]
+pub use widgets::CanvasBuffer;
 
 #[cfg(feature = "rust_timer")]
 pub mod timer;

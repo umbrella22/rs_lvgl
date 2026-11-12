@@ -135,6 +135,20 @@ impl Keypad {
     }
 }
 
+impl Keypad {
+    /// Set the software input sampling period independently of display refresh.
+    /// Only nonzero whole milliseconds representable by u32 are accepted.
+    pub fn set_read_period(&mut self, period: core::time::Duration) -> Result<(), crate::PeriodError> {
+        // SAFETY: the concrete device retains its registered native descriptor.
+        unsafe { crate::display::set_input_period(self.raw().map_or(core::ptr::null_mut(), |p| p.as_ptr()), period) }
+    }
+
+    pub fn read_period(&self) -> Result<core::time::Duration, crate::PeriodError> {
+        // SAFETY: native deletion follows this device's lifetime contract.
+        unsafe { crate::display::input_period(self.raw().map_or(core::ptr::null_mut(), |p| p.as_ptr())) }
+    }
+}
+
 impl Drop for Keypad {
     fn drop(&mut self) {
         if let Some(indev) = self.descriptor.take() {
