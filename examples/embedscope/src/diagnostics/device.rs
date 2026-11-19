@@ -1,6 +1,11 @@
-use super::{frame::Frame, HEIGHT, WIDTH};
+use super::{
+    evidence::{Attempt, Decision, Outcome},
+    frame::Frame,
+    tree::SettingsTree,
+    BrightnessCase, HEIGHT, WIDTH,
+};
 use escope_agent::Backend;
-use escope_lvgl::{native::NativeTree, UiBridge};
+use escope_lvgl::UiBridge;
 use escope_protocol::{self as p, capability, decode_payload, encode_payload, Operation, Status};
 use rs_lvgl::{
     input_device::{InputDriver, Pointer, PointerInputData},
@@ -21,11 +26,14 @@ struct Capture {
 }
 
 pub struct Device {
-    tree: UiBridge<NativeTree<128>>,
+    tree: UiBridge<SettingsTree>,
     pixels: Rc<RefCell<Frame>>,
     pointer: Pointer,
     sample: Rc<Cell<Sample>>,
     release_at: Option<Instant>,
+    attempt: Option<Attempt>,
+    pub cancelled_brightness: bool,
+    case: BrightnessCase,
     capture: Option<Capture>,
     next_capture: u32,
     started: Instant,
@@ -34,7 +42,12 @@ pub struct Device {
 }
 
 impl Device {
-    pub fn new(display: &rs_lvgl::Display, pixels: Rc<RefCell<Frame>>, boot: u32) -> Self {
+    pub fn new(
+        display: &rs_lvgl::Display,
+        pixels: Rc<RefCell<Frame>>,
+        boot: u32,
+        case: BrightnessCase,
+    ) -> Self {
         let sample = Rc::new(Cell::new(Sample {
             x: 0,
             y: 0,
@@ -57,15 +70,19 @@ impl Device {
         .expect("pointer");
         // SAFETY: the active screen lives until after Inspector and Device drop.
         // Construction, every read and teardown occur on this sole UI thread.
-        let tree = unsafe {
-            NativeTree::new(NonNull::new(rs_lvgl::sys::lv_screen_active()).expect("screen"))
+        let mut tree = unsafe {
+            SettingsTree::new(NonNull::new(rs_lvgl::sys::lv_screen_active()).expect("screen"))
         };
+        tree.refresh_layout();
         Self {
             tree: UiBridge::new(tree),
             pixels,
             pointer,
             sample,
             release_at: None,
+            attempt: None,
+            cancelled_brightness: false,
+            case,
             capture: None,
             next_capture: 1,
             started: Instant::now(),
@@ -79,7 +96,26 @@ impl Device {
     }
 
     pub fn changed(&mut self) -> Result<(), Status> {
+        self.tree.source_mut().refresh_layout();
         self.tree.source_mut().changed()
+    }
+
+    pub fn observe(&mut self, decision: Option<Decision>) -> Result<Option<Outcome>, Status> {
+        let Some(attempt) = self.attempt.as_mut() else {
+            return Ok(None);
+        };
+        let center = self.tree.source_mut().preview_center()?;
+        let result = attempt.observe(
+            decision,
+            self.release_at.is_none(),
+            &self.pixels.borrow(),
+            center,
+            Instant::now(),
+        );
+        if result.is_some() {
+            self.attempt = None;
+        }
+        Ok(result)
     }
 
     pub fn release_due(&mut self) {
@@ -87,7 +123,13 @@ impl Device {
             .release_at
             .is_some_and(|deadline| Instant::now() >= deadline)
         {
-            self.release_at = None;
+            self.release_input();
+        }
+    }
+
+    fn release_input(&mut self) {
+        self.release_at = None;
+        if self.sample.get().pressed {
             self.sample.set(Sample {
                 pressed: false,
                 ..self.sample.get()
@@ -97,12 +139,12 @@ impl Device {
     }
 
     fn read_pointer(&mut self) {
-        // Pressed flags are part of NativeTree output even before a view update.
-        self.changed()
-            .expect("tree revision exhausted; restart the example");
         // SAFETY: live pointer/display, UI-loop safe point, no callback is active.
         // Native callbacks enqueue messages; the outer loop drains them later.
         unsafe { rs_lvgl::sys::lv_indev_read(self.pointer.get_descriptor().unwrap()) };
+        // Pressed flags are part of the tree even before a model update.
+        self.changed()
+            .expect("tree revision exhausted; restart the example");
     }
 }
 
@@ -124,7 +166,11 @@ impl Backend for Device {
             name: "rs_lvgl native example",
             model: "LVGL 9.6 / memory display",
             firmware: env!("CARGO_PKG_VERSION"),
-            build_id: "rs-lvgl-0.3.1+escope-0.1.0",
+            build_id: concat!(
+                "rs-lvgl-example-",
+                env!("CARGO_PKG_VERSION"),
+                "+escope-0.6.0"
+            ),
             boot_id: self.boot,
             uptime_ms: self.uptime(),
         }
@@ -132,14 +178,10 @@ impl Backend for Device {
 
     fn reset(&mut self) {
         self.capture = None;
-        self.release_at = None;
-        self.sample.set(Sample {
-            pressed: false,
-            ..self.sample.get()
-        });
+        self.attempt = None;
         // Complete an accepted tap with release, including a short-lived CLI
         // connection. This can enqueue its click; it never leaves a held input.
-        self.read_pointer();
+        self.release_input();
     }
 
     fn handle(&mut self, op: u16, payload: &[u8], out: &mut [u8]) -> Result<usize, Status> {
@@ -165,16 +207,24 @@ impl Backend for Device {
                 if tap.x >= WIDTH || tap.y >= HEIGHT || !(1..=5000).contains(&tap.hold_ms) {
                     return Err(Status::InvalidArgument);
                 }
-                if self.release_at.is_some() {
+                if self.release_at.is_some() || self.attempt.is_some() {
                     return Err(Status::Busy);
+                }
+                let brightness = self.tree.source_mut().hits_brightness(tap.x, tap.y)?;
+                if brightness {
+                    let center = self.tree.source_mut().preview_center()?;
+                    self.attempt = Some(Attempt::new(&self.pixels.borrow(), center));
+                }
+                self.release_at =
+                    Some(Instant::now() + std::time::Duration::from_millis(tap.hold_ms.into()));
+                if brightness && self.case == BrightnessCase::IgnoreInput {
+                    return Ok(0);
                 }
                 self.sample.set(Sample {
                     x: tap.x as i32,
                     y: tap.y as i32,
                     pressed: true,
                 });
-                self.release_at =
-                    Some(Instant::now() + std::time::Duration::from_millis(tap.hold_ms.into()));
                 self.read_pointer();
                 Ok(0)
             }
@@ -255,17 +305,15 @@ impl Backend for Device {
                 // Explicit Cancel suppresses a pending click. Disconnect
                 // instead completes an already accepted tap.
                 self.capture = None;
-                self.release_at = None;
-                self.sample.set(Sample {
-                    pressed: false,
-                    ..self.sample.get()
-                });
-                // SAFETY: live native input on its owning UI thread. The next
-                // sample emits PRESS_LOST and clears native pressed state.
-                unsafe {
-                    rs_lvgl::sys::lv_indev_wait_release(self.pointer.get_descriptor().unwrap())
-                };
-                self.read_pointer();
+                self.cancelled_brightness = self.attempt.take().is_some();
+                if self.sample.get().pressed {
+                    // SAFETY: live native input on its owning UI thread. The next
+                    // sample emits PRESS_LOST and clears native pressed state.
+                    unsafe {
+                        rs_lvgl::sys::lv_indev_wait_release(self.pointer.get_descriptor().unwrap())
+                    };
+                }
+                self.release_input();
                 Ok(0)
             }
             _ => Err(Status::Unsupported),

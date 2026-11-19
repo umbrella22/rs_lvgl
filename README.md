@@ -1,5 +1,8 @@
 # rs_lvgl
 
+Version 0.8.1 updates the [optional EmbedScope example](examples/embedscope/README.md)
+with input outcomes and completed-frame evidence.
+
 Version 0.8.0 adds configurable RGB888/RGB565 display buffers, render modes,
 invalidation alignment and independent display/input periods. It also improves
 tick precision, long-uptime clock behavior and large draw-buffer allocation.
@@ -58,8 +61,8 @@ Add the crates.io dependencies to your project:
 
 ```toml
 [dependencies]
-rs_lvgl = { version = "0.8.0", default-features = false, features = ["alloc"] }
-rs_lvgl_ui = "0.8.0"
+rs_lvgl = { version = "0.8.1", default-features = false, features = ["alloc"] }
+rs_lvgl_ui = "0.8.1"
 ```
 
 `rs_lvgl` and `rs_lvgl_ui` support `no_std`. Embedded applications using the UI
@@ -129,7 +132,7 @@ Disable the default feature set to select the widgets and fonts you need:
 
 ```toml
 [dependencies.rs_lvgl_ui]
-version = "0.8.0"
+version = "0.8.1"
 default-features = false
 features = [
     "alloc", "components", "widget-slider", "widget-switch", "font-montserrat-16"

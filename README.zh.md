@@ -1,5 +1,7 @@
 # rs_lvgl
 
+0.8.1 更新了[可选的 EmbedScope 接入示例](examples/embedscope/README.md)，可以检查输入结果和已完成帧的像素。
+
 0.8.0 增加可配置的 RGB888/RGB565 显示缓冲区、渲染模式、无效区域对齐，以及独立的显示与输入周期。
 同时改进 tick 精度、长时间运行的时钟回绕和大绘图缓冲区的堆分配。
 从 0.7.0 升级时请参阅[迁移指南](docs/ui-api-migration.md)。
@@ -52,8 +54,8 @@ cargo run -p rs_lvgl_ui --example studio --features showcase
 
 ```toml
 [dependencies]
-rs_lvgl = { version = "0.8.0", default-features = false, features = ["alloc"] }
-rs_lvgl_ui = "0.8.0"
+rs_lvgl = { version = "0.8.1", default-features = false, features = ["alloc"] }
+rs_lvgl_ui = "0.8.1"
 ```
 
 `rs_lvgl` 和 `rs_lvgl_ui` 支持 `no_std`。在嵌入式设备上使用 UI 层时，
@@ -119,7 +121,7 @@ impl App for Counter {
 
 ```toml
 [dependencies.rs_lvgl_ui]
-version = "0.8.0"
+version = "0.8.1"
 default-features = false
 features = [
     "alloc", "components", "widget-slider", "widget-switch", "font-montserrat-16"

@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+## 0.8.1 — 2026-11-19
+
+### Changed
+
+- Pair the opt-in EmbedScope example with the released EmbedScope 0.6.0 SDK and
+  Inspector. The example supplies a semantic tree, a controlled brightness
+  slider, and preview evidence from completed frames.
+- Verify the standalone registry consumer and the feature-off executable in CI.
+  The example defaults to diagnostics off.
+- Add an ESP32-S31 acceptance runbook for Dango OS, including capture lifetime,
+  USB reconnect and restoration of the original firmware.
+
 ## 0.8.0 — 2026-11-12
 
 ### Added

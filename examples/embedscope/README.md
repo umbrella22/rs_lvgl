@@ -1,10 +1,14 @@
 # Optional EmbedScope diagnostics
 
-This standalone application connects published `rs_lvgl` / `rs_lvgl_ui` 0.3.1 to
-EmbedScope 0.1.0. It renders a real LVGL 9.6 counter into a 320 × 240 memory display.
-There is no visible simulator window. The Inspector displays the actual RGB888
-flush output; its input requests use a native LVGL pointer driver and update the
-Rust application through the ordinary message loop.
+This standalone application connects published `rs_lvgl` / `rs_lvgl_ui` 0.8 to
+EmbedScope 0.6.0. It renders a counter and controlled brightness slider into a
+320 × 240 LVGL 9.6 memory display. Inspector reads the RGB888 flush output;
+there is no simulator window. Native pointer input sends typed `App::Action`
+messages through the ordinary UI loop.
+
+The app supplies a `TreeSource` for named controls and uses the default
+`escope-lvgl` feature set. Applications that use `escope-lvgl 0.6/native`
+resolve the same `rs_lvgl_sys` 0.8 provider, source and configuration as rs_lvgl.
 
 The four library crates do not start a server or depend on EmbedScope. This
 application owns the `embedscope` feature, which is **off by default**. All its
@@ -25,19 +29,40 @@ In another terminal:
 ```sh
 escope -d tcp://127.0.0.1:9338 --json info
 escope -d tcp://127.0.0.1:9338 --json ui tree
-escope -d tcp://127.0.0.1:9338 display capture counter-before.png
-escope -d tcp://127.0.0.1:9338 input tap 100 140 --hold-ms 60
-escope -d tcp://127.0.0.1:9338 display capture counter-after.png
+escope -d tcp://127.0.0.1:9338 display capture settings.png
 ```
 
-Use new capture filenames. The button spans 224 × 56 pixels; its exact position
-comes from `ui tree`. The default layout includes `(100, 140)`. In the desktop
-Inspector, connect to `tcp://127.0.0.1:9338`. Enable sending taps when reproducing
-input. The listener accepts loopback addresses only and serves one connection at
-a time. Use one Session for concurrent SDK operations.
+Use new capture filenames. The live tree gives the position of `settings.increment`
+and `action:settings.brightness`. `escope input tap X Y` accepts display-pixel
+coordinates; the reply confirms admission, not an application change. The listener
+accepts loopback addresses only and serves one connection at a time. Inspector and
+CLI take turns; an SDK client can subscribe and tap on the same session.
 
 `--listen 127.0.0.1:0` chooses an available port; the application prints its endpoint.
-`--run-for-ms 1000` limits execution and performs ordered native teardown.
+`--run-for-ms 1000` limits execution. For automated runs with a piped stdin,
+`--exit-on-stdin-close` starts the same ordered native teardown when the parent
+closes the pipe.
+
+## Reproduce slider outcomes
+
+Connect with EmbedScope Inspector 0.6.0 or later. Enable **Send taps**, click near the middle of the brightness
+slider, and inspect **Last observed action**. Refresh if the displayed screenshot
+predates the frame shown in the evidence. Tree and screenshot are separate reads.
+Restart the example and reconnect for each independent case:
+
+| `--brightness-case` | Tap position | Expected result |
+| --- | --- | --- |
+| `normal` (default) | About 50% across the slider | The preview swatch changes; a newer completed RGB888 frame contains the expected preview pixel |
+| `normal` | About 88% across | The application rejects values over 65 and restores the controlled slider; the swatch is unchanged |
+| `ignore-input` | About 50% across | The request is admitted but no brightness action reaches the application |
+| `hold-preview` | About 50% across | The application changes brightness state, but the swatch does not show the expected color |
+
+Example: append `-- --brightness-case hold-preview` to the `cargo run` command.
+The device reports this bounded observation over the `escope.ui.evidence.v1`
+log target. It does not export the input value. The panel shows the last available
+observation for that tagged control in the current session, not a prediction or
+an acknowledgement of the latest tap. A short-lived CLI tap can change the UI but
+cannot collect an outcome from the closed session.
 
 ## Enable and disable
 
@@ -62,14 +87,15 @@ the final application's unified feature graph.
 
 - `diagnostics/wire.rs` keeps one pending frame, preserves partial TX, bounds RX
   work per UI tick, and drops the connection if TX stalls for three seconds.
-- `diagnostics/device.rs` reads the existing native screen on the UI thread. The
-  general `NativeTree<128>` supplies generic `lv_obj` kinds, geometry and state;
-  semantic View names and text need an application-owned `TreeSource`.
+- `diagnostics/tree.rs` projects this page's fixed native hierarchy on the UI
+  thread. Public names are explicit; no label text or object pointers are exported.
+  View keys are not used as native IDs. Input or layout updates advance the revision.
 - Captures copy the full rendered display into a fixed owned frame. New captures
   return Busy until End; disconnect and Cancel release the frame. There is no
   panel readback or synthetic reference image.
 - Native taps pair press/release. Disconnect completes an accepted tap early,
-  including a short-lived CLI connection; explicit Cancel suppresses its click.
+  including a short-lived CLI connection; explicit Cancel suppresses the pending
+  click or slider edit. Neither carries pending evidence into a later session.
   Unsupported crash and unmeasured memory statistics are not invented.
 - The application registers a diagnostic sink and forwards error/ignored-property
   metadata through a bounded queue. Counter updates produce structured log events.
@@ -79,18 +105,18 @@ the final application's unified feature graph.
 
 For a board, keep transport in its existing executor and queue requests to the UI
 thread. Mirror the platform's actual final display path and route injected input
-through the system's input arbitration. Keep exactly one native provider: this
-example uses registry dependencies throughout so `escope-lvgl/native` resolves to
-the same `rs_lvgl`. Mixing a path provider with a registry provider needs explicit
-source unification or an application `TreeSource` without the `native` feature.
+through the system's input arbitration. Keep exactly one native provider: Cargo
+cannot unify path and registry sources by version number alone. The [S31 procedure](s31-acceptance.md)
+separates firmware identity, tree evidence, final display capture and panel checks.
 
 ## Validate
 
 ```sh
-cargo test --manifest-path examples/embedscope/Cargo.toml --features embedscope -- --test-threads=1
+bash scripts/check-embedscope-example.sh
 ```
 
-The process acceptance test exercises real native tree/pixels, input-driven state
-changes, structured logs, fixed captures, stale revisions, malformed/fragmented
-frames, disconnect/reconnect cleanup and ordered process teardown. This establishes
-host-native behavior; it does not certify a physical display or device transport.
+The gate verifies the provider, runs the native process tests, and checks the
+feature-off dependency graph and executable. Tests cover fixed captures, stale
+revisions, malformed/fragmented frames, reset and teardown, and compare the
+preview pixel before and after the four input cases. These are host-native
+checks, not physical display or USB acceptance.

@@ -77,7 +77,7 @@ widgets are not compiled at all. The defaults keep the full set.
 ```toml
 [dependencies]
 [dependencies.rs_lvgl_ui]
-version = "0.8.0"
+version = "0.8.1"
 default-features = false
 features = [
     "alloc", "components", "widget-slider", "widget-switch", "font-montserrat-20",

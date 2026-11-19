@@ -1,10 +1,13 @@
 //! Application-owned diagnostics; entirely absent without `embedscope`.
 mod device;
+mod evidence;
 mod frame;
+mod tree;
 mod wire;
 
-use super::{HEIGHT, WIDTH};
+use super::{BrightnessCase, HEIGHT, WIDTH};
 use escope_agent::Agent;
+pub use evidence::Decision;
 pub use frame::Frame;
 use rs_lvgl_ui::{DiagnosticEvent, DiagnosticSink};
 use std::{
@@ -29,6 +32,7 @@ pub struct Inspector {
     device: device::Device,
     pixels: Rc<RefCell<Frame>>,
     logs: Rc<RefCell<Logs>>,
+    last_count: u32,
 }
 
 impl Inspector {
@@ -36,6 +40,7 @@ impl Inspector {
         address: SocketAddr,
         display: &rs_lvgl::Display,
         pixels: Rc<RefCell<Frame>>,
+        case: BrightnessCase,
     ) -> io::Result<Self> {
         let listener = TcpListener::bind(address)?;
         listener.set_nonblocking(true)?;
@@ -44,7 +49,7 @@ impl Inspector {
             .unwrap_or_default()
             .as_nanos() as u32)
             .max(1);
-        let device = device::Device::new(display, pixels.clone(), seed);
+        let device = device::Device::new(display, pixels.clone(), seed, case);
         println!("LISTEN tcp://{}", listener.local_addr()?);
         Ok(Self {
             listener,
@@ -53,6 +58,7 @@ impl Inspector {
             device,
             pixels,
             logs: Rc::new(RefCell::new(Logs::default())),
+            last_count: 0,
         })
     }
 
@@ -101,16 +107,43 @@ impl Inspector {
         Ok(())
     }
 
-    pub fn rendered(&mut self, changed: bool, count: u32) -> io::Result<()> {
+    pub fn take_cancelled_brightness(&mut self) -> bool {
+        std::mem::take(&mut self.device.cancelled_brightness)
+    }
+
+    pub fn rendered(
+        &mut self,
+        changed: bool,
+        count: u32,
+        decision: Option<Decision>,
+    ) -> io::Result<()> {
         self.pixels.borrow_mut().finish();
         if changed {
             self.device
                 .changed()
                 .map_err(|e| io::Error::other(format!("tree revision: {e:?}")))?;
+        }
+        if count != self.last_count {
+            self.last_count = count;
             let message = format!("counter={count}");
             let _ = self
                 .agent
                 .push_log(self.device.uptime(), 3, "example.counter", &message);
+        }
+        if let Some(outcome) = self
+            .device
+            .observe(decision)
+            .map_err(|e| io::Error::other(format!("preview evidence: {e:?}")))?
+        {
+            let (result, frame) = outcome.log_fields();
+            let message =
+                serde_json::json!({"control": tree::BRIGHTNESS, "result": result, "frame": frame});
+            let _ = self.agent.push_log(
+                self.device.uptime(),
+                3,
+                evidence::LOG_TARGET,
+                &message.to_string(),
+            );
         }
         Ok(())
     }

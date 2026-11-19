@@ -59,9 +59,9 @@ monitor zeros do not establish leak freedom.
 For host diagnostics, download the matching CLI ZIP or Inspector from [EmbedScope Releases](https://github.com/umbrella22/EmbedScope/releases/latest). Add the CLI directory to PATH. Cargo installation is an alternative when Rust is already installed.
 
 Use default `escope-lvgl` with an application `TreeSource` to expose the application's
-rs_lvgl 0.8.0 objects without linking another LVGL provider. Before enabling a
-native SDK adapter, inspect its resolved Rust dependencies and unify its provider
-and source with the application's. Matching version text does not unify path and
+rs_lvgl 0.8 objects. When using `escope-lvgl 0.6/native`, inspect the resolved
+Rust dependencies and match the application's `rs_lvgl_sys` 0.8 provider, source
+and configuration. Matching version text does not unify path and
 registry sources. Release diagnostic resources before UI-thread teardown.
 
 Own the default-disabled `embedscope` feature in the application, gating optional dependencies, initialization, transport and buffers. `rs_lvgl_ui/diagnostics` supplies events only. `--release --features embedscope` retains diagnostics; production omits the application feature and verifies normal/build dependency graphs, final artifacts and installed device interfaces. Closing a Session is resource cleanup, not compile-time removal. See the [debugging guide](https://umbrella22.github.io/rs_lvgl_website/en/guide/embedscope.html).

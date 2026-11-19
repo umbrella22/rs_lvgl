@@ -1,11 +1,13 @@
 # Optional EmbedScope integration
 
-For rs_lvgl 0.8.0 applications, expose UI inspection through an application-owned
+For rs_lvgl 0.8 applications, expose UI inspection through an application-owned
 adapter. Default `escope-lvgl` accepts an application `TreeSource` without linking
 another LVGL provider. Read tree data from the application's UI thread and copy
 actual display pixels into an owned capture. Before using a native SDK adapter,
 verify that its resolved dependencies use the application's exact LVGL provider
-and source.
+and source. `escope-lvgl 0.6/native` uses `rs_lvgl_sys` 0.8. The standalone
+`examples/embedscope` application uses the released 0.6 SDK with an application
+`TreeSource` for semantic names.
 
 Download the matching CLI ZIP from [EmbedScope Releases](https://github.com/umbrella22/EmbedScope/releases/latest), extract it and add its directory to PATH. Cargo installation is optional for a machine that already has Rust.
 
@@ -16,14 +18,15 @@ For a loopback TCP listener on port 9338:
 cargo run --features embedscope
 escope -d tcp://127.0.0.1:9338 --json info
 escope -d tcp://127.0.0.1:9338 --json ui tree
-escope -d tcp://127.0.0.1:9338 input tap 100 140 --hold-ms 60
 escope -d tcp://127.0.0.1:9338 display capture NEW_SCREEN.png
 ```
 
 Use the Inspector and CLI in turn for a single-connection transport. Reuse one
 Session for concurrent SDK requests. Capture filenames must be new. Provide
 semantic view/text metadata through the application's `TreeSource`; raw native
-objects alone do not supply it.
+objects alone do not supply it. Derive tap coordinates from the returned tree,
+not a previous release's layout. A tap reply confirms receipt, not state or
+presentation. Report model outcomes and completed-frame evidence separately.
 
 ## Feature and profile contract
 

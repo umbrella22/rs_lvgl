@@ -191,6 +191,20 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+  embedscope-reference:
+    name: Optional EmbedScope reference application
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install native toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libclang-dev g++ pkg-config
+      - name: Verify registry consumer and feature-off executable
+        run: bash scripts/check-embedscope-example.sh
+
   heap-contracts:
     name: Rust and LVGL heap balance
     runs-on: ubuntu-24.04

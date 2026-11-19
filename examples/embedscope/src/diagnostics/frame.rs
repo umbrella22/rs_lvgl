@@ -34,4 +34,12 @@ impl Frame {
             self.id = self.id.checked_add(1).expect("frame sequence exhausted");
         }
     }
+
+    pub(super) fn pixel(&self, x: usize, y: usize) -> Option<[u8; 3]> {
+        if x >= WIDTH as usize || y >= HEIGHT as usize {
+            return None;
+        }
+        let at = (y * WIDTH as usize + x) * 3;
+        self.pixels[at..at + 3].try_into().ok()
+    }
 }
